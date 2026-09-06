@@ -1165,7 +1165,7 @@ probe('directives', 'match-media wraps bare queries and tracks matches', async (
     removeEventListener() {},
   }));
   const { $ } = h.app();
-  await h.render('<div data-match-media:is-dark="\'prefers-color-scheme: dark\'"></div>');
+  await h.render('<div data-match-media:is-dark="prefers-color-scheme: dark"></div>');
   assert.equal($.isDark, true);
   assert.equal(listeners[0][0], '(prefers-color-scheme: dark)');
 });

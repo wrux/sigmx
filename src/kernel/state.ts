@@ -19,8 +19,6 @@ export interface Store {
   /** Called after each settled batch with the nested object of changed paths (null = removed). */
   onPatch(fn: (patch: Patch) => void): () => void;
   readonly $: any;
-  /** Identifier scope for compiled expressions: resolves `$count`, `$user`, and `$`. */
-  readonly scope: object;
 }
 
 /** 'a.b.c' → ['a.b', 'c']; 'a' → ['', 'a']. */
@@ -235,18 +233,6 @@ export const createStore = (): Store => {
     return px;
   };
 
-  const scope = new Proxy(
-    {},
-    {
-      has: (_, k) => str(k) && k[0] === '$',
-      get: (_, k) => (!str(k) ? undefined : k === '$' ? ns('') : get(k.slice(1))),
-      set: (_, k, v) => {
-        if (str(k)) k === '$' ? merge(v) : set(k.slice(1), v);
-        return true;
-      },
-    },
-  );
-
   const paths = (filter?: Filter, { computed = true } = {}): string[] => {
     shape.value;
     const ok = toPredicate(filter);
@@ -284,6 +270,5 @@ export const createStore = (): Store => {
     get $() {
       return ns('');
     },
-    scope,
   };
 };

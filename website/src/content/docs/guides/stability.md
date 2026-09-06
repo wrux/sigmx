@@ -28,7 +28,7 @@ Anything else is internal: module paths under `dist/` other than the exports abo
 - **Additions** (a new plugin, modifier, option or event field) are minor releases. Existing markup keeps working.
 - **Behaviour fixes** that change observable results are called out in the CHANGELOG under "Changed", even when the old behaviour was a bug.
 - **Removals** happen only in a major release and are first deprecated for at least one minor release, during which the old form still works and logs nothing in production.
-- **Bundle size** is a feature, not a promise: every release records it in the CHANGELOG (11.1 KB brotli for the `everything` build with all 50 plugins at the time of writing), and a change that costs bytes is weighed against what it buys, correctness first.
+- **Bundle size** is a feature, not a promise: every release records it in the CHANGELOG (11.5 KB brotli for the `everything` build with all 50 plugins at the time of writing), and a change that costs bytes is weighed against what it buys, correctness first.
 
 ## How the promise is tested
 
@@ -41,13 +41,17 @@ Anything else is internal: module paths under `dist/` other than the exports abo
 
 The client needs a browser with ES2022, `Proxy`, `MutationObserver`, `fetch` with `ReadableStream`, `AbortSignal.any` and `CSS.escape`: Chrome and Edge 116+, Firefox 124+, Safari 17.4+. Optional APIs degrade quietly: without the Web Animations API `data-transition` switches display instantly, without `moveBefore` moved elements are re-inserted, without `localStorage` `data-persist` keeps state in memory. The server helpers need any runtime with the Fetch API (Node 20+, Deno, Bun, Cloudflare Workers).
 
-## Known trade-offs
+## Rules, settled
 
-- A dot in an object key means nesting: `merge({ 'a.b': 1 })` creates `a` → `b`. Keys are paths.
-- Paths beginning with `_` are browser-only by convention (requests leave them out) and keep their underscore through recasing.
-- Plain objects become namespaces and arrays are leaves, so `$list` is reactive in place while `$user` is a proxy over paths.
-- Attribute names are lowercased by HTML; keyed directives convert kebab-case keys to camelCase signal names, so write `data-bind:first-name`, never `data-bind:firstName`.
-- Precompiled expression tables are keyed by source text and plugin parameters; a new plugin parameter invalidates the table, so rebuild when upgrading.
+These were the open design questions before 1.0; each is now a rule with a mechanism behind it.
+
+- **One expression pipeline.** Runtime and precompiler run the same `transform()` and compile the same strict-mode bodies, so an expression means one thing everywhere. Typos throw; a misspelt signal reads as `undefined`.
+- **Keys are paths.** A dot in an object key means nesting: `merge({ 'a.b': 1 })` creates `a` → `b`.
+- **`_` is the browser-only prefix.** Requests leave `_`-prefixed paths out, and recasing keeps the underscore.
+- **Objects are namespaces, arrays are leaves.** `$list` is reactive in place; `$user` is a proxy over paths.
+- **Keys are kebab-case in markup.** HTML lowercases attribute names; the build lints `data-bind:firstName` and the runtime camelCases `first-name`.
+- **Literal values are declared.** A directive whose value is text sets `literal: true` and gains `__dynamic` for free; everything else is an expression.
+- **Plugin arguments are append-only.** Precompiled tables are keyed by source text alone and stay valid across upgrades.
 
 ## Failure policy
 

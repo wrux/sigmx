@@ -25,9 +25,9 @@ export const applyMask = (mask: string, raw: string): string => {
  * Formats the input as the user types: `mask="(999) 999-9999"`. The value is the mask itself;
  * add `__dynamic` to evaluate it as an expression instead (`mask__dynamic="$isUS ? '999-999' : '9999'"`).
  */
-export const mask = dir('mask', 6, ({ el, value, mods, evaluate, listen, effect }) => {
+export const mask = dir('mask', 38, ({ el, evaluate, listen, effect }) => {
   const input = el as HTMLInputElement;
-  let pattern = value;
+  let pattern = '';
   const format = () => {
     const next = applyMask(pattern, input.value);
     if (next !== input.value) {
@@ -39,10 +39,9 @@ export const mask = dir('mask', 6, ({ el, value, mods, evaluate, listen, effect 
     }
   };
   listen(input, 'input', format);
-  if (mods.has('dynamic')) {
-    effect(() => {
-      pattern = String(evaluate() ?? '');
-      format();
-    });
-  } else format();
+  // Literal by default; with `__dynamic` the value is an expression and the mask follows its signals.
+  effect(() => {
+    pattern = String(evaluate() ?? '');
+    format();
+  });
 });

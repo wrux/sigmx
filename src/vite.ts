@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { isAbsolute, join, relative } from 'node:path';
-import { extractExpressions, generateTable } from './kernel/precompile.js';
+import { extractExpressions, generateTable, lintSource } from './kernel/precompile.js';
 import {
   builtinPlugins,
   customPluginMeta,
@@ -95,6 +95,9 @@ export const scanProject = (o: AutoOptions = {}): Selection & { files: string[] 
   const root = o.root ?? process.cwd();
   const list = files(o);
   const sources = list.map((f) => readFileSync(f, 'utf8'));
+  list.forEach((f, i) => {
+    for (const w of lintSource(sources[i], o.prefixes)) console.warn(`[sigmx] ${relative(root, f)}: ${w}`);
+  });
   const sel = selectPlugins(sources, { prefixes: o.prefixes, always: o.always, custom: customMeta(root, o.custom) });
   return { ...sel, files: list };
 };

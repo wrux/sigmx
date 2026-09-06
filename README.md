@@ -8,7 +8,7 @@
 
 Your server renders HTML, as it always has. The browser asks for more of it with `@get` and `@post`, and sigmx merges the response into the page with a morph that keeps focus, typed input and scroll position. When you want live updates, the same request can return a stream of patches instead. Signals, two-way binding and reactive attributes cover the client-side state. You write `data-*` attributes and register only the plugins you use.
 
-- **Tiny.** 4.1 KB core, 8.6 KB with the essentials, 11.1 KB with all 50 plugins (brotli). Zero runtime dependencies.
+- **Tiny.** 4.5 KB core, 9.0 KB with the essentials, 11.5 KB with all 50 plugins (brotli). Zero runtime dependencies.
 - **Server-driven.** Return plain HTML from any endpoint and it is morphed into the page by id, or targeted with a header. Return JSON to merge signals, or an event stream to push many patches over one request, with `Last-Event-ID` reconnects.
 - **Reactive where it matters.** Signals declared in markup; `bind`, `show`, `class`, computed values and effects keep the page in step. No component model, no virtual DOM.
 - **Pay for what you use.** Every directive and function is an opt-in plugin, and auto mode scans your source to bundle exactly the set it finds.
@@ -96,14 +96,14 @@ Brotli, measured from the real source by `npm run size` and `npm run compare` (n
 
 |                                                             |  brotli |
 | ----------------------------------------------------------- | ------: |
-| sigmx core                                                  |  4.1 KB |
-| sigmx essentials (state, rendering, forms, requests, morph) |  8.6 KB |
-| sigmx everything, 50 plugins                                | 11.1 KB |
+| sigmx core                                                  |  4.5 KB |
+| sigmx essentials (state, rendering, forms, requests, morph) |  9.0 KB |
+| sigmx everything, 50 plugins                                | 11.5 KB |
 | htmx 2.0.10                                                 | 14.6 KB |
 | Datastar 1.0.3 (23 plugins)                                 | 11.8 KB |
 | Alpine.js 3.17.1                                            | 17.6 KB |
 
-Precompiling expressions at build time removes the runtime compiler and any use of `new Function`, taking the core to 3.9 KB and making strict CSP trivial.
+Precompiling expressions at build time removes the runtime compiler and any use of `new Function`, taking the core to 3.8 KB and making strict CSP trivial.
 
 ## Auto mode
 

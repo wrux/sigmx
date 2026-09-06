@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-**A smaller "everything" build, then a hardening pass.** The script-tag bundle with all 50 plugins is 11,388 bytes brotli (was 12,410 with 52; it reached 10,190 before the hardening below added about 1.2 KB of guards and teardown), the core 4.1 KB and the essentials 8.6 KB (was 8.8 KB). About a third of that came from rewrites with unchanged behaviour; the rest came from dropping two plugins and a list of options and modifiers, recorded below so the release can be judged as a whole.
+**A smaller "everything" build, then a hardening pass.** The script-tag bundle with all 50 plugins is 11,801 bytes brotli (was 12,410 with 52; it reached 10,190 before the hardening below added about 1.2 KB of guards and teardown and the strict expression tokenizer another 0.4 KB), the core 4.5 KB and the essentials 9.0 KB (was 8.8 KB). With precompiled expressions the core is 3.8 KB, smaller than before. About a third of that came from rewrites with unchanged behaviour; the rest came from dropping two plugins and a list of options and modifiers, recorded below so the release can be judged as a whole.
 
 Rewrites with unchanged behaviour:
 
@@ -35,6 +35,14 @@ Hardening (a review of every module for edge cases; each item has a regression t
 - Directives: `persist` survives corrupted or blocked storage; `transition` switches display where the Web Animations API is missing and, like `collapse` and `custom-validity`, undoes its changes on unmount; `class` removes only classes it added and drops classes whose key disappeared from the object; `style` keeps `--custom` property names; `computed` is disposed with its element; `ref` only clears a path it still owns; `@setAll`/`@toggleAll` skip computed paths; `query-string` keeps the type of its default (`?code=007` stays a string) and no longer depends on `URLSearchParams.size`; `animate` treats a zero duration as an instant write; `bind` clears a field whose signal was removed and does not overwrite a half-typed number; `mask` keeps the caret where the user was typing; `remove-me` rejects unparsable delays; `on-signal-patch:key` fires when an ancestor of the key is removed; `@fit` with an empty input range returns `outMin`; `@peek(value)` returns the value; debounced and throttled handlers are cancelled on unmount.
 - Tooling: the Vite scanner accepts files in `include`, defaults to `['src', 'index.html']`, skips broken symlinks and warns when nothing was scanned; the precompiler's syntax check runs in strict mode like the emitted module, decodes numeric entities, and `cspCompiler` creates its Trusted Types policy once per page.
 - New guide: Stability and compatibility.
+
+Decisions settled before 1.0 (see the stability guide):
+
+- **One expression pipeline.** `transform()` (new export) rewrites `$name` → `$.name` and `@name(` → `__a.name(` with a tokenizer that respects strings, template holes, comments and regular expressions; the runtime and the build-time precompiler compile the very same strict-mode bodies. Typos such as `cuont = 1` throw `ReferenceError` instead of creating globals; `/$x/` inside a regex is left alone. `with` is gone, and so is `Store#scope`; `rewriteActions`, `splitStatements` and `rewriteSignals` are replaced by `transform`/`compileBody`; `AttributePlugin.returns` is removed (every expression may return a value). Precompiled tables are keyed by source text only, so a plugin gaining an argument keeps older tables valid (arguments are append-only).
+- **Literal values are a declared contract.** `AttributePlugin.literal` marks a directive whose value is text rather than an expression, and `__dynamic` opts any of them into an expression. `mask`, `match-media`, `teleport` and `remove-me` are literal; `match-media` therefore takes the query unquoted: `data-match-media:dark="prefers-color-scheme: dark"` (`"'…'"` used to be required).
+- **Uppercase keys are linted.** `npm run build` (the Vite and Astro integrations) warns about `data-bind:firstName` and friends, which HTML lowercases before the runtime sees them.
+- Dotted keys mean nesting, `_`-prefixed paths keep their underscore, plain objects are namespaces and arrays leaves: all stated as rules in the stability guide.
+
 
 - Precompiler: `...$signal` (spread) is now rewritten; it used to be mistaken for a member access and threw `$signal is not defined` at runtime.
 - Docs: every directive and function reference page documents each modifier and option with its own live demo (110 demos across 44 pages), all checked in a real browser against the built site.

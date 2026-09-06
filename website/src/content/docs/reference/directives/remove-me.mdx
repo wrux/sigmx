@@ -19,7 +19,13 @@ data-remove-me
 | part | |
 |---|---|
 | key | forbidden |
-| value | optional delay: `3s`, `500ms` or a plain number of milliseconds; default 0 |
+| value | optional delay (a literal): `3s`, `500ms` or a plain number of milliseconds; default 0. An unparsable value is an error |
+
+## Modifiers
+
+| modifier | effect |
+|---|---|
+| `__dynamic` | evaluate the value as an expression that yields the delay |
 
 ## Toasts
 

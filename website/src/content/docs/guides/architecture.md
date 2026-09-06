@@ -9,7 +9,7 @@ src/
   kernel/
     reactive.ts    Signal, Computed, effect, batch, untracked, onSettled   (no DOM)
     state.ts       createStore(): path-keyed signals, merge-patch, snapshot, proxies   (no DOM)
-    compile.ts     compile(): with(scope) expressions, @action rewrite, statement split   (no DOM)
+    compile.ts     transform(): $name/@action rewrite; compile(): strict-mode functions of ($, __a, el, evt, …)   (no DOM)
     strict-csp.ts  cspCompiler(nonce)
     runtime.ts     createSigmx(): scanning, mounting, MutationObserver, error isolation
     contracts.ts   Ctx, Runtime, plugin and option types
@@ -32,7 +32,7 @@ A `Map<path, Signal>` for leaves and a `Map<path, Set<name>>` for namespaces. On
 
 ## Expressions
 
-`compile(compiler, src, params, returns)` wraps the source as `with($){ return (src) }`, falling back to statement form with the last statement returned. A small scanner rewrites `@name(` to a call on the per-evaluation actions object and splits statements, skipping string, template and comment contents. Results are cached by source and parameter list.
+`transform(src)` is a small tokenizer: it copies strings, template text, comments and regular expressions untouched, recurses into `${…}` holes, and rewrites `$name` to `$.name` and `@name(` to `__a.name(`. `compile(compiler, src, params)` then tries, in order, `return (code)`, each split at a `;` from the end with the last part returned, and plain statements, all as strict-mode functions of `($, __a, el, evt, …args)` where `$` is the root store proxy. The build-time precompiler emits exactly these bodies, so there is one set of semantics. Results are cached by source and parameter list.
 
 ## Engine
 

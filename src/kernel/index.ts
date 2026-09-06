@@ -3,7 +3,7 @@ export type { Filter } from '../lib/objects.js';
 export { expand, isPlain, toPredicate } from '../lib/objects.js';
 export { debounce, delay, throttle, toMs, withTiming } from '../lib/schedule.js';
 export type { Compiler } from './compile.js';
-export { compile, functionCompiler, rewriteActions, runtimeExpressions, splitStatements } from './compile.js';
+export { compile, compileBody, functionCompiler, runtimeExpressions, transform } from './compile.js';
 export type * from './contracts.js';
 export type { ExpressionTable } from './precompiled.js';
 export { expressionKey, precompiled } from './precompiled.js';

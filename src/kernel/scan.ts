@@ -7,7 +7,7 @@ export type PluginMeta = {
   name: string;
   type: Plugin['type'];
   from: string;
-  returns?: boolean;
+  literal?: boolean;
   args?: string[];
 };
 
@@ -28,7 +28,7 @@ export const builtinPlugins = (): PluginMeta[] =>
         name: p.name,
         type: p.type,
         from: 'sigmx/plugins',
-        returns: (p as any).returns,
+        literal: (p as any).literal,
         args: (p as any).args,
       };
     });
@@ -47,14 +47,14 @@ export const customPluginMeta = (exportName: string, source: string, from: strin
   const body = m[2];
   const name = /\bname\s*:\s*['"`]([^'"`]+)['"`]/.exec(body)?.[1];
   if (!name) return;
-  const returns = /\breturns\s*:\s*(true|false)/.exec(body)?.[1];
+  const literal = /\bliteral\s*:\s*true/.test(body);
   const args = /\bargs\s*:\s*\[([^\]]*)\]/.exec(body)?.[1];
   return {
     export: exportName,
     name,
     type: m[1] as Plugin['type'],
     from,
-    returns: returns === undefined ? undefined : returns === 'true',
+    literal: literal || undefined,
     args: args
       ?.split(',')
       .map((s) => s.trim().replace(/^['"`]|['"`]$/g, ''))

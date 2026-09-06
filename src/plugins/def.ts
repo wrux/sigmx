@@ -6,7 +6,7 @@ type Rule = 'required' | 'forbidden' | undefined;
 const rule = (flags: number, required: number, forbidden: number): Rule =>
   flags & required ? 'required' : flags & forbidden ? 'forbidden' : undefined;
 
-/** Flags: 1 key required, 2 key forbidden, 4 value required, 8 value forbidden, 16 statement (no return value). */
+/** Flags: 1 key required, 2 key forbidden, 4 value required, 8 value forbidden, 32 the value is a literal (`__dynamic` opts into an expression). */
 export const dir = (
   name: string,
   flags: number,
@@ -17,7 +17,7 @@ export const dir = (
   name,
   key: rule(flags, 1, 2),
   value: rule(flags, 4, 8),
-  returns: !(flags & 16),
+  literal: !!(flags & 32),
   args,
   mount,
 });

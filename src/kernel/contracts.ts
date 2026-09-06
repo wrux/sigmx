@@ -8,7 +8,7 @@ export type Mods = Map<string, string[]>;
 /** A compiled attribute expression. `store` is the instance store; `actions` resolves `@name(...)`. */
 export type Evaluator = (store: Store, actions: any, el: El, evt: Event | undefined, ...args: any[]) => any;
 /** Turns expression source into an evaluator. The runtime compiler and the precompiled table both implement this. */
-export type ExpressionCompiler = (src: string, params: string[], returns: boolean) => Evaluator;
+export type ExpressionCompiler = (src: string, params: string[]) => Evaluator;
 
 export interface Runtime {
   /** Attribute prefixes being scanned; the first is primary. */
@@ -73,7 +73,8 @@ export interface AttributePlugin {
   key?: 'required' | 'forbidden';
   value?: 'required' | 'forbidden';
   /** Whether the expression yields a value (default) or is a statement body. */
-  returns?: boolean;
+  /** The value is a literal (a mask, a selector, a delay) rather than an expression; `__dynamic` makes it one. */
+  literal?: boolean;
   /** Extra parameter names the expression can reference, in the order passed to `evaluate`. */
   args?: string[];
   // biome-ignore lint/suspicious/noConfusingVoidType: mount may return nothing or a teardown

@@ -313,3 +313,73 @@ test('boost: submitter formaction/formmethod win, hash-only popstates do not ref
   await tick(20);
   assert.equal(calls.length, 1, 'a hash change is not a navigation');
 });
+
+// ---- one expression pipeline: strict mode, tokenizer, literal contract ----
+
+test('strict mode: a misspelt plain identifier throws instead of creating a global', async (t) => {
+  const { render, errors } = app(t);
+  await render('<button data-on:click="cuont = 1">x</button>');
+  await click(document.querySelector('button'));
+  assert.equal(globalThis.cuont, undefined);
+  assert.ok(
+    errors.some((e) => /cuont is not defined/.test(String(e?.message ?? e))),
+    `got ${errors.map(String)}`,
+  );
+});
+
+test('regex literals and strings containing $ or @ are left alone by the rewrite', async (t) => {
+  const { $, render } = app(t);
+  $.name = "o'hara";
+  await render(`<b data-text="$name.replace(/'/g, '') + ' $x @y(' + /\\$n/.test('$n')"></b>`);
+  assert.equal(document.querySelector('b').textContent, 'ohara $x @y(true');
+});
+
+test('match-media takes a literal query and __dynamic an expression', async (t) => {
+  const seen = [];
+  const orig = window.matchMedia;
+  window.matchMedia = (q) => {
+    seen.push(q);
+    return { matches: q.includes('700'), addEventListener() {}, removeEventListener() {} };
+  };
+  t.after(() => {
+    window.matchMedia = orig;
+  });
+  const { $, render } = app(t);
+  $.bp = 700;
+  await render(
+    `<div data-match-media:narrow="max-width: 700px" data-match-media:wide="screen and (min-width: 60rem)" data-match-media:dyn__dynamic="'(max-width: ' + $bp + 'px)'"></div>`,
+  );
+  assert.deepEqual(seen, ['(max-width: 700px)', 'screen and (min-width: 60rem)', '(max-width: 700px)']);
+  assert.equal($.narrow, true);
+  assert.equal($.wide, false);
+  assert.equal($.dyn, true);
+  $.bp = 500;
+  await tick();
+  assert.equal(seen.at(-1), '(max-width: 500px)');
+  assert.equal($.dyn, false);
+});
+
+test('teleport and remove-me accept __dynamic expressions', async (t) => {
+  const target = document.createElement('div');
+  target.id = 'dyn-target';
+  document.body.append(target);
+  t.after(() => target.remove());
+  const { $, render } = app(t);
+  $.where = '#dyn-target';
+  $.delay = 10;
+  await render(`<div><i data-teleport__dynamic="$where">moved</i><b data-remove-me__dynamic="$delay">gone</b></div>`);
+  assert.equal(target.textContent, 'moved');
+  assert.ok(document.querySelector('b'));
+  await until(() => !document.querySelector('b'), 500);
+});
+
+test('a literal value is never compiled: a mask with quotes is used verbatim', async (t) => {
+  const { render, errors } = app(t);
+  await render(`<input data-mask="'99'-aa">`);
+  const input = document.querySelector('input');
+  input.value = '12xy';
+  input.dispatchEvent(new Event('input', { bubbles: true }));
+  await tick();
+  assert.equal(input.value, "'12'-xy");
+  assert.deepEqual(errors, []);
+});

@@ -48,10 +48,10 @@ test('selectPlugins: usage, implied dependencies, always, unused', () => {
 
 test('custom plugins are read from source and selected only when used', () => {
   const src = `import { attribute, handler } from 'sigmx'
-export const upper = attribute({ name: 'upper', value: 'required', returns: true, args: ['extra'], mount() {} })
+export const upper = attribute({ name: 'upper', value: 'required', literal: true, args: ['extra'], mount() {} })
 export const toast = handler({ name: 'toast', handle() {} })`;
   const upper = customPluginMeta('upper', src, '/src/plugins.ts');
-  assert.deepEqual([upper.name, upper.type, upper.returns, upper.args], ['upper', 'attribute', true, ['extra']]);
+  assert.deepEqual([upper.name, upper.type, upper.literal, upper.args], ['upper', 'attribute', true, ['extra']]);
   const toast = customPluginMeta('toast', src, '/src/plugins.ts');
   assert.equal(toast.type, 'handler');
   const used = selectPlugins(['<p data-upper="$x"></p>', "stream.send({ event: 'sigmx-toast' })"], {

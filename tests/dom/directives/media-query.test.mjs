@@ -22,7 +22,7 @@ test('match-media keeps a boolean signal in step with a media query', async (t) 
   Object.defineProperty(window, 'matchMedia', { value: fake, configurable: true, writable: true });
   const { $, render } = app(t);
   await render(
-    '<div data-match-media:is-dark="\'prefers-color-scheme: dark\'" data-match-media:wide="\'min-width: 800px\'"></div>',
+    '<div data-match-media:is-dark="prefers-color-scheme: dark" data-match-media:wide="min-width: 800px"></div>',
   );
   assert.equal($.isDark, true);
   assert.equal($.wide, false);

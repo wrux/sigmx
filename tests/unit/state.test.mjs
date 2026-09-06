@@ -68,11 +68,14 @@ test('patch events are batched and nested; removals are null', () => {
   assert.deepEqual(patches, [{ a: { b: 1 }, c: 2 }, { c: null }]);
 });
 
-test('scope proxy resolves $names for `with` and the root as $', () => {
+test('the root proxy is the expression scope: strict code writes and reads through it', () => {
   const s = createStore();
   s.set('count', 1);
-  const fn = new Function('$', 'with($){ $count++; $user = { name: "n" }; return [$count, $.user.name, $["count"]] }');
-  assert.deepEqual(fn(s.scope), [2, 'n', 2]);
+  const fn = new Function(
+    '$',
+    '"use strict"; $.count++; $.user = { name: "n" }; return [$.count, $.user.name, $["count"]]',
+  );
+  assert.deepEqual(fn(s.$), [2, 'n', 2]);
   assert.equal(JSON.stringify(s.$), '{"count":2,"user":{"name":"n"}}');
 });
 

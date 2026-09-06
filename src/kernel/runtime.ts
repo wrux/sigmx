@@ -129,7 +129,8 @@ export const createRuntime = (options: RuntimeOptions): Sigmx => {
       mods,
       cased: (style = 'camel') => recase(key ?? '', (mods.get('case')?.[0] as CaseStyle) || style),
       evaluate: (evt, ...args) => {
-        fn ??= expressions(value, ['el', 'evt', ...(plugin.args ?? [])], plugin.returns ?? true);
+        if (plugin.literal && !mods.has('dynamic')) return value;
+        fn ??= expressions(value, ['el', 'evt', ...(plugin.args ?? [])]);
         const actx: ActionCtx = { el, evt, store, runtime, error, cleanup, report };
         const actions = new Proxy(
           {},

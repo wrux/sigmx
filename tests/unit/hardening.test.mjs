@@ -1,7 +1,7 @@
 // Regression tests for the hardening pass: each test names the failure it guards against.
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { compile, functionCompiler, rewriteActions } from '../../dist/kernel/compile.js';
+import { compile, functionCompiler, transform } from '../../dist/kernel/compile.js';
 import { generateTable } from '../../dist/kernel/precompile.js';
 import { computed, effect, rootEffect, signal } from '../../dist/kernel/reactive.js';
 import { createStore } from '../../dist/kernel/state.js';
@@ -193,14 +193,14 @@ test('paths and snapshot can leave computeds out; filters with /g regexes are st
 test('compile returns the last statement, caches, and rewrites actions inside template holes', () => {
   const s = createStore();
   s.set('n', 2);
-  assert.equal(compile(functionCompiler, '$n = 5; $n + 1', ['el', 'evt'], true)(s, {}, null, null), 6);
-  const tpl = compile(functionCompiler, '`v=${@fit($n)} ${"@no("}`', ['el', 'evt'], true);
-  assert.equal(tpl(s, { fit: (x) => x * 2 }, null, null), 'v=10 @no(');
-  assert.equal(rewriteActions("'@a(' + @b(1)"), "'@a(' + __a.b(1)");
+  assert.equal(compile(functionCompiler, '$n = 5; $n + 1', ['el', 'evt'])(s.$, {}, null, null), 6);
+  const tpl = compile(functionCompiler, '`v=${@fit($n)} ${"@no("}`', ['el', 'evt']);
+  assert.equal(tpl(s.$, { fit: (x) => x * 2 }, null, null), 'v=10 @no(');
+  assert.equal(transform("'@a(' + @b(1)"), "'@a(' + __a.b(1)");
 });
 
 test('the precompiler syntax check is strict, like the emitted module', () => {
-  const table = generateTable([{ src: 'with($){ 1 }', params: ['el', 'evt'], returns: true }]);
+  const table = generateTable([{ src: 'with($){ 1 }', params: ['el', 'evt'] }]);
   assert.equal(
     table.includes('with('),
     false,

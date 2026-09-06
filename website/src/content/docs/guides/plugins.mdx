@@ -19,7 +19,7 @@ export const upper = attribute({
   name: 'upper',                  // data-upper
   key: 'forbidden',               // 'required' | 'forbidden' | undefined (optional)
   value: 'required',
-  returns: true,                  // evaluate() returns a value (default); false for statement bodies
+  literal: false,                 // true when the value is literal text (a mask, a selector); `__dynamic` then opts into an expression
   mount({ el, evaluate, effect }) {
     effect(() => { el.textContent = String(evaluate()).toUpperCase() })
   },
