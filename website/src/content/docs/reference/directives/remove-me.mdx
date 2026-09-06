@@ -1,0 +1,42 @@
+---
+title: "data-remove-me"
+description: "Remove the element after a delay (htmx's remove-me extension)."
+sidebar: {"order": 35, "label": "remove-me"}
+---
+import Live from '../../../../components/Live.astro'
+import Cost from '../../../../components/Cost.astro'
+
+Remove the element after a delay (htmx's remove-me extension).
+
+## Syntax
+
+```html
+data-remove-me="3s"
+data-remove-me
+```
+
+| part | |
+|---|---|
+| key | forbidden |
+| value | optional delay, default immediately |
+
+## Example
+
+<Live html={`
+<div data-signals="{ toasts: 0 }">
+  <button data-on:click="$toasts++; el.nextElementSibling.insertAdjacentHTML('beforeend', \`<p data-remove-me=\"2s\" class=\"hot\" style=\"padding:.4rem .6rem;border-radius:.4rem\">Toast #\${$toasts} disappears in two seconds</p>\`)">Show a toast</button>
+  <div></div>
+</div>
+`} />
+
+## Notes
+
+Typical for toasts and flash messages a server patches in with `mode: append`.
+
+## Register
+
+```ts
+import { removeMe } from 'sigmx/plugins'
+```
+
+<Cost name="removeMe" />

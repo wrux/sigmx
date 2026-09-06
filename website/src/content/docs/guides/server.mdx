@@ -37,7 +37,7 @@ The response's content type decides what happens.
 | `204`, `304` | nothing |
 | `4xx`, `5xx` | a `sigmx-fetch` event with `type: 'error'`; no retry unless `retry.onStatusError` |
 
-<Demo title="Polling with a plain HTML response" source={pollSrc}><Poll /></Demo>
+<Demo app title="Polling with a plain HTML response" source={pollSrc}><Poll /></Demo>
 
 ## The event stream
 
@@ -61,7 +61,7 @@ Two handlers ship with sigmx:
 
 `id:` lines are remembered and sent back as `Last-Event-ID` on reconnect; `retry:` sets the reconnect delay. Every event also dispatches `sigmx-server-event` on `document`, so you can listen for custom events with `data-on:sigmx-server-event__document`.
 
-<Demo title="Streaming progress" source={streamSrc}><Stream /></Demo>
+<Demo app title="Streaming progress" source={streamSrc}><Stream /></Demo>
 
 GET streams pause while the tab is hidden and reconnect when it is visible again (sending `Last-Event-ID`). This job restarts from scratch on reconnect, so the demo passes `openWhenHidden: true` to keep the connection open instead.
 
@@ -95,4 +95,4 @@ Backends written for Datastar emit `datastar-patch-*` events. Accept them during
 createSigmx({ plugins, eventPrefix: ['sigmx-', 'datastar-'] })
 ```
 
-<Demo source={legacySrc}><Legacy /></Demo>
+<Demo app source={legacySrc}><Legacy /></Demo>

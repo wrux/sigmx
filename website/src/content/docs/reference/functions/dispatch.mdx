@@ -1,0 +1,34 @@
+---
+title: "@dispatch"
+description: "Fire a bubbling CustomEvent from the element (Alpine's $dispatch)."
+sidebar: {"order": 8}
+---
+import Live from '../../../../components/Live.astro'
+import Cost from '../../../../components/Cost.astro'
+
+Fire a bubbling CustomEvent from the element (Alpine's $dispatch).
+
+## Syntax
+
+```js
+@dispatch('saved', { id: 3 })
+```
+
+Listen anywhere up the tree with `data-on:saved` (or `data-on:saved__window`). Components can talk to each other without sharing signals.
+
+## Example
+
+<Live html={`
+<div data-signals="{ last: 'nothing yet' }" data-on:ping="$last = 'ping with ' + JSON.stringify(evt.detail)">
+  <button data-on:click="@dispatch('ping', { at: Date.now() % 1000 })">Dispatch from inside</button>
+  <p>parent heard: <code data-text="$last"></code></p>
+</div>
+`} />
+
+## Register
+
+```ts
+import { dispatch } from 'sigmx/plugins'
+```
+
+<Cost name="dispatch" />

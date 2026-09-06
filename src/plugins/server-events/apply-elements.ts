@@ -41,19 +41,18 @@ const apply = (runtime: Runtime, html: string, selector: string, mode: Mode): vo
   if (!targets.length) console.warn('patch-elements: no elements match', selector)
   targets.forEach((t, i) => {
     const content = i === targets.length - 1 ? frag : (frag.cloneNode(true) as DocumentFragment)
-    if (mode === 'outer') {
-      if (content.children.length === 1 && content.childNodes.length === 1) morph(t, content.children[0], o)
-      else (t.replaceWith(content), activateScripts(t.parentNode as Node))
-    } else if (mode === 'inner') {
-      morphInner(t, content, o)
-    } else {
-      const nodes = [...content.childNodes]
-      if (mode === 'replace') t.replaceWith(content)
+    const nodes = [...content.childNodes]
+    if (mode === 'outer' && nodes.length === 1 && isElement(nodes[0])) morph(t, nodes[0], o)
+    else if (mode === 'inner') morphInner(t, content, o)
+    else {
+      if (mode === 'outer' || mode === 'replace') t.replaceWith(content)
       else t[mode](content)
       for (const n of nodes) activateScripts(n)
     }
   })
 }
+
+const isElement = (n: Node): n is Element => n.nodeType === 1
 
 /** Server event `patch-elements`: `elements <html>`, `selector`, `mode`, `useViewTransition true`. */
 export const applyElements = handler({

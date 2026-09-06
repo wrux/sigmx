@@ -17,7 +17,7 @@ import { signals, text, on, show } from 'sigmx/plugins'
 createSigmx({ plugins: [signals, text, on, show] })
 ```
 
-Status: feature-complete against the reference library, including its paid tier: core, 33 directives and functions, a streaming fetch client, server-event handlers with id-aware DOM morphing, and `animate`. See [docs/REVIEW.md](docs/REVIEW.md).
+Status: feature-complete against the reference library, including its paid tier: core, 33 directives and functions, a streaming fetch client, server-event handlers with id-aware DOM morphing, and `animate`. Full documentation, guides and live examples live in the `website/` project.
 
 ## Sizes
 
@@ -25,10 +25,14 @@ Minified and gzipped, measured by `npm run size`:
 
 | what you register                              |  gzip |
 |------------------------------------------------|------:|
-| core only                                      | 4.4 KB |
-| `minimal` preset (signals, text, show, on)     | 5.1 KB |
-| minimal + fetch client + server handlers       | 9.0 KB |
-| every plugin (`sigmx/standalone`)              | 12.6 KB |
+| core only                                      | 4.5 KB |
+| core with precompiled expressions              | 4.0 KB |
+| `minimal` preset (signals, text, show, on)     | 5.2 KB |
+| minimal + fetch client + server handlers       | 8.9 KB |
+| every plugin, bundled by your own tool         | 14.1 KB |
+| every plugin, shipped `dist/sigmx.standalone.js` | 13.4 KB |
+
+The standalone file is passed through terser after esbuild, which is worth about 5% gzipped; your own bundler decides for everything else. `npm run size` prints the current numbers.
 
 ## Options
 
@@ -44,6 +48,8 @@ createSigmx({
 ```
 
 The instance exposes `store`, `$` (the root proxy, so `sigmx.$.count++` works from JavaScript), `apply(root)`, `use(...plugins)` and `destroy()`.
+
+Expressions compile in the browser by default. With a build step they can be precompiled into a function table instead (`createRuntime({ plugins, expressions: precompiled(table) })`, or `sigmx({ precompile: true })` in Astro), which removes the runtime compiler from the bundle and any use of `new Function`. `sigmx/precompile` provides the Node-side scanner and generator.
 
 ## Expressions
 
@@ -63,9 +69,9 @@ Keys are recased to camelCase for signal names unless `__case.kebab|snake|pascal
 
 Attributes: `signals`, `computed`, `effect`, `ref`, `text`, `show`, `class`, `style`, `attr`, `bind`, `init`, `on`, `on-interval`, `on-intersect`, `on-signal-patch`, `json-signals`, `indicator`, `on-resize`, `on-raf`, `match-media`, `scroll-into-view`, `custom-validity`, `persist`, `query-string`, `replace-url`, `view-transition`.
 
-Attributes (continued): `animate`.
+Attributes (continued): `animate`, and the ecosystem set: `cloak`, `collapse`, `transition`, `mask`, `trap`, `teleport`, `html`, `remove-me`, `boost`.
 
-Actions: `@get`, `@post`, `@put`, `@patch`, `@delete`, `@peek`, `@setAll`, `@toggleAll`, `@fit`, `@clipboard`, `@intl`.
+Actions: `@get`, `@post`, `@put`, `@patch`, `@delete`, `@peek`, `@setAll`, `@toggleAll`, `@fit`, `@clipboard`, `@intl`, `@dispatch`, `@confirm`, `@ws`.
 
 Server-event handlers: `patch-signals`, `patch-elements` (with `morph` and `morphInner` exported for direct use).
 
@@ -126,8 +132,8 @@ npm run size    # gzip/brotli sizes for representative plugin sets
 npm run dev     # zero-dependency dev server with SSE/JSON/HTML test endpoints on :8765
 ```
 
-`examples/index.html` is a smoke-test page and `tests/browser/index.html` runs the engine, morph, fetch and animate tests in a real browser; both are served by `npm run dev`.
+`tests/browser/index.html` runs the engine, morph, fetch and animate tests in a real browser, served by `npm run dev`.
 
 ## Licence
 
-MIT. See [NOTICE.md](NOTICE.md) for provenance.
+MIT. sigmx is an independent implementation; its attribute syntax is compatible with Datastar's public API for migration, and it contains no code from Datastar or Datastar Pro.

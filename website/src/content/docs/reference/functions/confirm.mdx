@@ -1,0 +1,34 @@
+---
+title: "@confirm"
+description: "Ask before continuing (htmx's hx-confirm)."
+sidebar: {"order": 9}
+---
+import Live from '../../../../components/Live.astro'
+import Cost from '../../../../components/Cost.astro'
+
+Ask before continuing (htmx's hx-confirm).
+
+## Syntax
+
+```js
+@confirm('Delete this item?') && @delete('/items/' + $id)
+```
+
+Returns the boolean from `window.confirm`, so `&&` short-circuits the rest of the expression.
+
+## Example
+
+<Live html={`
+<div data-signals="{ deleted: false }" class="row">
+  <button data-on:click="@confirm('Really delete?') && ($deleted = true)" data-show="!$deleted">Delete</button>
+  <span data-show="$deleted">gone. <button data-on:click="$deleted = false">undo</button></span>
+</div>
+`} />
+
+## Register
+
+```ts
+import { confirm } from 'sigmx/plugins'
+```
+
+<Cost name="confirm" />

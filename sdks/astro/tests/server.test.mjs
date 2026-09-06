@@ -44,3 +44,9 @@ test('bootScript wires presets, plugin lists and options', () => {
   assert.match(bootScript({ plugins: ['text', 'on'], prefix: 'hx-', expose: false }), /import \{ text, on \} from 'sigmx\/plugins'/)
   assert.doesNotMatch(bootScript({ expose: false }), /window\[/)
 })
+
+test('bootScript with precompile uses the table and the fallback flag', async () => {
+  const { bootScript } = await import('../dist/index.js')
+  assert.match(bootScript({ precompile: true }), /precompiled\(table, runtimeExpressions\(functionCompiler\)\)/)
+  assert.match(bootScript({ precompile: { fallback: false } }), /precompiled\(table, undefined\)/)
+})

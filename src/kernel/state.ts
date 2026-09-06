@@ -31,6 +31,7 @@ const parentOf = (p: string): string => p.slice(0, Math.max(0, p.lastIndexOf('.'
 const nameOf = (p: string): string => p.slice(p.lastIndexOf('.') + 1)
 const join = (a: string, b: string): string => (a ? `${a}.${b}` : b)
 const under = (p: string, at: string): boolean => !at || p === at || p.startsWith(`${at}.`)
+const str = (k: unknown): k is string => typeof k === 'string'
 
 export const createStore = (): Store => {
   const leaves = new Map<string, Signal<any>>()
@@ -160,15 +161,14 @@ export const createStore = (): Store => {
     let px = nsCache.get(p)
     if (!px) {
       const names = () => (shape.value, kids.get(p))
-      px = new Proxy(Object.create(null), {
-        get: (_, k) =>
-          typeof k !== 'string' ? undefined : k === 'toJSON' ? () => snapshot(undefined, { at: p }) : get(join(p, k)),
-        set: (_, k, v) => (typeof k === 'string' && set(join(p, k), v), true),
-        deleteProperty: (_, k) => (typeof k === 'string' && remove(join(p, k)), true),
-        has: (_, k) => typeof k === 'string' && !!names()?.has(k),
+      px = new Proxy({}, {
+        get: (_, k) => (!str(k) ? undefined : k === 'toJSON' ? () => snapshot(undefined, { at: p }) : get(join(p, k))),
+        set: (_, k, v) => (str(k) && set(join(p, k), v), true),
+        deleteProperty: (_, k) => (str(k) && remove(join(p, k)), true),
+        has: (_, k) => str(k) && !!names()?.has(k),
         ownKeys: () => [...(names() ?? [])],
         getOwnPropertyDescriptor: (_, k) =>
-          typeof k === 'string' && names()?.has(k)
+          str(k) && names()?.has(k)
             ? { enumerable: true, configurable: true, writable: true, value: get(join(p, k)) }
             : undefined,
       })
@@ -177,11 +177,11 @@ export const createStore = (): Store => {
     return px
   }
 
-  const scope = new Proxy(Object.create(null), {
-    has: (_, k) => typeof k === 'string' && k[0] === '$',
-    get: (_, k) => (typeof k !== 'string' ? undefined : k === '$' ? ns('') : get(k.slice(1))),
+  const scope = new Proxy({}, {
+    has: (_, k) => str(k) && k[0] === '$',
+    get: (_, k) => (!str(k) ? undefined : k === '$' ? ns('') : get(k.slice(1))),
     set: (_, k, v) => {
-      if (typeof k === 'string') k === '$' ? merge(v) : set(k.slice(1), v)
+      if (str(k)) k === '$' ? merge(v) : set(k.slice(1), v)
       return true
     },
   })

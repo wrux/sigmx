@@ -5,13 +5,16 @@ export const indicator = attribute({
   name: 'indicator',
   mount({ el, key, value, cased, store, listen }) {
     const path = key ? cased() : value.trim()
-    let active = 0
+    // Requests are remembered by id at `started`, because the element that made one may have been
+    // morphed away by the time it finishes.
+    const mine = new Set<number>()
     store.set(path, false)
-    listen(document, 'sigmx-fetch', (e: CustomEvent<{ el: Element; type: string }>) => {
-      if (e.detail.el !== el && !el.contains(e.detail.el)) return
-      if (e.detail.type === 'started') active++
-      else if (e.detail.type === 'finished') active = Math.max(0, active - 1)
-      store.set(path, active > 0)
+    listen(document, 'sigmx-fetch', (e: CustomEvent<{ el: Element; type: string; rid: number }>) => {
+      const { el: from, type, rid } = e.detail
+      if (type === 'started' && (from === el || el.contains(from))) mine.add(rid)
+      else if (type === 'finished') mine.delete(rid)
+      else return
+      store.set(path, mine.size > 0)
     })
     return () => store.set(path, false)
   },

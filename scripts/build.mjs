@@ -7,19 +7,24 @@ await esbuild.build({
   entryPoints: globSync('src/**/*.ts'),
   outdir: 'dist',
   format: 'esm',
-  target: 'es2021',
+  target: 'es2022',
   sourcemap: true,
   mangleProps: /^_/,
 })
 execSync('npx tsc', { stdio: 'inherit' })
-// Convenience script-tag bundle.
-await esbuild.build({
+// Convenience script-tag bundle: esbuild bundles and minifies, then terser squeezes a further ~5% gzipped.
+// Only safe options: property reads have tracking side effects, so no `pure_getters`.
+const bundled = await esbuild.build({
   entryPoints: ['src/standalone.ts'],
-  outfile: 'dist/sigmx.standalone.js',
   bundle: true,
   minify: true,
   format: 'esm',
-  target: 'es2021',
+  target: 'es2022',
   mangleProps: /^_/,
+  write: false,
 })
+const { minify } = await import('terser')
+const squeezed = await minify(bundled.outputFiles[0].text, { module: true, compress: { passes: 2 }, mangle: true })
+const { writeFileSync } = await import('node:fs')
+writeFileSync('dist/sigmx.standalone.js', squeezed.code)
 console.log('built dist/')

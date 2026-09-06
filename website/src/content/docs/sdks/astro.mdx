@@ -38,6 +38,7 @@ Endpoints that answer requests need to run on the server: add an adapter and set
 | `expose` | `'sigmx'` | global name for the instance; `false` for none |
 | `inject` | `true` | inject on every page; `false` to opt in per page |
 | `entrypoint` | | an app-local module that creates the instance itself, e.g. `'/src/sigmx.ts'` |
+| `precompile` | `false` | compile attribute expressions at build time; see [Precompiled expressions](/guides/precompiled-expressions/) |
 
 An app-local entrypoint lets you add your own plugins:
 
@@ -94,7 +95,7 @@ const fragment = await container.renderToString(Results, { props: { q } })
 
 ## A complete example
 
-<Demo source={searchSrc}><Search /></Demo>
+<Demo app source={searchSrc}><Search /></Demo>
 
 ```ts
 // src/pages/api/search.ts

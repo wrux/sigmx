@@ -1,0 +1,39 @@
+---
+title: "data-cloak"
+description: "Hide markup until sigmx has mounted it (Alpine's x-cloak)."
+sidebar: {"order": 28, "label": "cloak"}
+---
+import Live from '../../../../components/Live.astro'
+import Cost from '../../../../components/Cost.astro'
+
+Hide markup until sigmx has mounted it (Alpine's x-cloak).
+
+## Syntax
+
+```html
+data-cloak
+```
+
+| part | |
+|---|---|
+| key | forbidden |
+| value | forbidden |
+
+## Example
+
+<Live html={`
+<style>[data-cloak] { display: none !important }</style>
+<div data-signals="{ ready: true }"><p data-cloak>You only see this once sigmx has run, so no flash of raw <code>{ signals }</code> or unstyled placeholders.</p></div>
+`} />
+
+## Notes
+
+Add `[data-cloak] { display: none !important }` to your CSS (use your prefix if you changed it). The attribute is removed the moment the element mounts, which happens on DOM ready for markup in the initial HTML and immediately for patched-in markup.
+
+## Register
+
+```ts
+import { cloak } from 'sigmx/plugins'
+```
+
+<Cost name="cloak" />

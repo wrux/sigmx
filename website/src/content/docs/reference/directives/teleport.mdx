@@ -1,0 +1,49 @@
+---
+title: "data-teleport"
+description: "Move an element elsewhere in the document, keeping its behaviour (Alpine's x-teleport)."
+sidebar: {"order": 33, "label": "teleport"}
+---
+import Live from '../../../../components/Live.astro'
+import Cost from '../../../../components/Cost.astro'
+
+Move an element elsewhere in the document, keeping its behaviour (Alpine's x-teleport).
+
+## Syntax
+
+```html
+data-teleport="body"
+data-teleport__prepend="#toasts"
+```
+
+| part | |
+|---|---|
+| key | forbidden |
+| value | required (a selector) |
+
+## Modifiers
+
+| modifier | effect |
+|---|---|
+| `__prepend` | insert as the first child instead of the last |
+
+## Example
+
+<Live html={`
+<div data-signals="{ n: 0 }">
+  <div id="teleport-target" style="border:1px dashed var(--sl-color-hairline);padding:.5rem;margin-bottom:.5rem">target box</div>
+  <button data-on:click="$n++">clicked <span data-text="$n"></span></button>
+  <p data-teleport="#teleport-target" style="margin:.3rem 0 0">I was written after the button but live inside the target box, and I still see <b data-text="$n"></b>.</p>
+</div>
+`} />
+
+## Notes
+
+Modals, tooltips and toasts usually need to escape `overflow: hidden` or stacking contexts. Browsers with `moveBefore` move the element without unmounting it; others remove and re-insert it, which remounts its attributes (state in signals is unaffected).
+
+## Register
+
+```ts
+import { teleport } from 'sigmx/plugins'
+```
+
+<Cost name="teleport" />

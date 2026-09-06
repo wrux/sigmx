@@ -88,6 +88,7 @@ await t('form contentType posts urlencoded fields', async () => {
   await tick(); el.requestSubmit(); await until(() => app.$.form?.who === 'me')
 })
 await t('animate tweens a numeric style over time', async () => {
+  if (document.hidden) return // animation frames do not run in hidden tabs; nothing to measure
   app.$.open = false
   const el = html('<div data-animate:opacity__duration.3s="$open ? 1 : 0" style="width:10px;height:10px"></div>')
   await tick(); eq(getComputedStyle(el).opacity, '0'); app.$.open = true
@@ -95,6 +96,63 @@ await t('animate tweens a numeric style over time', async () => {
   await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))
   const mid = +getComputedStyle(el).opacity; if (!(mid > 0 && mid < 1)) throw new Error(`mid value ${mid}`)
   app.$.open = false; await tick(20); const back = +getComputedStyle(el).opacity; if (!(back < 1)) throw new Error(`retarget ${back}`)
+})
+
+await t('cloak is removed on mount; html sets innerHTML; remove-me removes after its delay', async () => {
+  app.$.markup = '<b>bold</b>'
+  const el = html('<div><p id="c" data-cloak>x</p><div id="h" data-html="$markup"></div><span id="rm" data-remove-me="50ms">bye</span></div>')
+  await tick(); eq(el.querySelector('#c').hasAttribute('data-cloak'), false); eq(el.querySelector('#h b').textContent, 'bold')
+  await until(() => !el.querySelector('#rm'))
+})
+await t('collapse animates height and settles', async () => {
+  app.$.open = true
+  const el = html('<div id="col" data-collapse__duration.60ms="$open"><p style="height:80px;margin:0">content</p></div>')
+  await tick(); const col = el; eq(col.style.height, ''); app.$.open = false
+  eq(col.style.overflow, 'hidden'); await until(() => col.style.height === '0px' && col.style.transition === ''); eq(col.getBoundingClientRect().height, 0) // settled (transitions do not advance in hidden tabs)
+  app.$.open = true; await until(() => col.style.height === '' && col.getBoundingClientRect().height > 70)
+})
+await t('transition toggles display after the animation', async () => {
+  if (document.hidden) return // web animations do not finish in hidden tabs
+  app.$.open = true
+  const el = html('<div id="tr" data-transition__duration.30ms="$open">hi</div>')
+  await tick(); app.$.open = false; await until(() => getComputedStyle(el).display === 'none')
+  app.$.open = true; await tick(); eq(getComputedStyle(el).display !== 'none', true)
+})
+await t('mask formats input and bind sees the formatted value; dynamic masks react', async () => {
+  const el = html('<div><input id="ph" data-bind:phone data-mask="(999) 999-9999"><input id="dyn" data-signals:code="\'9999\'" data-mask__dynamic="$code"></div>')
+  await tick(); const ph = el.querySelector('#ph'); ph.value = '5551234567x'; ph.dispatchEvent(new Event('input', { bubbles: true }))
+  eq(ph.value, '(555) 123-4567'); eq(app.$.phone, '(555) 123-4567')
+  const dyn = el.querySelector('#dyn'); dyn.value = 'ab12345'; dyn.dispatchEvent(new Event('input', { bubbles: true })); eq(dyn.value, '1234')
+  app.$.code = '99-99'; await tick(); eq(dyn.value, '12-34')
+})
+await t('trap keeps Tab inside and restores focus; teleport moves the element', async () => {
+  app.$.modal = false
+  const el = html('<div><button id="outside">o</button><div id="dlg" data-trap="$modal" data-teleport="#stage"><button id="a">a</button><button id="b">b</button></div><div id="landing"></div></div>')
+  await tick(); eq(document.getElementById('dlg').parentElement, stage, 'teleported to #stage')
+  document.getElementById('outside').focus(); app.$.modal = true; await tick(); await tick()
+  eq(document.activeElement.id, 'a')
+  document.getElementById('b').focus(); document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true }))
+  eq(document.activeElement.id, 'a', 'wrapped to first')
+  app.$.modal = false; eq(document.activeElement.id, 'outside', 'focus restored')
+})
+await t('@dispatch bubbles a CustomEvent; @confirm gates', async () => {
+  let got = null; stage.addEventListener('ping', (e) => (got = e.detail))
+  const el = html('<div><button id="d" data-on:click="@dispatch(\'ping\', { n: 7 })"></button><button id="c" data-on:click="@confirm(\'ok?\') && ($confirmed = true)"></button></div>')
+  await tick(); el.querySelector('#d').click(); eq(got.n, 7)
+  const orig = window.confirm; window.confirm = () => false; el.querySelector('#c').click(); eq(app.$.confirmed, undefined)
+  window.confirm = () => true; el.querySelector('#c').click(); eq(app.$.confirmed, true); window.confirm = orig
+})
+await t('@ws routes incoming blocks as server events and sends JSON', async () => {
+  const el = html('<div data-init="$sock = @ws(\'/ws\')"><button id="send" data-on:click="$sock.send({ hi: 1 })"></button></div>')
+  await tick(); await until(() => app.$.wsHello === 'connected'); el.querySelector('#send').click()
+  await until(() => app.$.echo?.hi === 1)
+})
+await t('boost turns a same-origin link into a morphed navigation with history', async () => {
+  const el = html('<div data-boost><main id="main"><h1 id="title">Page one</h1><a id="lnk" href="/api/page2">go</a></main></div>')
+  await tick(); const url0 = location.href; el.querySelector('#lnk').click()
+  await until(() => document.getElementById('title')?.textContent === 'Page two')
+  eq(location.pathname, '/api/page2'); eq(!!document.getElementById('boost-note'), true)
+  history.replaceState(null, '', url0)
 })
 window.__done = true
 </script></body></html>

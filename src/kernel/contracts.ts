@@ -5,12 +5,18 @@ import type { CaseStyle } from '../lib/casing.js'
 export type El = HTMLElement | SVGElement | MathMLElement
 export type Mods = Map<string, string[]>
 
+/** A compiled attribute expression. `store` is the instance store; `actions` resolves `@name(...)`. */
+export type Evaluator = (store: Store, actions: any, el: El, evt: Event | undefined, ...args: any[]) => any
+/** Turns expression source into an evaluator. The runtime compiler and the precompiled table both implement this. */
+export type ExpressionCompiler = (src: string, params: string[], returns: boolean) => Evaluator
+
 export interface Runtime {
   /** Attribute prefixes being scanned; the first is primary. */
   readonly prefixes: readonly string[]
   /** Full attribute name under the primary prefix: attr('on') → 'data-on'. */
   attr(name: string): string
   readonly store: Store
+  /** The low-level function compiler (`new Function` or the CSP compiler), for plugins that build code. */
   readonly compiler: Compiler
   /** Dispatch a `sigmx-<type>` CustomEvent on `document`. */
   emit(type: string, detail?: unknown): void
@@ -87,19 +93,27 @@ export interface HandlerPlugin {
 
 export type Plugin = AttributePlugin | ActionPlugin | HandlerPlugin
 
-export interface SigmxOptions {
+export interface RuntimeOptions {
   plugins?: Plugin[]
+  /** How attribute expressions become functions: `runtimeExpressions(compiler)` or `precompiled(table)`. */
+  expressions: ExpressionCompiler
+  /** Low-level function compiler exposed to plugins (default `new Function`). */
+  compile?: Compiler
   /** Attribute prefix or prefixes to scan. Default 'data-'. */
   prefix?: string | string[]
   /** Server event-name prefixes to accept, add a second prefix while migrating from another library. Default 'sigmx-'. */
   eventPrefix?: string | string[]
-  compile?: Compiler
   /** Share a store between instances. */
   store?: Store
   /** Called for any plugin or expression error. Default: console.error. */
   onError?: (error: unknown, info: { plugin?: string; el?: Element; attr?: string }) => void
   /** Scan `document.documentElement` on creation (after DOM ready). Default true. */
   autoStart?: boolean
+}
+
+/** `createSigmx` options: `expressions` is optional and defaults to the runtime compiler. */
+export interface SigmxOptions extends Omit<RuntimeOptions, 'expressions'> {
+  expressions?: ExpressionCompiler
 }
 
 export interface Sigmx {

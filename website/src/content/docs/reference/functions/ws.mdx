@@ -1,0 +1,45 @@
+---
+title: "@ws"
+description: "Open a WebSocket and route its messages like a server event stream (htmx's ws extension)."
+sidebar: {"order": 10}
+---
+import Live from '../../../../components/Live.astro'
+import Cost from '../../../../components/Cost.astro'
+
+Open a WebSocket and route its messages like a server event stream (htmx's ws extension).
+
+## Syntax
+
+```js
+$socket = @ws('/live')
+$socket.send({ type: 'chat', text: $draft })
+$socket.close()
+```
+
+Messages are text blocks in the same shape as an event stream, separated by blank lines:
+
+```
+event: sigmx-patch-signals
+data: signals {"online": 12}
+
+event: sigmx-patch-elements
+data: selector #chat
+data: mode append
+data: elements <li>hello</li>
+```
+
+Each block is dispatched as `sigmx-server-event` and handed to the matching handler, so `patch-signals` and `patch-elements` work exactly as over HTTP. The returned object has `send` (objects are JSON-encoded), `close` and the raw `socket`; the socket closes when the element that opened it unmounts. Store it in a signal to use it elsewhere.
+
+## Example
+
+<Live html={`
+<p class="muted">No socket server behind this documentation site; the repository's dev server has a <code>/ws</code> echo endpoint exercised by the browser test suite.</p>
+`} />
+
+## Register
+
+```ts
+import { websocket } from 'sigmx/plugins'
+```
+
+<Cost name="websocket" />

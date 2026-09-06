@@ -1,4 +1,7 @@
-<p data-upper="'registered with instance.use()'">this text is replaced once the plugin registers</p>
+<div class="ex custom">
+  <span class="label">data-upper</span>
+  <p data-upper="'registered with instance.use()'">this text is replaced once the plugin registers</p>
+</div>
 <script>
   import { attribute } from 'sigmx'
   const upper = attribute({
@@ -10,3 +13,8 @@
   })
   ;(window as any).sigmx.use(upper)
 </script>
+<style is:global>
+  .custom { padding: 1rem; display: grid; gap: .2rem; background: var(--ex-surface); }
+  .custom .label { font-family: var(--sl-font-mono); font-size: .72rem; color: var(--ex-muted); }
+  .custom p { margin: 0; font-weight: 600; letter-spacing: .04em; }
+</style>

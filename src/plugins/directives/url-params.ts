@@ -1,4 +1,4 @@
-import { attribute, expand } from '../../kernel/index.js'
+import { attribute, expand, toPredicate } from '../../kernel/index.js'
 
 const parse = (s: string): unknown => {
   try {
@@ -17,17 +17,17 @@ export const queryString = attribute({
   key: 'forbidden',
   mount({ value, mods, evaluate, store, listen, effect }) {
     const filter = value ? evaluate() : undefined
-    const history = mods.has('history')
+    const ok = toPredicate(filter)
     const fromUrl = () => {
       const patch = {}
-      for (const [k, v] of new URLSearchParams(location.search)) expand(patch, k, parse(v))
-      store.merge(store.snapshot(filter, { computed: false }) && patch)
+      for (const [k, v] of new URLSearchParams(location.search)) if (ok(k)) expand(patch, k, parse(v))
+      store.merge(patch)
     }
-    let syncing = false
+    let restoring = false
     fromUrl()
     effect(() => {
       const snap = store.snapshot(filter, { computed: false })
-      if (syncing) return
+      if (restoring) return
       const q = new URLSearchParams(location.search)
       const walk = (obj: Record<string, any>, prefix: string) => {
         for (const k in obj) {
@@ -40,16 +40,15 @@ export const queryString = attribute({
       }
       walk(snap, '')
       const url = `${location.pathname}${q.size ? `?${q}` : ''}${location.hash}`
-      if (url === location.pathname + location.search + location.hash) return
-      history ? window.history.pushState(null, '', url) : window.history.replaceState(null, '', url)
+      if (url !== location.pathname + location.search + location.hash) history[mods.has('history') ? 'pushState' : 'replaceState'](null, '', url)
     })
-    if (history)
+    if (mods.has('history'))
       listen(window, 'popstate', () => {
-        syncing = true
+        restoring = true
         try {
           fromUrl()
         } finally {
-          syncing = false
+          restoring = false
         }
       })
   },

@@ -1,10 +1,13 @@
-import { compile, functionCompiler } from './compile.js'
+import { functionCompiler } from './compile.js'
 import { effect } from './reactive.js'
 import { createStore } from './state.js'
-import type { ActionCtx, AttributePlugin, Ctx, El, Mods, Plugin, Runtime, Sigmx, SigmxOptions } from './contracts.js'
+import type { ActionCtx, AttributePlugin, Ctx, El, Evaluator, Mods, Plugin, Runtime, RuntimeOptions, Sigmx } from './contracts.js'
 import { recase, type CaseStyle } from '../lib/casing.js'
 
 const isEl = (n: Node): n is El => n instanceof HTMLElement || n instanceof SVGElement || n instanceof MathMLElement
+/** An element (or shadow root) followed by every element under it; nothing for text and comment nodes. */
+const tree = (n: Node): El[] =>
+  isEl(n) ? [n, ...n.querySelectorAll<El>('*')] : n instanceof ShadowRoot ? [...n.querySelectorAll<El>('*')] : []
 
 type Parsed = { plugin: string; key: string | undefined; mods: Mods }
 const parsed = new Map<string, Parsed>()
@@ -29,11 +32,13 @@ export const parseAttr = (raw: string): Parsed => {
 const fail = (message: string, info: Record<string, unknown>): Error =>
   Object.assign(new Error(message), { info })
 
-export const createSigmx = (options: SigmxOptions = {}): Sigmx => {
+/** Low-level constructor: you supply the expression pipeline. `createSigmx` wraps it with the runtime compiler. */
+export const createRuntime = (options: RuntimeOptions): Sigmx => {
   const prefixes = ([] as string[]).concat(options.prefix ?? 'data-')
   const eventPrefixes = ([] as string[]).concat(options.eventPrefix ?? 'sigmx-')
   const store = options.store ?? createStore()
   const compiler = options.compile ?? functionCompiler
+  const { expressions } = options
   const onError = options.onError ?? ((e, info) => console.error(e, info))
   const attributes: Record<string, AttributePlugin> = Object.create(null)
   const actions: Runtime['actions'] = Object.create(null)
@@ -88,7 +93,7 @@ export const createSigmx = (options: SigmxOptions = {}): Sigmx => {
 
   const actionsFor = (el: El, evt: Event | undefined, error: Ctx['error'], cleanup: (fn: () => void) => void) => {
     const ctx: ActionCtx = { el, evt, store, runtime, error, cleanup }
-    return new Proxy(Object.create(null), { get: (_, name: string) => (...args: any[]) => runtime.call(name, ctx, args) })
+    return new Proxy({}, { get: (_, name: string) => (...args: any[]) => runtime.call(name, ctx, args) })
   }
 
   const mount = (el: El, attr: string, raw: string, value: string, only?: Set<string>): void => {
@@ -101,7 +106,7 @@ export const createSigmx = (options: SigmxOptions = {}): Sigmx => {
     const info = { plugin: name, el, attr }
     const error: Ctx['error'] = (message, extra) => fail(`${prefixes[0]}${name}: ${message}`, { ...info, ...extra })
     const report = (e: unknown) => onError(e, info)
-    let fn: ((...args: any[]) => any) | undefined
+    let fn: Evaluator | undefined
     const ctx: Ctx = {
       el,
       plugin: name,
@@ -111,8 +116,8 @@ export const createSigmx = (options: SigmxOptions = {}): Sigmx => {
       mods,
       cased: (style = 'camel') => recase(key ?? '', (mods.get('case')?.[0] as CaseStyle) || style),
       evaluate: (evt, ...args) => {
-        fn ??= compile(compiler, value, ['el', 'evt', ...(plugin.args ?? [])], plugin.returns ?? true)
-        return fn(store.scope, actionsFor(el, evt, error, ctx.cleanup), el, evt, ...args)
+        fn ??= expressions(value, ['el', 'evt', ...(plugin.args ?? [])], plugin.returns ?? true)
+        return fn(store, actionsFor(el, evt, error, ctx.cleanup), el, evt, ...args)
       },
       effect: (f) => disposers.push(effect(f, report)),
       listen: (target, type, f, opts) => {
@@ -139,10 +144,10 @@ export const createSigmx = (options: SigmxOptions = {}): Sigmx => {
     })
 
     try {
-      if (plugin.key === 'required' && !key) throw error('needs a key, e.g. :name')
-      if (plugin.key === 'forbidden' && key) throw error('does not take a key')
+      if (plugin.key === 'required' && !key) throw error('needs a key')
+      if (plugin.key === 'forbidden' && key) throw error('takes no key')
       if (plugin.value === 'required' && !value) throw error('needs a value')
-      if (plugin.value === 'forbidden' && value) throw error('does not take a value')
+      if (plugin.value === 'forbidden' && value) throw error('takes no value')
       const r = plugin.mount(ctx)
       if (typeof r === 'function') disposers.push(r)
     } catch (e) {
@@ -163,8 +168,8 @@ export const createSigmx = (options: SigmxOptions = {}): Sigmx => {
   const observer = new MutationObserver((records) => {
     for (const { type, target, attributeName, addedNodes, removedNodes } of records) {
       if (type === 'childList') {
-        for (const n of removedNodes) if (isEl(n)) unmount([n, ...n.querySelectorAll<El>('*')])
-        for (const n of addedNodes) if (isEl(n)) mountEls([n, ...n.querySelectorAll<El>('*')])
+        for (const n of removedNodes) unmount(tree(n))
+        for (const n of addedNodes) mountEls(tree(n))
       } else if (attributeName && isEl(target) && !ignored(target)) {
         const raw = strip(attributeName)
         if (!raw) continue
@@ -177,7 +182,7 @@ export const createSigmx = (options: SigmxOptions = {}): Sigmx => {
 
   let ready = false
   const apply = (root: El | ShadowRoot = document.documentElement, observe = true, only?: Set<string>) => {
-    mountEls([...(isEl(root) ? [root] : []), ...root.querySelectorAll<El>('*')], only)
+    mountEls(tree(root), only)
     if (observe && !roots.has(root)) {
       observer.observe(root, { subtree: true, childList: true, attributes: true })
       roots.add(root)

@@ -21,6 +21,7 @@ export type RequestOptions = {
 }
 
 const inflight = new Map<string, AbortController>()
+let seq = 0
 const sleep = (ms: number, signal: AbortSignal) =>
   new Promise<void>((resolve) => {
     const t = setTimeout(resolve, ms)
@@ -54,7 +55,8 @@ const send = async (method: string, ctx: ActionCtx, url: string, o: RequestOptio
     inflight.set(key, ac)
   }
   ctx.cleanup(() => ac.abort())
-  const emit = (type: string, extra: Record<string, unknown> = {}) => runtime.emit('fetch', { el, type, method, url, ...extra })
+  const rid = ++seq
+  const emit = (type: string, extra: Record<string, unknown> = {}) => runtime.emit('fetch', { el, type, method, url, rid, ...extra })
   const retry = { attempts: 5, interval: 1000, factor: 2, max: 30_000, onStatusError: false, ...o.retry }
   const pauseWhenHidden = !(o.openWhenHidden ?? method !== 'GET')
   const bodyAllowed = method !== 'GET' && method !== 'DELETE'
@@ -116,14 +118,11 @@ const send = async (method: string, ctx: ActionCtx, url: string, o: RequestOptio
       const req = build()
       if (!req) return
       if (lastId) (req.init.headers as Record<string, string>)['Last-Event-ID'] = lastId
-      const inner = new AbortController()
-      const stop = () => inner.abort()
-      ac.signal.addEventListener('abort', stop, { once: true })
-      const onHide = () => document.hidden && inner.abort()
+      const hide = new AbortController()
+      const onHide = () => document.hidden && hide.abort()
       if (pauseWhenHidden) document.addEventListener('visibilitychange', onHide)
-      let paused = false
       try {
-        const res = await fetch(req.url, { ...req.init, signal: inner.signal })
+        const res = await fetch(req.url, { ...req.init, signal: AbortSignal.any([ac.signal, hide.signal]) })
         const ct = res.headers.get('content-type') ?? ''
         if (res.status >= 400) {
           emit('error', { status: res.status })
@@ -144,24 +143,16 @@ const send = async (method: string, ctx: ActionCtx, url: string, o: RequestOptio
           await backoff()
           continue
         }
-        if (ct.includes('text/html')) {
-          runtime.handle('patch-elements', headerArgs(res, ['selector', 'mode', 'use-view-transition'], { elements: await res.text() }))
-        } else if (ct.includes('application/json')) {
-          runtime.handle('patch-signals', headerArgs(res, ['only-if-missing'], { signals: await res.text() }))
-        } else if (ct.includes('javascript')) {
-          runScript(await res.text())
-        }
+        const text = await res.text()
+        if (ct.includes('text/html')) runtime.handle('patch-elements', headerArgs(res, ['selector', 'mode', 'use-view-transition'], { elements: text }))
+        else if (ct.includes('application/json')) runtime.handle('patch-signals', headerArgs(res, ['only-if-missing'], { signals: text }))
+        else if (ct.includes('javascript')) runScript(text)
         return
-      } catch (e) {
+      } catch {
         if (ac.signal.aborted) return
-        if (inner.signal.aborted && pauseWhenHidden && document.hidden) {
-          paused = true
-          await untilVisible()
-          continue
-        }
-        if (!paused) await backoff()
+        if (hide.signal.aborted) await untilVisible()
+        else await backoff()
       } finally {
-        ac.signal.removeEventListener('abort', stop)
         document.removeEventListener('visibilitychange', onHide)
       }
     }

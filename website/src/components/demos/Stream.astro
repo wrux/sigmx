@@ -1,8 +1,20 @@
-<div data-signals="{ progress: 0, running: false }">
-  <div class="row">
-    <button data-on:click="@get('/api/stream', { openWhenHidden: true })" data-attr:disabled="$running" data-text="$running ? 'Working…' : 'Start job'">Start job</button>
-    <span data-text="$progress + '%'">0%</span>
-  </div>
-  <progress max="100" data-attr:value="$progress"></progress>
-  <ul id="job-log"></ul>
+<div class="ex job" data-signals="{ progress: 0, running: false }">
+  <header class="bar">
+    <div><b>Nightly export</b><small class="muted">one request, many patches</small></div>
+    <button class="btn" data-on:click="@get('/api/stream', { openWhenHidden: true })" data-attr:disabled="$running" data-text="$running ? 'Working…' : 'Start job'">Start job</button>
+  </header>
+  <div class="track"><i data-animate:width__duration.350ms="$progress + '%'"></i></div>
+  <div class="meta"><span class="num" data-text="$progress + '%'">0%</span><span class="chip" data-class="{ good: $progress === 100 }" data-text="$progress === 100 ? 'done' : $running ? 'running' : 'idle'"></span></div>
+  <ul id="job-log" class="log"></ul>
 </div>
+<style is:global>
+  .job { padding: 1rem; display: grid; gap: .7rem; background: var(--ex-surface); }
+  .job .bar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+  .job .bar b { display: block; } .job .bar small { font-size: .78rem; }
+  .job .track { height: .55rem; border-radius: 999px; background: var(--ex-surface-2); overflow: hidden; }
+  .job .track i { display: block; height: 100%; width: 0; border-radius: 999px; background: linear-gradient(90deg, var(--ex-accent), #7c5cff); }
+  .job .meta { display: flex; justify-content: space-between; align-items: center; font-size: .85rem; }
+  .job .log { list-style: none; margin: 0; padding: 0; display: grid; gap: .3rem; font-family: var(--sl-font-mono); font-size: .8rem; }
+  .job .log li { padding: .35rem .6rem; border-left: 3px solid var(--ex-accent); background: var(--ex-surface-2); border-radius: 0 .4rem .4rem 0; animation: msg-in .25s ease-out; }
+  .job .log li::before { content: '✓ '; color: var(--ex-good); }
+</style>

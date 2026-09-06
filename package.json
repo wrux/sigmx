@@ -34,6 +34,10 @@
     "./standalone": {
       "types": "./dist/standalone.d.ts",
       "import": "./dist/standalone.js"
+    },
+    "./precompile": {
+      "types": "./dist/kernel/precompile.d.ts",
+      "import": "./dist/kernel/precompile.js"
     }
   },
   "scripts": {
@@ -45,6 +49,7 @@
   },
   "devDependencies": {
     "esbuild": "^0.28.2",
+    "terser": "^5.51.2",
     "typescript": "^5.9.0"
   }
 }

@@ -32,7 +32,7 @@ Expressions are plain JavaScript. `$name` resolves to the `name` signal; everyth
 
 Add `@get` and an endpoint. The endpoint reads the signals the browser sent, renders HTML, and returns it. Because the returned element has the same `id` as the one on the page, sigmx morphs it in place: the input keeps focus, and only the list changes.
 
-<Demo source={searchSrc}><Search /></Demo>
+<Demo app source={searchSrc}><Search /></Demo>
 
 The endpoint, written with the Astro SDK:
 

@@ -6,7 +6,10 @@ const easings: Record<string, (t: number) => number> = {
   'ease-out': (t) => 1 - (1 - t) * (1 - t),
   'ease-in-out': (t) => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2),
 }
-const num = (s: string) => /^\s*(-?\d*\.?\d+)([a-z%]*)\s*$/i.exec(s)
+const num = (s: string): { n: number; unit: string } | undefined => {
+  const m = /^\s*(-?\d*\.?\d+)([a-z%]*)\s*$/i.exec(s)
+  return m ? { n: +m[1], unit: m[2] } : undefined
+}
 
 /**
  * `animate:opacity="$open ? 1 : 0"` tweens a numeric CSS property (or attribute, for SVG) from its
@@ -23,25 +26,31 @@ export const animate = attribute({
     const duration = toMs(mods.get('duration'), 300)
     const ease = easings[mods.get('easing')?.[0] ?? 'ease-out'] ?? easings['ease-out']
     const instant = matchMedia('(prefers-reduced-motion: reduce)').matches
-    const read = () => (css ? getComputedStyle(el).getPropertyValue(prop) : (el.getAttribute(prop) ?? ''))
+    // Prefer the inline value (which this directive wrote last time); computed styles report px only.
+    const read = () => (css ? el.style.getPropertyValue(prop) || getComputedStyle(el).getPropertyValue(prop) : (el.getAttribute(prop) ?? ''))
     const write = (v: string) => (css ? el.style.setProperty(prop, v) : el.setAttribute(prop, v))
     let frame = 0
     let first = true
     effect(() => {
       const to = String(evaluate())
       cancelAnimationFrame(frame)
-      const from = num(read())
+      let from = num(read())
       const target = num(to)
-      if (first || instant || !from || !target || from[2] !== target[2]) {
+      // A px start and a % target are common for width/height: convert against the parent box.
+      if (from && target && from.unit === 'px' && target.unit === '%' && (prop === 'width' || prop === 'height') && el.parentElement) {
+        const size = prop === 'width' ? el.parentElement.clientWidth : el.parentElement.clientHeight
+        if (size) from = { n: (from.n / size) * 100, unit: '%' }
+      }
+      if (first || instant || !from || !target || from.unit !== target.unit) {
         first = false
         return write(to)
       }
-      const a = +from[1]
-      const b = +target[1]
+      const a = from.n
+      const b = target.n
       const start = performance.now()
       const tick = (now: number) => {
         const p = Math.min(1, (now - start) / duration)
-        write(`${a + (b - a) * ease(p)}${target[2]}`)
+        write(`${a + (b - a) * ease(p)}${target.unit}`)
         if (p < 1) frame = requestAnimationFrame(tick)
       }
       frame = requestAnimationFrame(tick)

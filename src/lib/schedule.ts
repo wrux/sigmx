@@ -12,40 +12,35 @@ export const toMs = (args: string[] | undefined, fallback = 0): number => {
 
 export const delay = (fn: Fn, ms: number): Fn => (...args) => void setTimeout(fn, ms, ...args)
 
-/** Debounce: wait for a quiet period. `leading` fires on the first call, `trailing` on the last. */
-export const debounce = (fn: Fn, ms: number, leading = false, trailing = true): Fn => {
+/** Shared rate limiter. `restart` makes it a debounce (the window restarts on every call). */
+const limit = (fn: Fn, ms: number, leading: boolean, trailing: boolean, restart: boolean): Fn => {
   let timer: ReturnType<typeof setTimeout> | undefined
   let last: any[] | undefined
-  return (...args) => {
-    if (timer) clearTimeout(timer)
-    else if (leading) fn(...args)
-    last = args
-    timer = setTimeout(() => {
-      timer = undefined
-      if (trailing && last) fn(...last)
-      last = undefined
-    }, ms)
+  const fire = () => {
+    timer = undefined
+    if (trailing && last) fn(...last)
+    last = undefined
   }
-}
-
-/** Throttle: at most one call per window. `leading` fires immediately, `trailing` fires once at the end. */
-export const throttle = (fn: Fn, ms: number, leading = true, trailing = false): Fn => {
-  let timer: ReturnType<typeof setTimeout> | undefined
-  let last: any[] | undefined
   return (...args) => {
     if (timer) {
       last = args
+      if (restart) {
+        clearTimeout(timer)
+        timer = setTimeout(fire, ms)
+      }
       return
     }
     if (leading) fn(...args)
     else last = args
-    timer = setTimeout(() => {
-      timer = undefined
-      if (trailing && last) fn(...last)
-      last = undefined
-    }, ms)
+    timer = setTimeout(fire, ms)
   }
 }
+
+/** Debounce: wait for a quiet period. `leading` fires on the first call, `trailing` on the last. */
+export const debounce = (fn: Fn, ms: number, leading = false, trailing = true): Fn => limit(fn, ms, leading, trailing, true)
+
+/** Throttle: at most one call per window. `leading` fires immediately, `trailing` fires once at the end. */
+export const throttle = (fn: Fn, ms: number, leading = true, trailing = false): Fn => limit(fn, ms, leading, trailing, false)
 
 /** Apply `__delay`, `__debounce` and `__throttle` modifiers to a callback. */
 export const withTiming = (fn: Fn, mods: Mods): Fn => {

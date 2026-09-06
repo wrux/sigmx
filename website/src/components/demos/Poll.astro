@@ -1,3 +1,11 @@
-<div data-on-interval__duration.2s.leading="@get('/api/time')">
-  Server time (refreshed every 2 s): <b><span id="server-time">…</span></b>
+<div class="ex clock" data-on-interval__duration.2s.leading="@get('/api/time')">
+  <span class="label">Server time</span>
+  <b class="num"><span id="server-time">…</span></b>
+  <small class="muted">refreshed every 2 s with a plain HTML response</small>
 </div>
+<style is:global>
+  .clock { padding: 1rem; display: grid; gap: .2rem; justify-items: center; text-align: center; background: var(--ex-surface); }
+  .clock .label { font-size: .7rem; letter-spacing: .08em; text-transform: uppercase; color: var(--ex-muted); }
+  .clock b { font-size: 2.2rem; letter-spacing: -.02em; font-family: var(--sl-font-mono); }
+  .clock small { font-size: .78rem; }
+</style>

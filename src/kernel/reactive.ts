@@ -41,7 +41,7 @@ export class Signal<T> {
   /** Notify subscribers without replacing the value (after mutating an array or object in place). */
   bump(): void {
     this._ver++
-    for (const s of [...this._subs]) s._invalidate()
+    for (const s of this._subs) s._invalidate()
     if (!depth) flush()
   }
 }
@@ -200,7 +200,7 @@ export const flush = (): void => {
   try {
     let guard = 0
     while (queue.size) {
-      if (++guard > 1e5) throw new Error('effect loop: a signal is written by an effect that reads it')
+      if (++guard > 1e5) throw new Error('effect loop')
       const e: Effect = queue.values().next().value!
       queue.delete(e)
       e._exec()

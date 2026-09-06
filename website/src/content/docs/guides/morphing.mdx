@@ -16,7 +16,7 @@ An element whose `id` appears in both the old and the new tree is kept, wherever
 
 Elements without an id are matched positionally by tag name.
 
-<Demo title="Type in a note, then add or remove todos" source={todosSrc}><Todos /></Demo>
+<Demo app title="Type in a note, then add or remove todos" source={todosSrc}><Todos /></Demo>
 
 Each `<li>` has an id, so the notes you type survive every patch even though the server re-renders the whole list.
 

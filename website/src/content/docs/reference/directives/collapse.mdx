@@ -1,0 +1,49 @@
+---
+title: "data-collapse"
+description: "Animate an element open and closed by height (Alpine's x-collapse)."
+sidebar: {"order": 29, "label": "collapse"}
+---
+import Live from '../../../../components/Live.astro'
+import Cost from '../../../../components/Cost.astro'
+
+Animate an element open and closed by height (Alpine's x-collapse).
+
+## Syntax
+
+```html
+data-collapse="$open"
+data-collapse__duration.400ms__min.48px="$open"
+```
+
+| part | |
+|---|---|
+| key | forbidden |
+| value | required |
+
+## Modifiers
+
+| modifier | effect |
+|---|---|
+| `__duration.ms` | animation length, default 250ms |
+| `__min.Npx` | collapsed height, default 0 (use it for “show more” teasers) |
+
+## Example
+
+<Live html={`
+<div data-signals="{ open: false }">
+  <button data-on:click="$open = !$open" data-text="$open ? 'Collapse' : 'Expand'">Expand</button>
+  <div data-collapse="$open" style="border:1px solid var(--sl-color-hairline);border-radius:.4rem;margin-top:.5rem"><p style="padding:.8rem;margin:0">The height animates from zero to the content's natural height and back. After the animation, height is cleared so the content can grow freely.</p></div>
+</div>
+`} />
+
+## Notes
+
+Overflow is hidden while collapsed and during the animation. `prefers-reduced-motion: reduce` makes the change instant.
+
+## Register
+
+```ts
+import { collapse } from 'sigmx/plugins'
+```
+
+<Cost name="collapse" />

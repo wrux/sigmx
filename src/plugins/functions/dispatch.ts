@@ -1,0 +1,7 @@
+import { action } from '../../kernel/index.js'
+
+/** `@dispatch('name', detail)` fires a bubbling CustomEvent from the element. */
+export const dispatch = action({
+  name: 'dispatch',
+  call: ({ el }, name: string, detail?: unknown) => el.dispatchEvent(new CustomEvent(name, { detail, bubbles: true, composed: true })),
+})

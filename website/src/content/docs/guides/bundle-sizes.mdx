@@ -26,3 +26,42 @@ Each row is the increase over the core-only build when that plugin alone is regi
 - The **request functions** share one client, so registering all five costs about the same as one.
 - **patch-elements** carries the DOM morph. Register it only if the server sends HTML.
 - Import from `sigmx/plugins` freely: the barrel is side-effect free and tree-shakes to what you name.
+- The shipped `dist/sigmx.standalone.js` is passed through terser after esbuild, which is worth about 5% gzipped. When you bundle sigmx yourself, your minifier decides; repeated plain statements compress better than clever compaction, which is why the source is written that way.
+
+## Going smaller
+
+The kernel is close to its floor for what it does; build targets from `es2021` to `esnext` make no measurable difference. These are the remaining levers, each measured by removing the feature from a scratch copy and rebuilding (gzipped bytes saved on the core and on the full build):
+
+| lever | core | everything | what you give up |
+|---|---:|---:|---|
+| drop the last-statement value in expressions | 104 | 100 | `data-text="$a = 1; $a * 2"` would yield `undefined`; single expressions unaffected |
+| drop namespace enumeration on `$` | 95 | 102 | `Object.keys($.user)`, `'x' in $.user`, `delete $.user.x`; `JSON.stringify` keeps working |
+| drop `data-ignore` | 60 | 65 | no way to fence off a subtree |
+| drop empty-namespace preservation | 31 | 34 | `{ form: {} }` disappears from snapshots until it has a leaf |
+| drop per-attribute error isolation | 28 | 37 | one broken expression aborts the scan; `onError` goes away |
+| plain arrays (no mutation notify) | 22 | 16 | `$items.push(x)` would need `$items = [...$items, x]` |
+| request client without form encoding | – | 194 | `contentType: 'form'` |
+| request client without retry, backoff, reconnect | – | 153 | streams end on the first failure |
+| request client without hidden-tab pausing | – | 123 | GET streams keep running in background tabs |
+| morph without the pantry | – | 150 | elements with ids cannot move across ancestors; they are recreated |
+| patch-elements without full-document responses | – | 95 | responses containing `<html>`, `<head>` or `<body>` |
+
+Two levers change nothing for people who do not use the feature and are the natural next step: making form encoding a plugin the request client looks up (`formEncoding`, about 190 bytes only when registered), and splitting the retry policy the same way. The rest trade documented behaviour for a few dozen bytes, which is not worth it by default; the numbers are here so the trade is explicit if you ever need it. Regenerate the table with `node scripts/explore-size.mjs`.
+
+## Exotic options, measured
+
+Everything below was tried on the shipped standalone file (30.1 KB minified, 11.6 KB gzip, 10.5 KB brotli) unless noted.
+
+| approach | result | verdict |
+|---|---|---|
+| **Bytecode** (V8 code cache, Hermes, QuickJS) | not measurable: browsers do not accept bytecode from the network; shipping an engine such as QuickJS in WebAssembly costs 200 KB and more before any of our code | dead end on the web |
+| **WebAssembly** (Rust, Zig, AssemblyScript) | not measured: WebAssembly cannot touch the DOM, so every attribute, event and mutation becomes a JavaScript import call; the smallest DOM-binding toolchains start above 20 KB, and Wasm bytecode compresses worse than JavaScript because brotli's built-in dictionary is tuned for text | wrong tool for a DOM library |
+| **brotli instead of gzip** | 11.6 KB → 10.5 KB (−9.5%) | do it: precompress and serve `Content-Encoding: br` |
+| **zstd** (`Content-Encoding: zstd`, Chrome and Firefox) | 11.3 KB | between gzip and brotli; no reason to prefer it here |
+| **Roadroller** (demoscene self-extracting packer) | raw 30.1 KB → 13.8 KB, but 10.5 KB → 10.3 KB under brotli | only for raw-byte limits such as 13 KB game jams; pointless behind HTTP compression |
+| **Closure Compiler** SIMPLE / ADVANCED | SIMPLE grew the file to 14.8 KB gzip (it re-lowered syntax); ADVANCED refused the code | whole-program renaming also cannot survive a Proxy-based store, where property names are data |
+| **Shared-dictionary brotli** (Compression Dictionary Transport, `Use-As-Dictionary`) | a new release compressed against the previous one: 10.5 KB → 4.9 KB (−54%) | real for returning visitors on Chromium; a server header, not a code change |
+| **Precompiled expressions** (a build plugin turns every attribute expression into a function table) | core 4.5 KB → 4.0 KB (−10%), and no `new Function` at all | implemented: see [Precompiled expressions](/guides/precompiled-expressions/); `sigmx({ precompile: true })` in Astro |
+| **Lazy directive chunks** (core first, each directive loaded on first sight) | initial payload 4.4 KB; a typical directive chunk is 200 B gzip, the request client 1.9 KB | practical with HTTP/2 and `modulepreload`; trades bytes on first paint for round trips |
+
+The short version: transport does more than code now. Serve brotli, add a dictionary header if your users come back, and consider precompiling expressions at build time if your templates are static. Bytecode and WebAssembly cannot help a library whose entire job is talking to the DOM.

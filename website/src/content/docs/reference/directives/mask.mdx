@@ -1,0 +1,49 @@
+---
+title: "data-mask"
+description: "Format an input as the user types (Alpine's x-mask)."
+sidebar: {"order": 31, "label": "mask"}
+---
+import Live from '../../../../components/Live.astro'
+import Cost from '../../../../components/Cost.astro'
+
+Format an input as the user types (Alpine's x-mask).
+
+## Syntax
+
+```html
+data-mask="(999) 999-9999"
+data-mask="99/99/9999"
+data-mask__dynamic="$country === 'US' ? '99999' : 'aa9 9aa'"
+```
+
+| part | |
+|---|---|
+| key | forbidden |
+| value | required (the mask, or an expression with `__dynamic`) |
+
+## Modifiers
+
+| modifier | effect |
+|---|---|
+| `__dynamic` | evaluate the value as an expression that yields the mask; it is reactive |
+
+## Example
+
+<Live html={`
+<div data-signals="{ phone: '', card: '' }">
+  <div class="row"><input placeholder="(555) 123-4567" data-bind:phone data-mask="(999) 999-9999"> <input placeholder="card" data-bind:card data-mask="9999 9999 9999 9999"></div>
+  <p>phone = <code data-text="$phone"></code>, card = <code data-text="$card"></code></p>
+</div>
+`} />
+
+## Notes
+
+`9` accepts a digit, `a` a letter, `*` either; every other character is a literal inserted for the user. `bind` sees the formatted value. `applyMask(mask, raw)` is exported from `sigmx/plugins` for use in JavaScript.
+
+## Register
+
+```ts
+import { mask } from 'sigmx/plugins'
+```
+
+<Cost name="mask" />

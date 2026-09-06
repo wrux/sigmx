@@ -2,6 +2,8 @@
 // `$count`, `$user.name` and `$` resolve through the store's scope proxy. Only `@action(` is
 // rewritten, into a call on the per-evaluation actions object.
 
+import type { ExpressionCompiler } from './contracts.js'
+
 export type Compiler = (params: string[], body: string) => (...args: any[]) => any
 
 /** Default compiler: `new Function`. Not usable under a strict CSP; see `cspCompiler`. */
@@ -74,7 +76,8 @@ export const splitStatements = (src: string): string[] => {
 }
 
 /**
- * Compile an expression to `(scope, actions, ...params) => any`. With `returns`, the value of the
+ * Compile an expression to `(store, actions, ...params) => any`: the body runs inside
+ * `with (store.scope)`, so `$name` resolves through the store. With `returns`, the value of the
  * last statement is returned, so `$a = 1; $a * 2` works. Compiled functions are cached by source.
  */
 export const compile = (
@@ -87,7 +90,7 @@ export const compile = (
   const hit = cache.get(key)
   if (hit) return hit
   const code = rewriteActions(src.trim())
-  const make = (body: string) => compiler(['$', '__a', ...params], `with($){${body}\n}`)
+  const make = (body: string) => compiler(['$', '__a', ...params], `with($.scope){${body}\n}`)
   let fn: (...args: any[]) => any
   if (!returns) {
     fn = make(code)
@@ -107,3 +110,9 @@ export const compile = (
   cache.set(key, fn)
   return fn
 }
+
+/** The default pipeline: compile at runtime inside `with (scope)` using `compiler` (`new Function` or CSP). */
+export const runtimeExpressions =
+  (compiler: Compiler): ExpressionCompiler =>
+  (src, params, returns) =>
+    compile(compiler, src, params, returns)

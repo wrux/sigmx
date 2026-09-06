@@ -1,4 +1,10 @@
-<div data-signals="{ legacy: 'not yet' }" class="row">
-  <button data-on:click="@get('/api/legacy')">Call a Datastar-style endpoint</button>
-  <span>legacy = <b data-text="$legacy"></b></span>
+<div class="ex legacy" data-signals="{ legacy: 'not yet' }">
+  <div><b>Datastar-style endpoint</b><small class="muted">emits <code>datastar-patch-signals</code>; accepted through <code>eventPrefix</code></small></div>
+  <button class="btn ghost" data-on:click="@get('/api/legacy', { openWhenHidden: true })">Call it</button>
+  <span class="chip" data-class:good="$legacy === 'accepted'" data-text="$legacy"></span>
 </div>
+<style is:global>
+  .legacy { padding: .9rem 1rem; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; background: var(--ex-surface); }
+  .legacy b { display: block; } .legacy small { font-size: .78rem; display: block; }
+  .legacy > div { flex: 1; }
+</style>

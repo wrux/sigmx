@@ -1,0 +1,8 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>sigmx standalone smoke</title></head><body>
+<div data-signals="{ n: 1 }" data-computed:double="$n * 2">
+  <button id="inc" data-on:click="$n++">+</button> <b id="out" data-text="$double"></b>
+  <button id="get" data-on:click="@get('/api/json', { openWhenHidden: true })">get</button> <i id="srv" data-text="$fromServer ?? '-'"></i>
+</div>
+<script type="module" src="../../dist/sigmx.standalone.js"></script>
+</body></html>

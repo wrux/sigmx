@@ -15,8 +15,8 @@ const isEl = (n: Node | null): n is Element => !!n && n.nodeType === 1
 
 /** Scripts inserted through the DOM do not execute; replace them with fresh copies that do. */
 export const activateScripts = (root: Node): void => {
-  const scripts = isEl(root) ? [root, ...root.querySelectorAll('script')].filter((n) => n.tagName === 'SCRIPT') : []
-  for (const old of scripts as HTMLScriptElement[]) {
+  if (!isEl(root)) return
+  for (const old of (root.matches('script') ? [root] : [...root.querySelectorAll('script')]) as HTMLScriptElement[]) {
     if (ran.has(old)) continue
     const s = document.createElement('script')
     for (const { name, value } of old.attributes) s.setAttribute(name, value)
@@ -26,8 +26,9 @@ export const activateScripts = (root: Node): void => {
   }
 }
 
-const containsKept = (n: Node, ctx: Ctx): boolean =>
-  isEl(n) && (ctx.keep.has(n.id) || [...n.querySelectorAll('[id]')].some((e) => ctx.keep.has(e.id)))
+/** Every element with an id in and under `n`. */
+const idsIn = (n: Node): Element[] => [...(isEl(n) && n.id ? [n] : []), ...(n as ParentNode).querySelectorAll('[id]')]
+const containsKept = (n: Node, ctx: Ctx): boolean => isEl(n) && idsIn(n).some((e) => ctx.keep.has(e.id))
 
 /** Remove a node, or park it if it (or a descendant) is wanted elsewhere in the new tree. */
 const discard = (n: Node, ctx: Ctx): void => {
@@ -96,17 +97,21 @@ const morphNode = (a: Node, b: Node, ctx: Ctx): void => {
 
 const morphChildren = (parent: Node, next: Node, ctx: Ctx): void => {
   let cur: Node | null = parent.firstChild
+  /** Discard old siblings from `cur` up to (not including) `stop`; returns whether `stop` was reached. */
+  const dropUntil = (stop: Node | null): boolean => {
+    while (cur && cur !== stop) {
+      const n = cur
+      cur = cur.nextSibling
+      discard(n, ctx)
+    }
+    return cur === stop
+  }
   for (const nb of [...next.childNodes]) {
     if (isEl(nb) && nb.id && ctx.keep.has(nb.id)) {
       const match = findKept(nb.id, cur, ctx)
       if (match) {
-        while (cur && cur !== match) {
-          const n = cur
-          cur = cur.nextSibling
-          discard(n, ctx)
-        }
-        if (cur !== match) place(parent, match, cur)
-        else cur = match.nextSibling
+        if (dropUntil(match) && cur) cur = match.nextSibling
+        else place(parent, match, cur)
         morphNode(match, nb, ctx)
         continue
       }
@@ -114,11 +119,7 @@ const morphChildren = (parent: Node, next: Node, ctx: Ctx): void => {
     let m: Node | null = cur
     while (m && !compatible(m, nb, ctx)) m = m.nextSibling
     if (m) {
-      while (cur && cur !== m) {
-        const n = cur
-        cur = cur.nextSibling
-        discard(n, ctx)
-      }
+      dropUntil(m)
       cur = m.nextSibling
       morphNode(m, nb, ctx)
     } else if (isEl(nb) && containsKept(nb, ctx)) {
@@ -132,21 +133,13 @@ const morphChildren = (parent: Node, next: Node, ctx: Ctx): void => {
       activateScripts(fresh)
     }
   }
-  while (cur) {
-    const n = cur
-    cur = cur.nextSibling
-    discard(n, ctx)
-  }
+  dropUntil(null)
 }
 
 const context = (target: Node, next: Node, o: MorphOptions): Ctx => {
   const keep = new Set<string>()
-  const wanted = new Map<string, string>()
-  for (const e of isEl(next) ? [next, ...next.querySelectorAll('[id]')] : [...(next as ParentNode).querySelectorAll('[id]')]) {
-    if (e.id) wanted.set(e.id, e.tagName)
-  }
-  const olds = isEl(target) ? [target, ...target.querySelectorAll('[id]')] : [...(target as ParentNode).querySelectorAll('[id]')]
-  for (const e of olds) if (e.id && wanted.get(e.id) === e.tagName) keep.add(e.id)
+  const wanted = new Map(idsIn(next).map((e) => [e.id, e.tagName]))
+  for (const e of idsIn(target)) if (wanted.get(e.id) === e.tagName) keep.add(e.id)
   return { keep, pantry: document.createDocumentFragment(), ignore: o.ignoreAttr ?? 'data-ignore-morph', preserve: o.preserveAttr ?? 'data-preserve-attr' }
 }
 

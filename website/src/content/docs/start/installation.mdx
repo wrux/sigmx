@@ -71,6 +71,7 @@ createSigmx({
   prefix: 'data-',                      // or ['data-', 'hx-', 's-'] while migrating
   eventPrefix: 'sigmx-',                // server event names to accept, e.g. ['sigmx-', 'datastar-']
   compile: cspCompiler(nonce),          // strict-CSP expression compiler, from 'sigmx/csp'
+  expressions: precompiled(table),      // build-time compiled expressions; see the guide
   onError: (error, { plugin, el, attr }) => {},  // default: console.error
   store: sharedStore,                   // share signals with another instance
   autoStart: true,                      // false to call instance.apply() yourself
@@ -81,4 +82,4 @@ The returned instance has `store`, `$` (the root store proxy, so `sigmx.$.count+
 
 ## Browser support
 
-Modern evergreen browsers. sigmx uses `Proxy`, `MutationObserver`, `fetch` with streaming bodies, `ReadableStream`, and optional APIs it feature-detects: `moveBefore`, `startViewTransition`, `ResizeObserver`, `IntersectionObserver`.
+Modern evergreen browsers. sigmx uses `Proxy`, `MutationObserver`, `fetch` with streaming bodies, `ReadableStream`, `AbortSignal.any` (2024), and optional APIs it feature-detects: `moveBefore`, `startViewTransition`, `ResizeObserver`, `IntersectionObserver`.

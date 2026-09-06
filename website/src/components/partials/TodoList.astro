@@ -3,12 +3,13 @@ interface Props { todos: { id: number; text: string }[] }
 const { todos } = Astro.props
 ---
 <ul id="todo-list">
-  {todos.length === 0 && <li class="muted">Nothing yet.</li>}
+  {todos.length === 0 && <li class="empty">Nothing to do. Enjoy it.</li>}
   {todos.map((t) => (
-    <li id={`todo-${t.id}`} class="row">
+    <li id={`todo-${t.id}`}>
+      <span class="tick" aria-hidden="true"></span>
       <span>{t.text}</span>
-      <input placeholder="note (kept across patches)" />
-      <button type="button" data-on:click={`@delete('/api/todos?id=${t.id}')`}>remove</button>
+      <input class="field note" placeholder="note (kept across patches)">
+      <button type="button" class="remove" title="Remove" data-on:click={`@delete('/api/todos?id=${t.id}')`}>×</button>
     </li>
   ))}
 </ul>

@@ -2,10 +2,20 @@
 import Towns from '../partials/Towns.astro'
 import { towns } from '../../data/towns'
 ---
-<div data-signals="{ q: '', results: 30 }">
-  <div class="row">
-    <input type="search" placeholder="Filter towns…" data-bind:q data-on:input__debounce.250ms="@get('/api/search')" data-indicator:searching>
-    <span class="muted" data-text="$searching ? 'searching…' : $results + ' results'"></span>
-  </div>
+<div class="ex search-app" data-signals="{ q: '', results: 30 }">
+  <header class="bar">
+    <label class="search"><span aria-hidden="true">⌕</span><input class="field" type="search" placeholder="Filter towns…" data-bind:q data-on:input__debounce.250ms="@get('/api/search')" data-indicator:searching></label>
+    <span class="chip" data-text="$searching ? 'searching…' : $results + ' towns'"></span>
+  </header>
   <Towns q="" towns={towns} />
 </div>
+<style is:global>
+  .search-app { background: var(--ex-surface); }
+  .search-app .bar { display: flex; align-items: center; gap: .8rem; padding: .7rem 1rem; border-bottom: 1px solid var(--ex-line); }
+  .search-app .search { position: relative; flex: 1; }
+  .search-app .search span { position: absolute; left: .7rem; top: 50%; transform: translateY(-50%); color: var(--ex-muted); }
+  .search-app .search .field { padding-left: 2rem; }
+  .search-app #towns { list-style: none; margin: 0; padding: .6rem 1rem; display: flex; flex-wrap: wrap; gap: .4rem; max-height: 9rem; overflow: auto; }
+  .search-app #towns li { padding: .25rem .7rem; border-radius: 999px; background: var(--ex-surface-2); border: 1px solid var(--ex-line); font-size: .85rem; animation: msg-in .2s ease-out; }
+  .search-app #towns li.empty { background: transparent; border: 0; color: var(--ex-muted); }
+</style>

@@ -1,0 +1,45 @@
+---
+title: "data-boost"
+description: "Turn same-origin links and forms into morphed navigations (htmx's hx-boost)."
+sidebar: {"order": 36, "label": "boost"}
+---
+import Live from '../../../../components/Live.astro'
+import Cost from '../../../../components/Cost.astro'
+
+Turn same-origin links and forms into morphed navigations (htmx's hx-boost).
+
+## Syntax
+
+```html
+<body data-boost>
+<nav data-boost__replace>
+```
+
+| part | |
+|---|---|
+| key | forbidden |
+| value | forbidden |
+
+## Modifiers
+
+| modifier | effect |
+|---|---|
+| `__replace` | replace the history entry instead of pushing one |
+
+## Example
+
+<Live html={`
+<p class="muted">Not demonstrated inline: it navigates the whole page. Put <code>data-boost</code> on <code>body</code> and every internal link and form fetches the new page with <code>@get</code> or <code>@post</code>, morphs the document (head included), scrolls to the top and pushes a history entry; Back and Forward refetch and morph again.</p>
+`} />
+
+## Notes
+
+Needs `httpGet`, `httpPost` and `applyElements`. Links with `target`, `download`, modifier keys, other origins, or hash-only changes are left to the browser. Because the morph keeps elements by id, persistent parts of the layout such as a media player or an open menu survive navigation.
+
+## Register
+
+```ts
+import { boost } from 'sigmx/plugins'
+```
+
+<Cost name="boost" />

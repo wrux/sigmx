@@ -3,13 +3,18 @@
 :root[data-theme='dark'] { --sl-color-accent: #4fb9c2; --sl-color-accent-high: #a6e1e6; --sl-color-accent-low: #163a3e; }
 .live { border: 1px solid var(--sl-color-hairline); border-radius: .5rem; margin-top: 1.5rem; overflow: hidden; }
 .live-label { font-family: var(--sl-font-mono); font-size: .75rem; letter-spacing: .08em; text-transform: uppercase; color: var(--sl-color-gray-3); padding: .4rem .9rem; border-bottom: 1px solid var(--sl-color-hairline); background: var(--sl-color-gray-6); }
-.live-body { padding: 1rem; }
+.live-body { padding: 1.1rem 1.2rem; background: var(--sl-color-bg); }
 .live-body > * + * { margin-top: .6rem; }
-.live-body:not(.app) button, .live-body:not(.app) input, .live-body:not(.app) select, .live-body:not(.app) textarea { font: inherit; padding: .35rem .6rem; border: 1px solid var(--sl-color-gray-4); border-radius: .35rem; background: var(--sl-color-bg); color: inherit; }
-.live-body:not(.app) button { cursor: pointer; background: var(--sl-color-accent-low); border-color: var(--sl-color-accent); }
-.live-body:not(.app) button:disabled { opacity: .5; cursor: wait; }
+.live-body:not(.app) input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]), .live-body:not(.app) select, .live-body:not(.app) textarea { font: inherit; padding: .45rem .7rem; border: 1px solid var(--sl-color-gray-5); border-radius: 10px; background: var(--sl-color-bg); color: inherit; transition: border-color .12s, box-shadow .12s; }
+.live-body:not(.app) input:focus, .live-body:not(.app) select:focus, .live-body:not(.app) textarea:focus { outline: none; border-color: var(--sl-color-accent); box-shadow: 0 0 0 3px var(--sl-color-accent-low); }
+.live-body:not(.app) button { font: inherit; font-weight: 600; padding: .45rem .9rem; border-radius: 10px; border: 1px solid transparent; background: var(--sl-color-accent-low); color: var(--sl-color-accent-high); cursor: pointer; transition: transform .12s ease, background .12s; }
+.live-body:not(.app) button:hover:not(:disabled) { transform: translateY(-1px); background: color-mix(in srgb, var(--sl-color-accent) 22%, var(--sl-color-accent-low)); }
+.live-body:not(.app) button:disabled { opacity: .5; cursor: not-allowed; }
+.live-body:not(.app) label { display: inline-flex; align-items: center; gap: .35rem; }
+.live-body:not(.app) b, .live-body:not(.app) code { font-variant-numeric: tabular-nums; }
+.live-body:not(.app) code { padding: .1rem .4rem; border-radius: 6px; background: var(--sl-color-gray-6); }
 .live-body .row { display: flex; gap: .6rem; align-items: center; flex-wrap: wrap; }
-.live-body .hot { background: var(--sl-color-accent-low); }
+.live-body .hot { background: var(--sl-color-accent-low); color: var(--sl-color-accent-high); border-radius: 8px; padding: .35rem .6rem; }
 .live-body .muted { color: var(--sl-color-gray-3); }
 .live-body .error { color: #d33; }
 .live-body:not(.app) ul { padding-left: 1.2rem; }

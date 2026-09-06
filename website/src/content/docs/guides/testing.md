@@ -16,6 +16,6 @@ Directives, the morph and the request client are exercised in a real browser by 
 npm run dev       # http://localhost:8765
 ```
 
-Open `/tests/browser/index.html` for the suite and `/examples/index.html` for a smoke-test page.
+Open `/tests/browser/index.html` (also the server's root) for the suite.
 
 Other scripts: `npm run check` (type-check), `npm run build` (one ESM module per source file plus `.d.ts`, and the standalone bundle), `npm run size` (this site's size tables).
