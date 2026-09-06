@@ -118,6 +118,30 @@ std::fs::write("public/sigmx.js", sigmx::scan::Entry::selection(selection, o.fro
 
 The scanner applies the [auto mode](/guides/auto-mode/) rules to `.rs`, `.html` and template files (`data-<name>` for directives, `@name(` for functions, custom plugins read from their `attribute({ name })` definition) and writes an entry that imports from the unpacked tree with relative paths. A browser loads that entry as it is; a bundler you already run (swc, esbuild, Vite) turns it into one file. Projects with an npm toolchain can keep installing `sigmx` from npm and using `sigmx/vite` instead; the crate does not mind where the client came from.
 
+## Your own plugins
+
+A plugin is a module exporting `attribute({ name, mount })`, `action({ name, call })` or `handler({ name, handle })`, with the helpers imported from the unpacked tree (`./vendor/sigmx/kernel/index.js`) or from `sigmx` on npm; see [writing a plugin](/guides/plugins/). The crate ships it three ways:
+
+```rust
+use sigmx::scan::{CustomPlugin, Entry, Kind};
+
+// Scanned like the built-ins: read from the file (never run), shipped when `data-shout` is used.
+// Declare the metadata when the file is not in the usual shape; `.always()` ships it regardless.
+o.custom = vec![
+    CustomPlugin::new("shout", "public/js/shout.js"),
+    CustomPlugin::new("toast", "public/js/toast.js").named("toast", Kind::Handler).always(),
+];
+
+// Added to any entry, presets included, by a specifier relative to the output file.
+let entry = Entry::preset("essentials", from).plugin("shout", "./js/shout.js");
+
+// Registered at runtime from code appended to the entry. Plugins are plain objects, so the same
+// call works against the script-tag build: `window.sigmx.use({ type: 'attribute', … })`.
+let entry = entry.append("sigmx.use({ type: 'attribute', name: 'inline', mount({ el }) { … } });");
+```
+
+The CLI has the same three: `--custom shout=assets/js/shout.js`, `--custom toast=assets/js/toast.js:handler:toast` and `--plugin shout=./js/shout.js`. A custom handler counts as used when its name appears quoted anywhere in the scanned files, so `Event::custom("toast")` in a Rust handler is enough to keep the `toast` handler in the bundle.
+
 `serve_client` serves the standalone build from memory with an ETag (`Router::new().route("/sigmx.js", get(serve_client))`); on Workers, writing it into the `[assets]` directory at build time is better, since assets are served before the Worker runs.
 
 ## Coming from the Datastar Rust SDK

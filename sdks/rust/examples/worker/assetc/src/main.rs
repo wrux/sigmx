@@ -11,7 +11,7 @@
 //!
 //! A project with a bundler (swc, esbuild, Vite) points it at the same entry to get one file.
 
-use sigmx::scan::{self, Entry, Options, Source};
+use sigmx::scan::{self, CustomPlugin, Entry, Options, Source};
 use std::fs;
 use std::path::Path;
 
@@ -40,7 +40,7 @@ fn main() -> std::io::Result<()> {
     o.include = vec!["src".into(), "assets/js".into()];
     o.from = Source::Dir("./vendor/sigmx".into());
     o.out = Some("public/sigmx.js".into());
-    o.custom = vec![("shout".into(), "public/js/shout.js".into())];
+    o.custom = vec![CustomPlugin::new("shout", "public/js/shout.js")];
     let sel = scan::scan(&o)?;
     let names: Vec<&str> = sel.plugins.iter().map(|p| p.export.as_str()).collect();
     eprintln!(
