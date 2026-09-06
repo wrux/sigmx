@@ -43,7 +43,7 @@ Or pick plugins by hand (`sigmx/plugins` is tree-shakeable), use `sigmx/presets/
 <script type="module" src="/sigmx.standalone.js"></script>
 ```
 
-Astro users: `npm install sigmx @sigmx/astro` and add `sigmx()` to the integrations; see [sdks/astro](sdks/astro). Hono users: `npm install sigmx @sigmx/hono`, then `app.use(sigmx())` gives every handler `c.var.sigmx`; see [sdks/hono](sdks/hono). Everyone else: `sigmx/server` has the same event builders, responses, streams and signal reading as plain Fetch-API code.
+Astro users: `npm install sigmx @sigmx/astro` and add `sigmx()` to the integrations; see [sdks/astro](sdks/astro). Hono users: `npm install sigmx @sigmx/hono`, then `app.use(sigmx())` gives every handler `c.var.sigmx`; see [sdks/hono](sdks/hono). Rust users: the `sigmx` crate has axum and Cloudflare Workers integrations and embeds the client, so a project without Node can still ship it; see [sdks/rust](sdks/rust). Everyone else: `sigmx/server` has the same event builders, responses, streams and signal reading as plain Fetch-API code.
 
 ## How it works
 
@@ -172,6 +172,7 @@ npm run format   # biome: rewrite files in the house style
 npm test         # build, then unit tests and happy-dom tests for every plugin
 npm run test:browser  # Playwright: transitions, observers, WebSocket, the standalone build
 npm run test:all # everything above plus the SDK suites
+cd sdks/rust && cargo test --all-features   # the Rust SDK (after npm run build, which embeds the client)
 npm run dev      # dev server with SSE and WebSocket endpoints; open /tests/browser/index.html
 npm run size     # bundle sizes for representative plugin sets
 npm run compare  # sizes of htmx, Datastar and Alpine at pinned versions

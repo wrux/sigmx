@@ -1,0 +1,9 @@
+[package]
+name = "sigmx-example-worker-assetc"
+version = "0.0.0"
+edition = "2021"
+publish = false
+description = "The example's asset step: unpacks the sigmx client and generates the entry module, no Node needed"
+
+[dependencies]
+sigmx = { path = "../../..", default-features = false, features = ["client", "scan"] }

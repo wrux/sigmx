@@ -36,6 +36,22 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["--prefix", "examples/hono", "run", "dev"],
       "port": 3001
+    },
+    {
+      "name": "rust-axum-example",
+      "runtimeExecutable": "cargo",
+      "runtimeArgs": [
+        "run",
+        "--manifest-path",
+        "sdks/rust/Cargo.toml",
+        "-p",
+        "sigmx",
+        "--example",
+        "axum",
+        "--features",
+        "axum,client"
+      ],
+      "port": 3000
     }
   ]
 }

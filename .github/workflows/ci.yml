@@ -58,6 +58,43 @@ jobs:
           npm ci
           npm test
 
+  rust:
+    name: rust sdk
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # The crate embeds the client, so the JavaScript build comes first.
+      - run: npm run build
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: sdks/rust
+      - name: fmt, clippy, tests
+        working-directory: sdks/rust
+        run: |
+          cargo fmt --all --check
+          cargo clippy --all-features --all-targets -- -D warnings
+          cargo test --all-features
+          cargo build --example axum --features axum,client
+      - name: wasm32
+        working-directory: sdks/rust
+        run: |
+          cargo check --target wasm32-unknown-unknown --features axum,worker,scan
+          cargo check -p sigmx-example-worker --target wasm32-unknown-unknown
+      - name: worker example asset step
+        working-directory: sdks/rust/examples/worker
+        run: |
+          cargo run --manifest-path assetc/Cargo.toml
+          test -f public/sigmx.js && grep -q createSigmx public/sigmx.js
+
   browser:
     name: browser
     runs-on: ubuntu-latest

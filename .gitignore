@@ -12,3 +12,9 @@ examples/*/.astro
 test-results
 playwright-report
 .audit-baseline/
+sdks/rust/client
+sdks/rust/target
+sdks/rust/Cargo.lock
+sdks/rust/examples/worker/build
+sdks/rust/examples/worker/public
+sdks/rust/examples/worker/.wrangler

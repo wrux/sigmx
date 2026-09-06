@@ -1,0 +1,125 @@
+---
+title: "Rust"
+description: "The sigmx crate: signals from the request, HTML, JSON and streamed patches from handlers, and the client from a build with no Node in it. Axum, Cloudflare Workers, anything on the http crate."
+sidebar: {"order": 3}
+---
+
+The `sigmx` crate is the server side of sigmx for Rust: it reads the signals a request carries and builds the responses the client knows how to apply. It has no required dependencies, works on native servers and compiles to `wasm32-unknown-unknown` for Cloudflare Workers. It also carries the client of the same release, so a Rust project never needs npm to get it.
+
+## Install
+
+```toml
+[dependencies]
+sigmx = { version = "0.2", features = ["axum"] }
+```
+
+| feature | |
+|---|---|
+| `json` (default) | reading signals into `serde_json` or your own `Deserialize` type |
+| `client` (default) | the embedded client: `sigmx::client::{STANDALONE, FILES, write_standalone, write_esm}` |
+| `axum` | extractors and responses for axum 0.8; no `tokio` dependency, so it builds for wasm32 |
+| `worker` | the same for `worker::Request` and `worker::Response` on Cloudflare Workers |
+| `http` | `http::Response<String>` builders for any other `http`-based framework |
+| `scan` | auto mode: scan your `.rs` and template files, generate the entry module |
+| `cli` | the `sigmx` binary (`cargo install sigmx --features cli`) |
+
+## Reading signals
+
+```rust
+use serde::Deserialize;
+use sigmx::axum::ReadSignals;
+
+#[derive(Deserialize)]
+struct Search { q: String, #[serde(default)] page: u32 }
+
+async fn search(ReadSignals(s): ReadSignals<Search>) -> Sse { … }
+```
+
+GET and DELETE requests carry signals in the `sigmx` query parameter, other methods in a JSON body, and `contentType: 'form'` requests as form fields. A payload that cannot be parsed answers 400, one that does not match the type 422, both with a JSON body. `Option<ReadSignals<T>>` is `None` for a browser navigation, and `IsSigmxRequest(bool)` tells you the same thing without reading the body, so one route can serve a page or a partial.
+
+Without a framework: `sigmx::read_signals(&RawRequest { method, content_type, query, body })`.
+
+## Responding
+
+```rust
+use sigmx::prelude::*;
+use sigmx::axum::Sse;
+
+html(page)                                              // text/html; the client morphs it by id
+html(row).selector("#rows").mode(PatchMode::Append)     // the sigmx-selector and sigmx-mode headers
+json(json!({ "count": 3 })).only_if_missing(true)       // merged into the signals
+Sse::events([                                           // several patches, sent at once
+    PatchElements::new(list).into_event(),
+    PatchSignals::new(r#"{"stale":false}"#).into_event(),
+])
+PatchElements::new(markup)                              // a lone event is a response too
+```
+
+Markup is anything that converts into a `String`, so `maud::Markup` and rendered askama templates go straight in. The event builders are `PatchElements::new(html)` with `.selector()` and `.mode()`, `PatchElements::remove(selector)`, `PatchSignals::new(json)` / `::from_value(json!(…))` / `::remove(paths)` with `.only_if_missing()`, and `ExecuteScript::new(js)`; each takes `.id()` and `.retry()` for the SSE fields, and `Event::custom("toast").line("message", "Saved")` builds events for your own handlers. `Event`'s `Display` is the wire format, so any framework can send it.
+
+## Streaming
+
+`Sse` streams without a runtime of its own. `Sse::run` polls the handler's future while the body is being read, so there is nothing to spawn and it works the same under tokio and inside a Worker:
+
+```rust
+async fn progress() -> Sse {
+    Sse::run(|s| async move {
+        for step in 1..=10 {
+            tokio::time::sleep(Duration::from_millis(150)).await;
+            if !s.patch_signals(format!(r#"{{"progress":{}}}"#, step * 10)) {
+                return; // the client disconnected
+            }
+        }
+        s.patch_elements("<p id=\"note\">Done.</p>");
+    })
+}
+```
+
+`Sse::channel()` returns a cloneable `SseWriter` and the response, for a spawned task or a broadcast subscription; the stream ends when every writer is dropped. `Sse::stream(s)` takes any `Stream<Item = Event>`.
+
+## Cloudflare Workers
+
+A Worker that routes with axum (the `worker` crate's `axum` feature) uses `sigmx::axum` unchanged. Worker futures are not `Send`; wrap a streaming handler's future in `worker::send::SendFuture`:
+
+```rust
+async fn progress() -> Sse {
+    Sse::run(|s| worker::send::SendFuture::new(async move {
+        worker::Delay::from(Duration::from_millis(150)).await;
+        s.patch_signals(r#"{"progress":10}"#);
+    }))
+}
+```
+
+Handlers written against `worker::Request` and `worker::Response` use `sigmx::worker` instead: `read_signals(&mut req).await`, `html(…)`, `events([…])`, and `run(|s| async move { … })` with a plain future. The repository's [Worker example](https://github.com/wrux/sigmx/tree/main/sdks/rust/examples/worker) is complete, including the client build below.
+
+## The client without Node
+
+The crate embeds the client of its own version. Get it out with the binary:
+
+```bash
+cargo install sigmx --features cli
+sigmx client standalone public/sigmx.js         # every plugin; <script type="module" src="/sigmx.js">
+sigmx client unpack public/vendor/sigmx         # the ES modules, for a bundle of your own
+sigmx entry src --from ./vendor/sigmx --out public/sigmx.js   # auto mode without a bundler
+```
+
+or from a Rust build step of your own (the `client` and `scan` features):
+
+```rust
+sigmx::client::write_esm("public/vendor/sigmx")?;
+let mut o = sigmx::scan::Options::default();
+o.include = vec!["src".into(), "assets/js".into()];      // maud templates, your own modules
+o.from = sigmx::scan::Source::Dir("./vendor/sigmx".into());
+o.out = Some("public/sigmx.js".into());
+o.custom = vec![("shout".into(), "public/js/shout.js".into())];
+let selection = sigmx::scan::scan(&o)?;
+std::fs::write("public/sigmx.js", sigmx::scan::Entry::selection(selection, o.from).module())?;
+```
+
+The scanner applies the [auto mode](/guides/auto-mode/) rules to `.rs`, `.html` and template files (`data-<name>` for directives, `@name(` for functions, custom plugins read from their `attribute({ name })` definition) and writes an entry that imports from the unpacked tree with relative paths. A browser loads that entry as it is; a bundler you already run (swc, esbuild, Vite) turns it into one file. Projects with an npm toolchain can keep installing `sigmx` from npm and using `sigmx/vite` instead; the crate does not mind where the client came from.
+
+`serve_client` serves the standalone build from memory with an ETag (`Router::new().route("/sigmx.js", get(serve_client))`); on Workers, writing it into the `[assets]` directory at build time is better, since assets are served before the Worker runs.
+
+## Coming from the Datastar Rust SDK
+
+`datastar::prelude::*` becomes `sigmx::prelude::*`; `DatastarEvent` is `Event`; `PatchElements::new(html).into()`, `PatchSignals::new(json).into()`, `ExecuteScript::new(js)` and `to_string()` are unchanged, and `ElementPatchMode` is an alias of `PatchMode`. The client now sends a `sigmx-request` header and a `sigmx` query parameter, which `ReadSignals` and `is_sigmx_request` read; a backend keeping its own header check updates those two strings. `use_view_transition` is dropped. Until every backend emits `sigmx-patch-*`, `createSigmx({ eventPrefix: ['sigmx-', 'datastar-'] })` accepts both.
