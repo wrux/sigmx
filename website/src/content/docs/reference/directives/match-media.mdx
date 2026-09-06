@@ -6,35 +6,52 @@ sidebar: {"order": 20, "label": "match-media"}
 import Live from '../../../../components/Live.astro'
 import Cost from '../../../../components/Cost.astro'
 
-Keep a boolean signal in sync with a media query.
+Keep a boolean signal in sync with a media query, updating when the viewport or a system preference changes.
 
 ## Syntax
 
 ```html
 data-match-media:is-dark="'prefers-color-scheme: dark'"
 data-match-media:wide="'(min-width: 60rem)'"
+data-match-media:print="'print'"
 ```
 
 | part | |
 |---|---|
-| key | required (the signal path) |
-| value | required (the query, as a string expression) |
+| key | required: the signal path (camelCased, `__case` changes it) |
+| value | required: the query, as a string expression |
 
 ## Modifiers
 
 | modifier | effect |
 |---|---|
-| `__case.*` | key casing |
+| `__case.kebab` | keep the key kebab-cased |
 
-## Example
+## Viewport and preferences
 
-<Live html={`
-<div data-match-media:narrow="'max-width: 700px'" data-match-media:reduced="'prefers-reduced-motion: reduce'">narrow viewport: <b data-text="$narrow"></b>, reduced motion: <b data-text="$reduced"></b></div>
+Resize the window or switch your system theme: the values follow.
+
+<Live title="three queries" html={`
+<div data-match-media:narrow="'max-width: 700px'" data-match-media:dark="'prefers-color-scheme: dark'" data-match-media:reduced="'prefers-reduced-motion: reduce'">
+  narrow viewport: <b data-text="$narrow"></b>, dark scheme: <b data-text="$dark"></b>, reduced motion: <b data-text="$reduced"></b>
+</div>
+`} />
+
+## Drive layout from the signal
+
+Anything reactive can read it: show a compact menu on narrow screens, a full one otherwise.
+
+<Live title="responsive markup" html={`
+<div data-match-media:compact="'max-width: 700px'">
+  <nav data-show="!$compact" class="row"><a href="#">Home</a> <a href="#">Docs</a> <a href="#">Blog</a> <a href="#">About</a></nav>
+  <select data-show="$compact"><option>Home</option><option>Docs</option><option>Blog</option><option>About</option></select>
+  <p class="muted">Narrow the window below 700px to swap the nav for a select.</p>
+</div>
 `} />
 
 ## Notes
 
-Parentheses are added when the query is a bare `feature: value` pair.
+Bare `feature: value` pairs are wrapped in parentheses for you; full media queries such as `screen and (min-width: 60rem)`, `print` or `(orientation: landscape)` are passed through unchanged. The signal is written once on mount and again on every `change` of the `MediaQueryList`.
 
 ## Register
 

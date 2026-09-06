@@ -6,24 +6,40 @@ sidebar: {"order": 4}
 import Live from '../../../../components/Live.astro'
 import Cost from '../../../../components/Cost.astro'
 
-Negate every boolean signal whose path matches.
+Negate every signal whose path matches a filter: each one becomes `!value`. Like `@setAll`, but relative.
 
 ## Syntax
 
 ```js
 @toggleAll({ include: /^flags\./ })
+@toggleAll()                        // every signal
 ```
 
-Like `@setAll`, but each matching signal becomes `!value`.
+## Invert a selection
 
-## Example
-
-<Live html={`
+<Live title="toggle both" html={`
 <div data-signals="{ t: { x: true, y: false } }">
-  <button data-on:click="@toggleAll({ include: /^t\./ })">toggle both</button>
+  <div class="row"><label><input type="checkbox" data-bind:t.x> x</label><label><input type="checkbox" data-bind:t.y> y</label> <button data-on:click="@toggleAll({ include: /^t\\./ })">invert</button></div>
   <pre data-text="JSON.stringify($t)"></pre>
 </div>
 `} />
+
+## Expand and collapse everything
+
+Toggle every `open.*` flag that drives a set of collapsibles.
+
+<Live title="sections" html={`
+<div data-signals="{ open: { a: true, b: false, c: false } }">
+  <button data-on:click="@toggleAll({ include: /^open\\./ })">flip all sections</button>
+  <div style="margin-top:.5rem"><b>Section A</b><div data-collapse="$open.a"><p class="muted" style="margin:.2rem 0 .5rem">Contents of A.</p></div></div>
+  <div><b>Section B</b><div data-collapse="$open.b"><p class="muted" style="margin:.2rem 0 .5rem">Contents of B.</p></div></div>
+  <div><b>Section C</b><div data-collapse="$open.c"><p class="muted" style="margin:.2rem 0 .5rem">Contents of C.</p></div></div>
+</div>
+`} />
+
+## Notes
+
+Non-boolean values are negated by JavaScript rules (`0` becomes `true`, a non-empty string becomes `false`), so keep the filter on boolean paths. Runs in one batch; computed paths are skipped.
 
 ## Register
 

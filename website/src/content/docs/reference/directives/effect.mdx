@@ -6,30 +6,53 @@ sidebar: {"order": 3, "label": "effect"}
 import Live from '../../../../components/Live.astro'
 import Cost from '../../../../components/Cost.astro'
 
-Run an expression now and whenever a signal it read changes.
+Run an expression now and whenever a signal it read changes. Use it for side effects that no other directive covers: document title, imperative DOM APIs, third-party widgets, logging.
 
 ## Syntax
 
 ```html
 data-effect="document.title = $unread + ' unread'"
+data-effect="el.scrollTop = el.scrollHeight"
 ```
 
 | part | |
 |---|---|
 | key | forbidden |
-| value | required |
+| value | required: statements; the result is ignored |
 
-## Example
+## Drive an imperative API
 
-<Live html={`
+<Live title="element style from a colour picker" html={`
 <div data-signals="{ colour: '#0e7c86' }" data-effect="el.style.borderLeft = '8px solid ' + $colour" style="padding-left:.6rem">
   <input type="color" data-bind:colour> pick a colour
 </div>
 `} />
 
+## Dependencies are exact
+
+Only the signals the expression actually read subscribe it. Below, changing `b` does nothing to the effect until `useB` is on.
+
+<Live title="conditional dependencies" html={`
+<div data-signals="{ a: 0, b: 0, useB: false, runs: 0 }" data-effect="$useB ? $b : $a; $runs = @peek(() => $runs) + 1">
+  <div class="row"><button data-on:click="$a++">a++</button><button data-on:click="$b++">b++</button><label><input type="checkbox" data-bind:useB> read b instead</label></div>
+  <p>effect ran <b data-text="$runs"></b> times</p>
+</div>
+`} />
+
+## Read without subscribing
+
+Wrap a read in `@peek` to use a value without re-running when it changes. Writing a signal you also read is a loop and is reported as an error, so counters inside effects use `@peek` too.
+
+<Live title="@peek inside an effect" html={`
+<div data-signals="{ n: 0, log: '' }" data-effect="$log = 'n is ' + $n + ' (peeked b: ' + @peek(() => $n * 10) + ')'">
+  <button data-on:click="$n++">n++</button>
+  <p data-text="$log"></p>
+</div>
+`} />
+
 ## Notes
 
-The body runs as statements. Reading a signal subscribes; writing one you also read is a loop and is reported as an error. Use `@peek(() => $x)` to read without subscribing.
+The body runs as statements with `el` in scope. Effects created inside another effect are disposed when the parent re-runs. When the element is removed, the effect stops.
 
 ## Register
 

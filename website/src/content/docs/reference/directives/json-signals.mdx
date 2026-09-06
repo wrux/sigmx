@@ -6,37 +6,44 @@ sidebar: {"order": 16, "label": "json-signals"}
 import Live from '../../../../components/Live.astro'
 import Cost from '../../../../components/Cost.astro'
 
-Render the store, or part of it, as JSON.
+Render the store, or part of it, as pretty-printed JSON. A development aid: drop it anywhere to watch signals change.
 
 ## Syntax
 
 ```html
 data-json-signals
 data-json-signals="{ include: /^form\./ }"
+data-json-signals="{ exclude: /^_/ }"
 ```
 
 | part | |
 |---|---|
 | key | forbidden |
-| value | optional filter `{ include, exclude }` |
+| value | optional filter `{ include, exclude }` of regular expressions over dotted paths |
 
-## Modifiers
+## Watch a namespace
 
-| modifier | effect |
-|---|---|
-
-## Example
-
-<Live html={`
-<div data-signals="{ debug: { on: true, n: 2 } }">
-  <button data-on:click="$debug.n++">n++</button>
+<Live title="filtered to one prefix" html={`
+<div data-signals="{ debug: { on: true, n: 2, tags: ['a'] } }">
+  <div class="row"><button data-on:click="$debug.n++">n++</button><button data-on:click="$debug.tags.push('x')">push a tag</button><button data-on:click="$debug.on = !$debug.on">toggle</button></div>
   <pre data-json-signals="{ include: /^debug/ }"></pre>
+</div>
+`} />
+
+## Exclude private paths
+
+Paths beginning with `_` are the convention for browser-only state; exclude them the same way requests do by default.
+
+<Live title="exclude" html={`
+<div data-signals="{ cart: { items: 2 }, _ui: { menuOpen: false } }">
+  <button data-on:click="$_ui.menuOpen = !$_ui.menuOpen">toggle _ui.menuOpen</button>
+  <pre data-json-signals="{ include: /^(cart|_ui)/, exclude: /^_/ }"></pre>
 </div>
 `} />
 
 ## Notes
 
-Useful while developing. Filters are regular expressions over dotted paths.
+Computed signals are included. Arrays and nested namespaces render as nested JSON; the output re-renders after each settled batch of changes.
 
 ## Register
 

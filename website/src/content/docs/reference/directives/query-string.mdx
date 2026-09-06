@@ -1,42 +1,66 @@
 ---
 title: "data-query-string"
-description: "Sync signals with the URL query string, both ways."
+description: "Declare a signal that is kept in sync with a URL query parameter."
 sidebar: {"order": 24, "label": "query-string"}
 ---
 import Live from '../../../../components/Live.astro'
 import Cost from '../../../../components/Cost.astro'
 
-Sync signals with the URL query string, both ways.
+Declare a signal that is kept in sync with a URL query parameter, both ways: the parameter seeds the signal on load, changes to the signal rewrite the address, and the parameter disappears when the value is back at its default.
 
 ## Syntax
 
 ```html
-data-query-string:page="1"                  <!-- declare `page` with a default, synced with ?page= -->
-data-query-string:sort-by="'name'"          <!-- parameter ?sort-by=, signal $sortBy -->
+data-query-string:page="1"                  <!-- ?page=  ↔ $page, default 1 -->
+data-query-string:sort-by="'name'"          <!-- ?sort-by= ↔ $sortBy -->
+data-query-string:q__history="''"           <!-- pushes a history entry per change -->
 ```
 
 | part | |
 |---|---|
-| key | optional: a parameter name; the value is then the default |
-| value | with a key, the default expression; without one, an optional `{ include, exclude }` filter |
+| key | required: the parameter name as written; the signal is the camelCased key |
+| value | optional: the default, as an expression (`''` when omitted) |
 
 ## Modifiers
 
 | modifier | effect |
 |---|---|
+| `__history` | `pushState` an entry per change and restore the signal on Back and Forward |
+| `__case.kebab` | keep the signal name kebab-cased |
 
-## Example
+## Tabs in the URL
 
-<Live html={`
+<Live title="default is dropped from the URL" html={`
 <div data-query-string:tab="'one'">
-  <div class="row"><button data-on:click="$tab = 'one'">one</button><button data-on:click="$tab = 'two'">two</button></div>
-  <p>tab = <b data-text="$tab"></b> (watch the address bar)</p>
+  <div class="row"><button data-on:click="$tab = 'one'">one</button><button data-on:click="$tab = 'two'">two</button><button data-on:click="$tab = 'three'">three</button></div>
+  <p>tab = <b data-text="$tab"></b>; watch the address bar: <code data-text="location.search || '(no query)'" data-on-signal-patch="el.textContent = location.search || '(no query)'"></code></p>
+</div>
+`} />
+
+## Typed values
+
+Parameters that parse as JSON come back typed: `?page=2` gives the number 2, `?tags=["a"]` an array.
+
+<Live title="numbers stay numbers" html={`
+<div data-query-string:page="1">
+  <div class="row"><button data-on:click="$page--">previous</button> <b data-text="$page"></b> (<span data-text="typeof $page"></span>) <button data-on:click="$page++">next</button></div>
+</div>
+`} />
+
+## History entries
+
+With `__history` every change pushes an entry, so Back walks through previous filters and the signal follows.
+
+<Live title="__history" html={`
+<div data-query-string:q__history="''">
+  <input data-bind:q__event.change placeholder="type, press Enter, then use Back">
+  <p>q = <b data-text="$q"></b></p>
 </div>
 `} />
 
 ## Notes
 
-The keyed form is the usual one: it declares the signal, applies the default when the parameter is absent, and removes the parameter when the value equals the default, so URLs stay clean. Values that parse as JSON come back typed (`?page=2` gives the number 2). The bare form syncs signals declared elsewhere; give those defaults with `__ifmissing`.
+Objects are stored as JSON in the parameter. When the parameter is present on load it wins over an existing signal value; when absent, the default applies. Without `__history` the address is replaced, leaving one history entry. To reflect a whole computed path rather than one parameter, see `data-replace-url`.
 
 ## Register
 

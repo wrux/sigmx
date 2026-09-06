@@ -57,7 +57,7 @@ export const rewriteSignals = (src: string): string => {
       next !== undefined &&
       ident.test(next) &&
       next !== '$' &&
-      prevCode() !== '.' &&
+      (prevCode() !== '.' || /\.\.\.\s*$/.test(out)) && // `obj.$x` is a member, `...$x` a spread
       !ident.test(out[out.length - 1] ?? '')
     ) {
       let j = i + 1;

@@ -6,32 +6,44 @@ sidebar: {"order": 35, "label": "remove-me"}
 import Live from '../../../../components/Live.astro'
 import Cost from '../../../../components/Cost.astro'
 
-Remove the element after a delay (htmx's remove-me extension).
+Remove the element after a delay (htmx's remove-me extension). Made for toasts and flash messages that a server patches in.
 
 ## Syntax
 
 ```html
 data-remove-me="3s"
+data-remove-me="500ms"
 data-remove-me
 ```
 
 | part | |
 |---|---|
 | key | forbidden |
-| value | optional delay, default immediately |
+| value | optional delay: `3s`, `500ms` or a plain number of milliseconds; default 0 |
 
-## Example
+## Toasts
 
-<Live html={`
+<Live title="two-second toasts" html={`
 <div data-signals="{ toasts: 0 }">
-  <button data-on:click="$toasts++; el.nextElementSibling.insertAdjacentHTML('beforeend', \`<p data-remove-me=\"2s\" class=\"hot\" style=\"padding:.4rem .6rem;border-radius:.4rem\">Toast #\${$toasts} disappears in two seconds</p>\`)">Show a toast</button>
+  <button data-on:click="$toasts++; el.nextElementSibling.insertAdjacentHTML('beforeend', \`<p data-remove-me=\\"2s\\" class=\\"hot\\" style=\\"padding:.4rem .6rem;border-radius:.4rem\\">Toast #\${$toasts} disappears in two seconds</p>\`)">Show a toast</button>
   <div></div>
+</div>
+`} />
+
+## Remove immediately
+
+Without a value the element is removed on mount, which is a way for a server patch to delete something by sending an empty replacement.
+
+<Live title="no delay" html={`
+<div>
+  <button data-on:click="el.insertAdjacentHTML('afterend', '<span data-remove-me>you will never see me</span>'); $inserted = ($inserted ?? 0) + 1">insert and remove at once</button>
+  <span>inserted <b data-text="$inserted ?? 0"></b>, visible 0</span>
 </div>
 `} />
 
 ## Notes
 
-Typical for toasts and flash messages a server patches in with `mode: append`.
+The timer is cleared if the element is removed earlier by something else. Pair it with `mode: append` server patches for flash messages.
 
 ## Register
 

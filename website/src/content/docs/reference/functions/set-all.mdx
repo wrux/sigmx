@@ -6,25 +6,39 @@ sidebar: {"order": 3}
 import Live from '../../../../components/Live.astro'
 import Cost from '../../../../components/Cost.astro'
 
-Assign one value to every signal whose path matches.
+Assign one value to every signal whose path matches a filter. Without a filter, every signal is set.
 
 ## Syntax
 
 ```js
 @setAll(false, { include: /^flags\./ })
-@setAll('')
+@setAll('', { include: /^form\./, exclude: /\.id$/ })
+@setAll(null)                                   // removes every signal
 ```
 
-The second argument is an optional `{ include, exclude }` filter of regular expressions over dotted paths. Without it, every signal is set.
+## Select all and none
 
-## Example
-
-<Live html={`
+<Live title="checkbox group" html={`
 <div data-signals="{ flags: { a: false, b: false, c: false } }">
   <div class="row"><label><input type="checkbox" data-bind:flags.a> a</label><label><input type="checkbox" data-bind:flags.b> b</label><label><input type="checkbox" data-bind:flags.c> c</label></div>
-  <div class="row"><button data-on:click="@setAll(true, { include: /^flags\./ })">all on</button><button data-on:click="@setAll(false, { include: /^flags\./ })">all off</button></div>
+  <div class="row"><button data-on:click="@setAll(true, { include: /^flags\\./ })">all on</button><button data-on:click="@setAll(false, { include: /^flags\\./ })">all off</button></div>
 </div>
 `} />
+
+## Reset a form
+
+Clear every field under a prefix while leaving the rest of the store alone.
+
+<Live title="clear form.*" html={`
+<div data-signals="{ form: { name: 'Ada', email: 'ada@example.com' }, theme: 'dark' }">
+  <div class="row"><input data-bind:form.name> <input data-bind:form.email> <button data-on:click="@setAll('', { include: /^form\\./ })">clear form</button></div>
+  <pre data-json-signals="{ include: /^(form|theme)/ }"></pre>
+</div>
+`} />
+
+## Notes
+
+Runs in one batch, so dependents update once. Computed paths are skipped. The filter is the same `{ include, exclude }` shape used by requests, `persist` and `json-signals`.
 
 ## Register
 

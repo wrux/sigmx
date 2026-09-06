@@ -6,25 +6,50 @@ sidebar: {"order": 6}
 import Live from '../../../../components/Live.astro'
 import Cost from '../../../../components/Cost.astro'
 
-Copy text to the clipboard.
+Copy text to the clipboard. Returns the promise from `navigator.clipboard.writeText`, so you can react when the copy has landed.
 
 ## Syntax
 
 ```js
 @clipboard('plain text')
+@clipboard($code)
 @clipboard('SGVsbG8=', true)   // base64, decoded first
 ```
 
-Base64 lets you embed text with quotes or markup safely inside an attribute. Returns the promise from `navigator.clipboard.writeText`.
+## Copy a signal
 
-## Example
-
-<Live html={`
-<div data-signals="{ copied: false }" class="row">
-  <button data-on:click="@clipboard('Copied from the sigmx docs').then(() => $copied = true)">Copy a sentence</button>
+<Live title="copy and confirm" html={`
+<div data-signals="{ code: 'SIGMX-2026', copied: false }" class="row">
+  <input data-bind:code>
+  <button data-on:click="@clipboard($code).then(() => $copied = true); setTimeout(() => $copied = false, 1200)">Copy</button>
   <span data-show="$copied">copied!</span>
 </div>
 `} />
+
+## Copy an element's text
+
+Read the text from the DOM with `data-ref`, so the button and the content stay decoupled.
+
+<Live title="copy a code block" html={`
+<div data-signals="{ done: false }">
+  <pre data-ref:snippet style="padding:.5rem;border:1px solid var(--sl-color-hairline);border-radius:.4rem">npm install sigmx</pre>
+  <button data-on:click="@clipboard($snippet.textContent).then(() => $done = true)" data-text="$done ? 'copied ✓' : 'copy command'">copy command</button>
+</div>
+`} />
+
+## Base64 for awkward text
+
+Text with quotes, newlines or markup is easier to embed in an attribute as base64; the second argument decodes it before copying.
+
+<Live title="base64" html={`
+<div class="row">
+  <button data-on:click="@clipboard('SGUgc2FpZCAiaGkiLA0KdGhlbiBsZWZ0Lg==', true)">copy a two-line quote</button> <span class="muted">then paste somewhere</span>
+</div>
+`} />
+
+## Notes
+
+The clipboard API needs a secure context (HTTPS or localhost) and a user gesture; call it from an event handler.
 
 ## Register
 

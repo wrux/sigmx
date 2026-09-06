@@ -10,6 +10,7 @@ test('rewriteSignals turns $name into $.name and leaves strings, $ and obj.$x al
   assert.equal(rewriteSignals('`hi ${$name} and ${$a.b + `${$c}`}`'), '`hi ${$.name} and ${$.a.b + `${$.c}`}`');
   assert.equal(rewriteSignals("$['a-b'] + $.x + obj.$y + $$z"), "$['a-b'] + $.x + obj.$y + $$z");
   assert.equal(rewriteSignals('a$b'), 'a$b');
+  assert.equal(rewriteSignals('[...$items, $n]'), '[...$.items, $.n]', 'spread is not a member access');
 });
 
 test('compileBody matches runtime semantics and runs in strict mode against the root proxy', () => {

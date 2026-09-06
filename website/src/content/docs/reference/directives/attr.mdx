@@ -6,34 +6,63 @@ sidebar: {"order": 9, "label": "attr"}
 import Live from '../../../../components/Live.astro'
 import Cost from '../../../../components/Cost.astro'
 
-Set any attribute from an expression.
+Set any attribute from an expression: one attribute per key, or several from an object.
 
 ## Syntax
 
 ```html
 data-attr:disabled="$busy"
 data-attr:aria-expanded="$open"
-data-attr="{ title: $tip, hidden: !$show }"
+data-attr="{ title: $tip, hidden: !$show, 'data-count': $n }"
 ```
 
 | part | |
 |---|---|
-| key | optional (an attribute name) or an object value |
-| value | required |
+| key | optional: an attribute name (kebab-cased, `__case` changes it) |
+| value | required: with a key, the attribute's value; without one, an object of attributes |
 
-## Example
+## Modifiers
 
-<Live html={`
+| modifier | effect |
+|---|---|
+| `__case.camel` | keep the key camelCase instead of converting to kebab-case |
+
+## Boolean attributes
+
+`true` writes an empty attribute, `false`, `null` and `undefined` remove it, so the same expression drives `disabled`, `hidden`, `required` or `open`.
+
+<Live title="disabled and hidden" html={`
 <div data-signals="{ busy: false }" class="row">
-  <button data-on:click="$busy = !$busy">toggle</button>
+  <button data-on:click="$busy = !$busy">toggle busy</button>
   <button data-attr:disabled="$busy">I get disabled</button>
-  <a data-attr:href="'https://example.com/?t=' + Date.now()" data-attr:title="$busy ? 'busy' : 'idle'">link with reactive href</a>
+  <span data-attr:hidden="$busy">hidden while busy</span>
+</div>
+`} />
+
+## Values
+
+Numbers and strings are written as they are, which suits `aria-*` attributes, `href`, `src`, `title` and data attributes.
+
+<Live title="aria-expanded, title, data-*" html={`
+<div data-signals="{ open: false, n: 0 }" class="row">
+  <button data-on:click="$open = !$open; $n++" data-attr:aria-expanded="$open" data-attr:title="'clicked ' + $n + ' times'" data-attr:data-count="$n">aria-expanded=<span data-text="$open"></span>, hover for the title</button>
+</div>
+`} />
+
+## Object form
+
+One attribute holds many keys. Attribute names that need quoting go in quotes.
+
+<Live title="several attributes at once" html={`
+<div data-signals="{ tip: 'a tooltip', show: true, lang: 'en' }">
+  <div class="row"><input data-bind:tip> <label><input type="checkbox" data-bind:show> show</label> <select data-bind:lang><option>en</option><option>de</option></select></div>
+  <p data-attr="{ title: $tip, hidden: !$show, lang: $lang, 'aria-live': 'polite' }">Hover me. lang=<b data-text="$lang"></b></p>
 </div>
 `} />
 
 ## Notes
 
-`true` sets an empty attribute, `false`, `null` and `undefined` remove it, objects are JSON-encoded, everything else is stringified.
+Everything that is not a boolean, `null` or `undefined` is converted with `String()`; pass objects through `JSON.stringify` yourself if you need them serialised. Attributes the directive removed are not restored on unmount.
 
 ## Register
 

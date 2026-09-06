@@ -6,7 +6,7 @@ sidebar: {"order": 19, "label": "on-raf"}
 import Live from '../../../../components/Live.astro'
 import Cost from '../../../../components/Cost.astro'
 
-Run an expression on every animation frame.
+Run an expression on every animation frame, until the element unmounts.
 
 ## Syntax
 
@@ -18,23 +18,42 @@ data-on-raf__throttle.100ms="…"
 | part | |
 |---|---|
 | key | forbidden |
-| value | required |
+| value | required: statements |
 
 ## Modifiers
 
 | modifier | effect |
 |---|---|
-| `__throttle.ms` | skip frames |
+| `__throttle.ms` | skip frames, running at most once per window |
+| `__debounce.ms` | run only after frames stop (rarely useful; frames never stop while visible) |
 
-## Example
+## Every frame
 
-<Live html={`
-<div data-signals="{ frames: 0 }" data-on-raf__throttle.50ms="$frames++">frames (throttled): <b data-text="$frames"></b></div>
+<Live title="raw frame counter" html={`
+<div data-signals="{ frames: 0 }" data-on-raf="$frames++">frames since mount: <b data-text="$frames"></b></div>
+`} />
+
+## Throttled
+
+Most work does not need 60 updates a second; throttle to what the eye needs.
+
+<Live title="__throttle.100ms" html={`
+<div data-signals="{ t: 0 }" data-on-raf__throttle.100ms="$t = Math.round(performance.now() / 100) / 10">seconds since page load: <b data-text="$t.toFixed(1)"></b></div>
+`} />
+
+## Animate with a clock
+
+Compute positions from time rather than incrementing, so the motion stays smooth when frames are dropped.
+
+<Live title="orbit" html={`
+<div data-signals="{ x: 0 }" data-on-raf="$x = 50 + 45 * Math.sin(performance.now() / 500)" style="position:relative;height:1.5rem">
+  <div class="box hot" data-style:left="$x + '%'" style="position:absolute;top:0;width:1.5rem;height:1.5rem;border-radius:50%"></div>
+</div>
 `} />
 
 ## Notes
 
-Browsers pause animation frames in background tabs.
+Browsers pause animation frames in background tabs and reduce them for hidden elements. Prefer `data-animate` or CSS for simple property tweens; use `on-raf` for canvases, physics and anything that needs the frame clock.
 
 ## Register
 

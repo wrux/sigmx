@@ -6,13 +6,13 @@ sidebar: {"order": 36, "label": "boost"}
 import Live from '../../../../components/Live.astro'
 import Cost from '../../../../components/Cost.astro'
 
-Turn same-origin links and forms into morphed navigations (htmx's hx-boost).
+Turn same-origin links and forms into morphed navigations (htmx's hx-boost). Clicking a link fetches the page with `@get`, submitting a form sends it with `@post` or `@get`, and the full-document response is morphed into the current page: `<head>` and `<body>` update in place, elements with matching ids keep their state, a history entry is pushed and the window scrolls to the top.
 
 ## Syntax
 
 ```html
 <body data-boost>
-<nav data-boost>
+<nav data-boost>…</nav>
 ```
 
 | part | |
@@ -20,20 +20,38 @@ Turn same-origin links and forms into morphed navigations (htmx's hx-boost).
 | key | forbidden |
 | value | forbidden |
 
-## Modifiers
+## What is boosted
 
-| modifier | effect |
-|---|---|
-
-## Example
-
-<Live html={`
-<p class="muted">Not demonstrated inline: it navigates the whole page. Put <code>data-boost</code> on <code>body</code> and every internal link and form fetches the new page with <code>@get</code> or <code>@post</code>, morphs the document (head included), scrolls to the top and pushes a history entry; Back and Forward refetch and morph again.</p>
+<Live title="rules, not a live navigation" code={false} html={`
+<div>
+  <p>This box cannot navigate the documentation page you are reading, so the rules are listed instead.</p>
+  <table>
+    <tr><th>element</th><th>request</th></tr>
+    <tr><td><code>&lt;a href&gt;</code> to the same origin</td><td><code>@get(href)</code>, then <code>history.pushState</code></td></tr>
+    <tr><td><code>&lt;form method="post"&gt;</code></td><td><code>@post(action, { contentType: 'form' })</code> with the form's fields</td></tr>
+    <tr><td><code>&lt;form&gt;</code> (GET)</td><td><code>@get(action, { contentType: 'form' })</code>: fields go into the query string</td></tr>
+    <tr><td>Back and Forward</td><td><code>@get(location.href)</code>, morphed again</td></tr>
+  </table>
+</div>
 `} />
+
+Left to the browser: links with `target` or `download`, clicks with a modifier key or a non-primary button, other origins, hash-only changes on the current page, and forms with a `target`.
+
+## Typical page
+
+```html
+<body data-boost>
+  <nav><a href="/">Home</a> <a href="/about">About</a></nav>
+  <main id="main">…</main>
+  <audio id="player" controls src="/song.mp3"></audio>
+</body>
+```
+
+Because the morph keeps elements by id, `#player` keeps playing across navigations and an open menu stays open. Put ids on the parts of the layout that should survive.
 
 ## Notes
 
-Needs `httpGet`, `httpPost` and `applyElements`. Links with `target`, `download`, modifier keys, other origins, or hash-only changes are left to the browser. Because the morph keeps elements by id, persistent parts of the layout such as a media player or an open menu survive navigation.
+Needs `httpGet`, `httpPost` and `applyElements` registered (all three are in the `essentials` preset). The server should return a complete HTML document, exactly as for a normal request; the `Sigmx-Request: true` header tells it the request came from sigmx if it wants to skip work. Form submissions respect `novalidate` and the browser's validity checks before sending.
 
 ## Register
 

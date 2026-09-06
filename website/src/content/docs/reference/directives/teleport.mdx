@@ -6,27 +6,23 @@ sidebar: {"order": 33, "label": "teleport"}
 import Live from '../../../../components/Live.astro'
 import Cost from '../../../../components/Cost.astro'
 
-Move an element elsewhere in the document, keeping its behaviour (Alpine's x-teleport).
+Move an element elsewhere in the document, keeping its behaviour (Alpine's x-teleport). Write the markup where it makes sense to author it, render it where it needs to live.
 
 ## Syntax
 
 ```html
 data-teleport="body"
+data-teleport="#toasts"
 ```
 
 | part | |
 |---|---|
 | key | forbidden |
-| value | required (a selector) |
+| value | required: a selector for the new parent; the element is appended to it |
 
-## Modifiers
+## Escape a container
 
-| modifier | effect |
-|---|---|
-
-## Example
-
-<Live html={`
+<Live title="into a target box" html={`
 <div data-signals="{ n: 0 }">
   <div id="teleport-target" style="border:1px dashed var(--sl-color-hairline);padding:.5rem;margin-bottom:.5rem">target box</div>
   <button data-on:click="$n++">clicked <span data-text="$n"></span></button>
@@ -34,9 +30,23 @@ data-teleport="body"
 </div>
 `} />
 
+## Modals and toasts
+
+The classic use: markup authored next to the button that opens it, rendered at the end of `body` so `overflow: hidden` and stacking contexts cannot clip it. This demo targets a box on the page rather than `body`.
+
+<Live title="layered UI" html={`
+<div data-signals="{ open: false }">
+  <div style="overflow:hidden;height:2.5rem;border:1px dashed var(--sl-color-hairline);padding:.3rem">
+    clipped container <button data-on:click="$open = !$open">toggle panel</button>
+    <div data-teleport="#teleport-layer" data-show="$open" style="display:none;padding:.5rem;border:1px solid var(--sl-color-hairline);border-radius:.4rem;margin-top:.3rem">Rendered outside the clipped container, still driven by its signals.</div>
+  </div>
+  <div id="teleport-layer"></div>
+</div>
+`} />
+
 ## Notes
 
-Modals, tooltips and toasts usually need to escape `overflow: hidden` or stacking contexts. Browsers with `moveBefore` move the element without unmounting it; others remove and re-insert it, which remounts its attributes (state in signals is unaffected).
+Browsers with `moveBefore` move the element without unmounting it; others remove and re-insert it, which remounts its attributes (signals are unaffected). A missing target is reported as an error and the element stays put. The element is appended as the last child; order siblings in the target with CSS if needed.
 
 ## Register
 

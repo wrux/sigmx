@@ -6,7 +6,7 @@ sidebar: {"order": 4, "label": "ref"}
 import Live from '../../../../components/Live.astro'
 import Cost from '../../../../components/Cost.astro'
 
-Store the element itself in a signal.
+Store the element itself in a signal, so other expressions can call its methods or read its properties.
 
 ## Syntax
 
@@ -24,20 +24,42 @@ data-ref="dialog"
 
 | modifier | effect |
 |---|---|
-| `__case.*` | key casing |
+| `__case.kebab` | keep the key kebab-cased |
 
-## Example
+## Call a method on another element
 
-<Live html={`
+<Live title="focus and select" html={`
+<div class="row">
+  <input data-ref:field value="select me">
+  <button data-on:click="$field.focus(); $field.select()">Focus and select</button>
+</div>
+`} />
+
+## Native dialogs
+
+`<dialog>` gives you a modal with focus trapping and an inert page for free; `data-ref` is how the buttons reach it.
+
+<Live title="showModal()" html={`
 <div>
-  <input data-ref:field placeholder="I get focus">
-  <button data-on:click="$field.focus()">Focus the input</button>
+  <button data-on:click="$dlg.showModal()">Open dialog</button>
+  <dialog data-ref:dlg style="border:1px solid var(--sl-color-hairline);border-radius:.5rem;padding:1rem"><p>Tab cycles inside; Escape closes.</p><button data-on:click="$dlg.close()">Close</button></dialog>
+</div>
+`} />
+
+## Read properties reactively
+
+The signal holds the element, not its state; read live values inside an event or effect, not as a dependency.
+
+<Live title="scroll position" html={`
+<div data-signals="{ pos: 0 }">
+  <div data-ref:pane data-on:scroll="$pos = Math.round($pane.scrollTop)" style="height:4rem;overflow:auto;border:1px solid var(--sl-color-hairline)"><div style="height:16rem;padding:.5rem">scroll me</div></div>
+  <p>scrollTop = <b data-text="$pos"></b></p>
 </div>
 `} />
 
 ## Notes
 
-The signal is removed when the element leaves the document.
+The signal is removed when the element leaves the document. Refs are stored in the same store as everything else, so keep them out of server requests with a `_` prefix (`data-ref:_dialog`) or a filter.
 
 ## Register
 

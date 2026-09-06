@@ -6,17 +6,23 @@ sidebar: {"order": 10}
 import Live from '../../../../components/Live.astro'
 import Cost from '../../../../components/Cost.astro'
 
-Open a WebSocket and route its messages like a server event stream (htmx's ws extension).
+Open a WebSocket and route its messages like a server event stream (htmx's ws extension). Incoming messages use the same wire format as `text/event-stream` responses, so `patch-signals`, `patch-elements` and your own handlers work unchanged; outgoing messages go through `send`.
 
 ## Syntax
 
 ```js
 $socket = @ws('/live')
-$socket.send({ type: 'chat', text: $draft })
+$socket = @ws('wss://example.com/live', { protocols: ['v1'] })
+$socket.send({ type: 'chat', text: $draft })   // objects are JSON-encoded
+$socket.send('ping')                             // strings are sent as they are
 $socket.close()
 ```
 
-Messages are text blocks in the same shape as an event stream, separated by blank lines:
+The URL is resolved against the page and `http(s)` becomes `ws(s)`. The returned object has `send`, `close` and the raw `socket`; store it in a signal to use it from other elements. The socket closes when the element that opened it unmounts.
+
+## Message format
+
+Each message is one or more blank-line-separated blocks of `field: value` lines, exactly like an event stream:
 
 ```
 event: sigmx-patch-signals
@@ -28,13 +34,44 @@ data: mode append
 data: elements <li>hello</li>
 ```
 
-Each block is dispatched as `sigmx-server-event` and handed to the matching handler, so `patch-signals` and `patch-elements` work exactly as over HTTP. The returned object has `send` (objects are JSON-encoded), `close` and the raw `socket`; the socket closes when the element that opened it unmounts. Store it in a signal to use it elsewhere.
+Every block with at least one `data` line is dispatched as `sigmx-server-event` and handed to the handler matching its `event` name (prefix stripped). Blocks without `data` lines are ignored.
 
-## Example
+## Client side, without a server
 
-<Live html={`
-<p class="muted">No socket server behind this documentation site; the repository's dev server has a <code>/ws</code> echo endpoint exercised by the browser test suite.</p>
+This site has no socket server, so the demo below drives the same code path with a stand-in socket object to show what a message does once it arrives.
+
+<Live title="what an incoming block does" code={false} html={`
+<div data-signals="{ online: 0 }">
+  <p>Given the message on the left, the page changes on the right:</p>
+  <div class="row"><pre style="flex:1;margin:0">event: sigmx-patch-signals
+data: signals {"online": 12}
+
+event: sigmx-patch-elements
+data: selector #ws-chat
+data: mode append
+data: elements &lt;li&gt;hello from the socket&lt;/li&gt;</pre>
+  <div style="flex:1">online: <b data-text="$online"></b><ul id="ws-chat" class="muted"><li>…</li></ul></div></div>
+  <button data-on:click="$online = 12; document.getElementById('ws-chat').insertAdjacentHTML('beforeend', '<li>hello from the socket</li>')">simulate receiving it</button>
+</div>
 `} />
+
+## Typical chat markup
+
+```html
+<div data-signals="{ draft: '', online: 0 }" data-init="$sock = @ws('/chat')">
+  <p><span data-text="$online"></span> online</p>
+  <ul id="chat"></ul>
+  <form data-on:submit="$sock.send({ text: $draft }); $draft = ''">
+    <input data-bind:draft> <button>Send</button>
+  </form>
+</div>
+```
+
+The server answers each message with blocks that patch `#chat` and `online`; nothing on the client parses JSON or touches the DOM.
+
+## Notes
+
+The repository's dev server has a `/ws` echo endpoint exercised by the browser test suite. Reconnection is not built in: open a new socket from `data-on:close`-style logic on the raw `socket` if the connection drops.
 
 ## Register
 

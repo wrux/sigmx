@@ -1,12 +1,12 @@
 ---
 title: "data-transition"
-description: "Show and hide with a fade and optional scale (Alpine's x-transition)."
+description: "Show and hide with a fade (Alpine's x-transition)."
 sidebar: {"order": 30, "label": "transition"}
 ---
 import Live from '../../../../components/Live.astro'
 import Cost from '../../../../components/Cost.astro'
 
-Show and hide with a fade and optional scale (Alpine's x-transition).
+Show and hide with a fade (Alpine's x-transition). The element fades in when the expression turns truthy and fades out, then gets `display: none`, when it turns falsy.
 
 ## Syntax
 
@@ -18,26 +18,46 @@ data-transition__duration.300ms="$open"
 | part | |
 |---|---|
 | key | forbidden |
-| value | required |
+| value | required: truthy shows |
 
 ## Modifiers
 
 | modifier | effect |
 |---|---|
-| `__duration.ms` | default 200ms |
+| `__duration.ms\|s` | fade length, default 200ms |
 
-## Example
+## Toggle
 
-<Live html={`
+<Live title="default fade" html={`
 <div data-signals="{ open: true }">
   <button data-on:click="$open = !$open">Toggle</button>
   <div data-transition="$open" class="hot" style="padding:.6rem;border-radius:.4rem;margin-top:.5rem">Fades in and out.</div>
 </div>
 `} />
 
+## Duration
+
+<Live title="__duration.800ms" html={`
+<div data-signals="{ on: true }">
+  <button data-on:click="$on = !$on">slow toggle</button>
+  <div data-transition__duration.800ms="$on" class="box" style="height:1.5rem;margin-top:.5rem"></div>
+</div>
+`} />
+
+## Notifications
+
+Combined with a timer, a fading notice that removes itself from layout when done.
+
+<Live title="fade out after a delay" html={`
+<div data-signals="{ saved: false }">
+  <button data-on:click="$saved = true; setTimeout(() => $saved = false, 1500)">Save</button>
+  <span data-transition="$saved" style="display:none;margin-left:.5rem">Saved ✓</span>
+</div>
+`} />
+
 ## Notes
 
-Uses the Web Animations API; the element gets `display: none` once the leave animation finishes. Like `show`, it remembers the element's own inline display value.
+Uses the Web Animations API on opacity. Like `show`, it remembers the element's own inline display value, and a change that does not flip the outcome does nothing. The first evaluation applies the state instantly, so nothing animates on page load. For height animation use `data-collapse`; for arbitrary property tweens use `data-animate`; for anything richer, toggle a class with `data-class` and write the transition in CSS.
 
 ## Register
 

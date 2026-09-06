@@ -6,7 +6,7 @@ sidebar: {"order": 21, "label": "scroll-into-view"}
 import Live from '../../../../components/Live.astro'
 import Cost from '../../../../components/Cost.astro'
 
-Scroll the element into view when it mounts.
+Scroll the element into view when it mounts. Put it on content the server appends, such as the newest chat message, or on an element revealed by `data-show`.
 
 ## Syntax
 
@@ -24,22 +24,44 @@ data-scroll-into-view__smooth__vcenter__focus
 
 | modifier | effect |
 |---|---|
-| `__smooth / __instant / __auto` | scroll behaviour |
-| `__vstart / __vcenter / __vend / __vnearest` | vertical alignment |
+| `__smooth` / `__instant` / `__auto` | scroll behaviour, default smooth |
+| `__vstart` / `__vcenter` / `__vend` / `__vnearest` | vertical alignment, default center |
 | `__focus` | focus the element afterwards |
 
-## Example
+## Scroll to revealed content
 
-<Live html={`
+<Live title="smooth, nearest" html={`
 <div data-signals="{ show: false }">
   <button data-on:click="$show = true">Reveal and scroll</button>
   <div data-show="$show" style="display:none"><div style="height:8rem"></div><p data-scroll-into-view__smooth__vnearest>Scrolled to me.</p></div>
 </div>
 `} />
 
+## Newest message at the bottom
+
+Each appended element scrolls its container; `__instant` avoids a queue of animations when many arrive at once.
+
+<Live title="chat log" html={`
+<div data-signals="{ n: 0 }">
+  <div style="height:5rem;overflow:auto;border:1px solid var(--sl-color-hairline);padding:.3rem" data-ref:log>
+    <p class="muted" style="margin:.2rem 0">older messages…</p>
+  </div>
+  <button data-on:click="$n++; $log.insertAdjacentHTML('beforeend', '<p data-scroll-into-view__instant__vend style=\\'margin:.2rem 0\\'>message ' + $n + '</p>')">append a message</button>
+</div>
+`} />
+
+## Focus the field an error points at
+
+<Live title="__focus" html={`
+<div data-signals="{ err: false }">
+  <button data-on:click="$err = true">show error</button>
+  <div data-show="$err" style="display:none"><div style="height:6rem"></div><input data-scroll-into-view__vcenter__focus placeholder="fix me: I was scrolled to and focused"></div>
+</div>
+`} />
+
 ## Notes
 
-Put it on content the server appends, for example the newest chat message.
+Runs once per mount. Horizontal alignment is left to the browser's default (`nearest`); call `el.scrollIntoView({ inline: … })` from `data-init` when you need it.
 
 ## Register
 

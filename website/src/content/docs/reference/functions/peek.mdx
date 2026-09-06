@@ -6,24 +6,50 @@ sidebar: {"order": 2}
 import Live from '../../../../components/Live.astro'
 import Cost from '../../../../components/Cost.astro'
 
-Read signals without subscribing the surrounding effect to them.
+Read signals without subscribing the surrounding effect to them. Inside `data-text`, `data-effect`, `data-computed` and every other reactive directive, each signal you read becomes a dependency; wrap a read in `@peek` to use the value without re-running when it changes.
 
 ## Syntax
 
 ```js
 @peek(() => $count)
+@peek(() => $a + $b)
 ```
 
-Inside `data-effect`, `data-text` and other reactive directives, every signal you read becomes a dependency. Wrap a read in `@peek` to use the value without re-running when it changes.
+## Use a value without depending on it
 
-## Example
-
-<Live html={`
+<Live title="a is tracked, b is peeked" html={`
 <div data-signals="{ a: 0, b: 0 }">
   <div class="row"><button data-on:click="$a++">a++</button><button data-on:click="$b++">b++</button></div>
   <p data-text="'a=' + $a + ', b (peeked)=' + @peek(() => $b)"></p>
+  <p class="muted">Pressing b++ changes nothing above until a changes.</p>
 </div>
 `} />
+
+## Counters inside effects
+
+An effect that reads and writes the same signal would loop; peek the read.
+
+<Live title="run counter" html={`
+<div data-signals="{ input: '', runs: 0 }" data-effect="$input; $runs = @peek(() => $runs) + 1">
+  <input data-bind:input placeholder="type">
+  <p>the effect ran <b data-text="$runs"></b> times</p>
+</div>
+`} />
+
+## Snapshot at a moment
+
+Read the whole store once, at click time, without the button subscribing to anything.
+
+<Live title="peek an object" html={`
+<div data-signals="{ x: 1, y: 2, snap: '' }">
+  <div class="row"><button data-on:click="$x++">x++</button><button data-on:click="$y++">y++</button><button data-on:click="$snap = JSON.stringify(@peek(() => ({ x: $x, y: $y })))">snapshot</button></div>
+  <p>snapshot: <code data-text="$snap"></code></p>
+</div>
+`} />
+
+## Notes
+
+Event handlers (`data-on`) are not reactive, so they never need `@peek`; it matters inside effects, computeds and rendering directives. In JavaScript the same function is exported from `sigmx` as `untracked`.
 
 ## Register
 

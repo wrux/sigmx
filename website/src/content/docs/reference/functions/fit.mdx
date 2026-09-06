@@ -6,21 +6,45 @@ sidebar: {"order": 5}
 import Live from '../../../../components/Live.astro'
 import Cost from '../../../../components/Cost.astro'
 
-Map a number from one range onto another.
+Map a number from one range onto another by linear interpolation, with optional clamping and rounding.
 
 ## Syntax
 
 ```js
-@fit(value, inMin, inMax, outMin, outMax, clamp = false, round = false)
+@fit(value, inMin, inMax, outMin, outMax)
+@fit(value, inMin, inMax, outMin, outMax, clamp)          // clamp: keep inside the output range
+@fit(value, inMin, inMax, outMin, outMax, clamp, round)   // round: Math.round the result
 ```
 
-Linear interpolation: `@fit(50, 0, 100, 0, 255)` is `127.5`. Pass `true` as the sixth argument to clamp to the output range and `true` as the seventh to round.
+`@fit(50, 0, 100, 0, 255)` is `127.5`.
 
-## Example
+## Unit conversion
 
-<Live html={`
+<Live title="Celsius to Fahrenheit" html={`
 <div data-signals="{ c: 20 }" class="row">
-  <input type="number" data-bind:c> °C = <b data-text="@fit($c, 0, 100, 32, 212).toFixed(1)"></b> °F, slider <input type="range" min="0" max="100" data-bind:c> → <b data-text="@fit($c, 0, 100, 0, 255, true, true)"></b>/255
+  <input type="number" data-bind:c style="width:5rem"> °C = <b data-text="@fit($c, 0, 100, 32, 212).toFixed(1)"></b> °F
+</div>
+`} />
+
+## Clamp and round
+
+A slider mapped onto a byte, clamped so out-of-range input cannot escape 0–255 and rounded to an integer.
+
+<Live title="slider to a byte" html={`
+<div data-signals="{ v: 40 }">
+  <div class="row"><input type="range" min="-20" max="120" data-bind:v> raw <b data-text="$v"></b> → <b data-text="@fit($v, 0, 100, 0, 255, true, true)"></b>/255</div>
+  <div class="box" data-style:background="'rgb(' + @fit($v, 0, 100, 0, 255, true, true) + ', 80, 120)'" style="height:1rem"></div>
+</div>
+`} />
+
+## Inverted ranges
+
+Output ranges may run backwards: map scroll progress onto an opacity that fades out.
+
+<Live title="fade with progress" html={`
+<div data-signals="{ p: 0 }">
+  <input type="range" min="0" max="100" data-bind:p>
+  <p data-style:opacity="@fit($p, 0, 100, 1, 0.2)">opacity <b data-text="@fit($p, 0, 100, 1, 0.2).toFixed(2)"></b> at <b data-text="$p"></b>%</p>
 </div>
 `} />
 

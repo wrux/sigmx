@@ -6,41 +6,65 @@ sidebar: {"order": 14, "label": "on-intersect"}
 import Live from '../../../../components/Live.astro'
 import Cost from '../../../../components/Cost.astro'
 
-Run an expression when the element scrolls into (or out of) view.
+Run an expression when the element scrolls into (or out of) view. Backed by `IntersectionObserver`; the observer is disconnected when the element unmounts.
 
 ## Syntax
 
 ```html
 data-on-intersect="$seen = true"
-data-on-intersect__once__threshold.50="@get('/more')"
+data-on-intersect__once="@get('/more')"
+data-on-intersect__exit="$left++"
+data-on-intersect__threshold.50="…"
 ```
 
 | part | |
 |---|---|
 | key | forbidden |
-| value | required |
+| value | required: statements |
 
 ## Modifiers
 
 | modifier | effect |
 |---|---|
 | `__once` | disconnect after the first run |
-| `__exit` | run when the element leaves the viewport instead |
-| `__threshold.N` | how much must be visible, in percent (default 0: any pixel) |
-| `__debounce / __throttle` | timing |
+| `__exit` | run when the element leaves the viewport instead of entering it |
+| `__threshold.N` | how much of the element must be visible, in percent (default 0: any pixel) |
+| `__debounce.ms` / `__throttle.ms` | timing |
 
-## Example
+## Count entries
 
-<Live html={`
+<Live title="every entry" html={`
 <div data-signals="{ seen: 0 }">
-  <p>Scroll this box: <b data-text="$seen"></b> intersections</p>
+  <p>Scroll the box: <b data-text="$seen"></b> intersections</p>
   <div style="height:6rem;overflow:auto;border:1px solid var(--sl-color-hairline)"><div style="height:9rem"></div><p data-on-intersect="$seen++">I am at the bottom.</p></div>
+</div>
+`} />
+
+## Infinite scroll with `__once`
+
+The sentinel runs once and disconnects; the server's response would normally append rows and a new sentinel.
+
+<Live title="__once" html={`
+<div data-signals="{ loaded: false }">
+  <div style="height:6rem;overflow:auto;border:1px solid var(--sl-color-hairline)"><div style="height:9rem"></div><p data-on-intersect__once="$loaded = true" class="muted">sentinel</p></div>
+  <p>more loaded: <b data-text="$loaded"></b> (scroll back up and down: it stays true)</p>
+</div>
+`} />
+
+## `__exit` and `__threshold`
+
+Exit fires when the element leaves; the threshold demands that half of it is visible before "entering" counts.
+
+<Live title="__exit, __threshold.50" html={`
+<div data-signals="{ entered: 0, left: 0 }">
+  <div style="height:6rem;overflow:auto;border:1px solid var(--sl-color-hairline)"><div style="height:8rem"></div><p data-on-intersect__threshold.50="$entered++" data-on-intersect__exit="$left++" style="height:3rem;background:var(--sl-color-hairline);margin:0">half of me must show</p><div style="height:8rem"></div></div>
+  <p>entered (≥50% visible): <b data-text="$entered"></b>, left: <b data-text="$left"></b></p>
 </div>
 `} />
 
 ## Notes
 
-Backed by `IntersectionObserver`.
+Combine with `@get` for lazy loading, with `__debounce` to avoid bursts while scrolling quickly, and with `__exit` for "pause the video when it scrolls away".
 
 ## Register
 

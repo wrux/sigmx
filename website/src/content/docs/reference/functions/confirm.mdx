@@ -6,7 +6,7 @@ sidebar: {"order": 9}
 import Live from '../../../../components/Live.astro'
 import Cost from '../../../../components/Cost.astro'
 
-Ask before continuing (htmx's hx-confirm).
+Ask before continuing (htmx's hx-confirm). Returns the boolean from `window.confirm`, so `&&` short-circuits the rest of the expression.
 
 ## Syntax
 
@@ -14,16 +14,27 @@ Ask before continuing (htmx's hx-confirm).
 @confirm('Delete this item?') && @delete('/items/' + $id)
 ```
 
-Returns the boolean from `window.confirm`, so `&&` short-circuits the rest of the expression.
+## Guard a destructive action
 
-## Example
-
-<Live html={`
+<Live title="delete with confirmation" html={`
 <div data-signals="{ deleted: false }" class="row">
   <button data-on:click="@confirm('Really delete?') && ($deleted = true)" data-show="!$deleted">Delete</button>
   <span data-show="$deleted">gone. <button data-on:click="$deleted = false">undo</button></span>
 </div>
 `} />
+
+## Build the message from signals
+
+<Live title="dynamic message" html={`
+<div data-signals="{ items: ['a', 'b', 'c'] }" class="row">
+  <button data-on:click="@confirm('Remove ' + $items.length + ' items?') && ($items = [])">clear <span data-text="$items.length"></span> items</button>
+  <button data-on:click="$items = ['a', 'b', 'c']">refill</button>
+</div>
+`} />
+
+## Notes
+
+`window.confirm` is already callable inside expressions; `@confirm` exists so the intent reads clearly in markup and so the auto-mode scanner can see it. Guard a request the same way: `@confirm('Send?') && @post('/send')`.
 
 ## Register
 
