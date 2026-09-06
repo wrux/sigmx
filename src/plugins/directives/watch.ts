@@ -1,4 +1,4 @@
-import { attribute } from '../../kernel/index.js'
+import { attribute } from '../../kernel/index.js';
 
 /** Runs the expression now and whenever a signal it read changes. */
 export const effect = attribute({
@@ -7,4 +7,4 @@ export const effect = attribute({
   value: 'required',
   returns: false,
   mount: (ctx) => ctx.effect(() => ctx.evaluate()),
-})
+});

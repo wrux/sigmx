@@ -1,8 +1,18 @@
 ---
-import type { Product } from '../../../data/products'
-interface Props { rows: Product[]; sort: string; dir: string }
-const { rows, sort, dir } = Astro.props
-const cols: [keyof Product, string, string][] = [['name', 'Product', ''], ['category', 'Category', ''], ['price', 'Price', 'num'], ['stock', 'Stock', 'num']]
+import type { Product } from '../../../data/products';
+
+interface Props {
+  rows: Product[];
+  sort: string;
+  dir: string;
+}
+const { rows, sort, dir } = Astro.props;
+const cols: [keyof Product, string, string][] = [
+  ['name', 'Product', ''],
+  ['category', 'Category', ''],
+  ['price', 'Price', 'num'],
+  ['stock', 'Stock', 'num'],
+];
 ---
 <table id="products">
   <colgroup><col style="width:34%"><col style="width:24%"><col style="width:20%"><col style="width:22%"></colgroup>

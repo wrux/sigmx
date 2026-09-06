@@ -1,54 +1,54 @@
 // Pure re-exports: nothing registers on import, so bundlers keep only what you use.
-export { attr } from './directives/attribute-sync.js'
-export { bind } from './directives/two-way-bind.js'
-export { className } from './directives/class-toggle.js'
-export { computed } from './directives/derive.js'
-export { customValidity } from './directives/validity.js'
-export { effect } from './directives/watch.js'
-export { indicator } from './directives/busy-flag.js'
-export { init } from './directives/on-mount.js'
-export { jsonSignals } from './directives/state-dump.js'
-export { matchMedia } from './directives/media-query.js'
-export { on } from './directives/event-listener.js'
-export { onIntersect } from './directives/viewport.js'
-export { onInterval } from './directives/timer.js'
-export { onRaf } from './directives/frame-loop.js'
-export { onResize } from './directives/size-watch.js'
-export { onSignalPatch } from './directives/patch-listener.js'
-export { persist } from './directives/storage-sync.js'
-export { queryString } from './directives/url-params.js'
-export { ref } from './directives/element-ref.js'
-export { replaceUrl } from './directives/url-replace.js'
-export { scrollIntoView } from './directives/scroll-to.js'
-export { show } from './directives/visibility.js'
-export { signals } from './directives/declare.js'
-export { style } from './directives/inline-style.js'
-export { text } from './directives/text-content.js'
-export { viewTransition } from './directives/transition-name.js'
-export { clipboard } from './functions/copy-text.js'
-export { fit } from './functions/range-map.js'
-export { intl } from './functions/locale-format.js'
-export { peek } from './functions/untracked-read.js'
-export { setAll } from './functions/bulk-set.js'
-export { toggleAll } from './functions/bulk-toggle.js'
-export { animate } from './directives/tween.js'
-export { httpDelete, httpGet, httpPatch, httpPost, httpPut } from './functions/request.js'
-export type { RequestOptions } from './functions/request.js'
-export { applyElements } from './server-events/apply-elements.js'
-export { applyState } from './server-events/apply-state.js'
-export { activateScripts, morph, morphInner } from './server-events/morph.js'
-export type { MorphOptions } from './server-events/morph.js'
+export { attr } from './directives/attribute-sync.js';
 // ecosystem plugins (Alpine, htmx equivalents)
-export { boost } from './directives/boost.js'
-export { cloak } from './directives/cloak.js'
-export { collapse } from './directives/collapse.js'
-export { html } from './directives/html.js'
-export { applyMask, mask } from './directives/mask.js'
-export { removeMe } from './directives/remove-me.js'
-export { teleport } from './directives/teleport.js'
-export { transition } from './directives/transition.js'
-export { trap } from './directives/trap.js'
-export { confirm } from './functions/confirm.js'
-export { dispatch } from './functions/dispatch.js'
-export { websocket } from './functions/websocket.js'
-export type { Socket } from './functions/websocket.js'
+export { boost } from './directives/boost.js';
+export { indicator } from './directives/busy-flag.js';
+export { className } from './directives/class-toggle.js';
+export { cloak } from './directives/cloak.js';
+export { collapse } from './directives/collapse.js';
+export { signals } from './directives/declare.js';
+export { computed } from './directives/derive.js';
+export { ref } from './directives/element-ref.js';
+export { on } from './directives/event-listener.js';
+export { onRaf } from './directives/frame-loop.js';
+export { html } from './directives/html.js';
+export { style } from './directives/inline-style.js';
+export { applyMask, mask } from './directives/mask.js';
+export { matchMedia } from './directives/media-query.js';
+export { init } from './directives/on-mount.js';
+export { onSignalPatch } from './directives/patch-listener.js';
+export { removeMe } from './directives/remove-me.js';
+export { scrollIntoView } from './directives/scroll-to.js';
+export { onResize } from './directives/size-watch.js';
+export { jsonSignals } from './directives/state-dump.js';
+export { persist } from './directives/storage-sync.js';
+export { teleport } from './directives/teleport.js';
+export { text } from './directives/text-content.js';
+export { onInterval } from './directives/timer.js';
+export { transition } from './directives/transition.js';
+export { viewTransition } from './directives/transition-name.js';
+export { trap } from './directives/trap.js';
+export { animate } from './directives/tween.js';
+export { bind } from './directives/two-way-bind.js';
+export { queryString } from './directives/url-params.js';
+export { replaceUrl } from './directives/url-replace.js';
+export { customValidity } from './directives/validity.js';
+export { onIntersect } from './directives/viewport.js';
+export { show } from './directives/visibility.js';
+export { effect } from './directives/watch.js';
+export { setAll } from './functions/bulk-set.js';
+export { toggleAll } from './functions/bulk-toggle.js';
+export { confirm } from './functions/confirm.js';
+export { clipboard } from './functions/copy-text.js';
+export { dispatch } from './functions/dispatch.js';
+export { intl } from './functions/locale-format.js';
+export { fit } from './functions/range-map.js';
+export type { RequestOptions } from './functions/request.js';
+export { httpDelete, httpGet, httpPatch, httpPost, httpPut } from './functions/request.js';
+export { peek } from './functions/untracked-read.js';
+export type { Socket } from './functions/websocket.js';
+export { websocket } from './functions/websocket.js';
+export { applyElements } from './server-events/apply-elements.js';
+export { applyState } from './server-events/apply-state.js';
+export type { MorphOptions } from './server-events/morph.js';
+export { activateScripts, morph, morphInner } from './server-events/morph.js';

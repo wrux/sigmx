@@ -23,7 +23,7 @@ Every file under the scanned directories counts, including server code and Markd
 
 ```js
 // astro.config.mjs
-import sigmx from 'sigmx-astro'
+import sigmx from '@sigmx/astro'
 
 export default defineConfig({
   integrations: [

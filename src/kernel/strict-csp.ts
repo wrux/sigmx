@@ -1,4 +1,4 @@
-import type { Compiler } from './compile.js'
+import type { Compiler } from './compile.js';
 
 /**
  * Compiler for pages with a strict Content-Security-Policy: compiles through a nonce-bearing
@@ -6,18 +6,18 @@ import type { Compiler } from './compile.js'
  * Pass as `createSigmx({ compile: cspCompiler(nonce) })`.
  */
 export const cspCompiler = (nonce: string): Compiler => {
-  if (!nonce) throw new Error('cspCompiler needs the page nonce')
-  const tt = (window as any).trustedTypes
-  const policy = tt?.createPolicy('sigmx', { createScript: (s: string) => s })
+  if (!nonce) throw new Error('cspCompiler needs the page nonce');
+  const tt = (window as any).trustedTypes;
+  const policy = tt?.createPolicy('sigmx', { createScript: (s: string) => s });
   return (params, body) => {
-    const script = document.createElement('script')
-    script.nonce = nonce
-    const text = `document.currentScript.f=function(${params.join(',')}){${body}}`
-    script.text = policy ? policy.createScript(text) : text
-    document.head.append(script)
-    script.remove()
-    const fn = (script as any).f
-    if (!fn) throw new Error('the Content-Security-Policy blocked expression compilation')
-    return fn
-  }
-}
+    const script = document.createElement('script');
+    script.nonce = nonce;
+    const text = `document.currentScript.f=function(${params.join(',')}){${body}}`;
+    script.text = policy ? policy.createScript(text) : text;
+    document.head.append(script);
+    script.remove();
+    const fn = (script as any).f;
+    if (!fn) throw new Error('the Content-Security-Policy blocked expression compilation');
+    return fn;
+  };
+};

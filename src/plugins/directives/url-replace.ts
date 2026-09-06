@@ -1,4 +1,4 @@
-import { attribute } from '../../kernel/index.js'
+import { attribute } from '../../kernel/index.js';
 
 export const replaceUrl = attribute({
   name: 'replace-url',
@@ -6,4 +6,4 @@ export const replaceUrl = attribute({
   value: 'required',
   mount: ({ evaluate, effect }) =>
     effect(() => history.replaceState(history.state, '', new URL(String(evaluate()), location.href))),
-})
+});

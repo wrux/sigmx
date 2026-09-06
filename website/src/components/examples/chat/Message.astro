@@ -1,7 +1,11 @@
 ---
-interface Props { id: string; role: 'user' | 'assistant'; text: string }
-const { id, role, text } = Astro.props
-const time = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+interface Props {
+  id: string;
+  role: 'user' | 'assistant';
+  text: string;
+}
+const { id, role, text } = Astro.props;
+const time = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 ---
 <li id={id} class={`msg ${role}`} data-scroll-into-view__smooth__vnearest>
   {role === 'assistant' && <span class="avatar" aria-hidden="true">σ</span>}

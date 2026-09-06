@@ -1,4 +1,4 @@
-import { attribute, withTiming } from '../../kernel/index.js'
+import { attribute, withTiming } from '../../kernel/index.js';
 
 export const onRaf = attribute({
   name: 'on-raf',
@@ -6,11 +6,11 @@ export const onRaf = attribute({
   value: 'required',
   returns: false,
   mount({ mods, evaluate }) {
-    const run = withTiming(() => evaluate(), mods)
+    const run = withTiming(() => evaluate(), mods);
     let id = requestAnimationFrame(function tick() {
-      run()
-      id = requestAnimationFrame(tick)
-    })
-    return () => cancelAnimationFrame(id)
+      run();
+      id = requestAnimationFrame(tick);
+    });
+    return () => cancelAnimationFrame(id);
   },
-})
+});

@@ -1,6 +1,6 @@
 ---
-import TodoList from '../partials/TodoList.astro'
-import { todos } from '../../data/todos'
+import { todos } from '../../data/todos';
+import TodoList from '../partials/TodoList.astro';
 ---
 <form class="ex todos" data-signals="{ newTodo: '' }" data-on:submit="@post('/api/todos')" data-indicator:saving>
   <header class="bar">

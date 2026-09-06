@@ -94,6 +94,8 @@
   },
   "scripts": {
     "check": "tsc --noEmit",
+    "lint": "biome check .",
+    "format": "biome format --write .",
     "build": "node scripts/build.mjs",
     "size": "node scripts/size.mjs",
     "test": "node scripts/build.mjs && node --test tests/*.test.mjs",
@@ -103,6 +105,7 @@
     "prepack": "npm run build"
   },
   "devDependencies": {
+    "@biomejs/biome": "2.5.12",
     "@types/node": "^22.20.1",
     "esbuild": "^0.28.2",
     "terser": "^5.51.2",

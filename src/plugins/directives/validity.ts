@@ -1,4 +1,4 @@
-import { attribute } from '../../kernel/index.js'
+import { attribute } from '../../kernel/index.js';
 
 /** The expression's string becomes the field's validity message; '' means valid. */
 export const customValidity = attribute({
@@ -6,7 +6,7 @@ export const customValidity = attribute({
   key: 'forbidden',
   value: 'required',
   mount({ el, evaluate, effect, error }) {
-    if (!('setCustomValidity' in el)) throw error('only works on form fields')
-    effect(() => (el as HTMLInputElement).setCustomValidity(String(evaluate() ?? '')))
+    if (!('setCustomValidity' in el)) throw error('only works on form fields');
+    effect(() => (el as HTMLInputElement).setCustomValidity(String(evaluate() ?? '')));
   },
-})
+});

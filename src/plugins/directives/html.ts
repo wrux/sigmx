@@ -1,4 +1,4 @@
-import { attribute } from '../../kernel/index.js'
+import { attribute } from '../../kernel/index.js';
 
 /** Sets `innerHTML` from an expression: `html="$markup"`. Scripts inside are not executed. */
 export const html = attribute({
@@ -7,6 +7,6 @@ export const html = attribute({
   value: 'required',
   mount: ({ el, evaluate, effect }) =>
     effect(() => {
-      el.innerHTML = String(evaluate() ?? '')
+      el.innerHTML = String(evaluate() ?? '');
     }),
-})
+});

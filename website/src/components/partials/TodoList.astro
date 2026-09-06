@@ -1,6 +1,8 @@
 ---
-interface Props { todos: { id: number; text: string }[] }
-const { todos } = Astro.props
+interface Props {
+  todos: { id: number; text: string }[];
+}
+const { todos } = Astro.props;
 ---
 <ul id="todo-list">
   {todos.length === 0 && <li class="empty">Nothing to do. Enjoy it.</li>}

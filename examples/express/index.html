@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>sigmx + Express</title>
+  <!-- Tailwind's browser build keeps this example free of any build step; use the CLI or a bundler plugin in production. -->
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <style>[data-cloak] { display: none !important }</style>
+</head>
+<body class="min-h-screen bg-zinc-50 text-zinc-900 antialiased dark:bg-zinc-950 dark:text-zinc-100">
+  <main class="mx-auto max-w-2xl space-y-6 px-4 py-12">
+    <header class="space-y-1">
+      <h1 class="text-3xl font-bold tracking-tight">sigmx + Express</h1>
+      <p class="text-zinc-500 dark:text-zinc-400">Installed from npm, served as a script tag from <code>node_modules</code>, no bundler. Express answers with HTML, JSON and event streams.</p>
+    </header>
+
+    <section class="space-y-3 rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900" data-signals="{ count: 0 }">
+      <h2 class="text-lg font-semibold">Signals</h2>
+      <div class="flex items-center gap-3">
+        <button type="button" class="rounded-lg bg-teal-600 px-3 py-1.5 font-semibold text-white hover:bg-teal-500" data-on:click="$count--">−</button>
+        <b class="inline-block min-w-[3ch] text-center text-xl tabular-nums" data-text="$count">0</b>
+        <button type="button" class="rounded-lg bg-teal-600 px-3 py-1.5 font-semibold text-white hover:bg-teal-500" data-on:click="$count++">+</button>
+        <span class="rounded-full bg-amber-100 px-2.5 py-0.5 text-sm text-amber-800 dark:bg-amber-900/40 dark:text-amber-200" data-cloak data-show="$count > 4">that is a lot of clicks</span>
+      </div>
+    </section>
+
+    <section class="space-y-3 rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900" data-signals="{ name: '' }">
+      <h2 class="text-lg font-semibold">HTML from a POST</h2>
+      <input class="w-full rounded-lg border border-zinc-300 bg-transparent px-3 py-2 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/30 dark:border-zinc-700" data-bind:name placeholder="Your name">
+      <div class="flex items-center gap-3">
+        <button type="button" class="rounded-lg bg-zinc-900 px-3 py-1.5 font-semibold text-white hover:bg-zinc-700 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900" data-on:click="@post('/api/greet')" data-indicator:loading data-attr:disabled="$loading">Ask the server</button>
+        <span class="text-sm text-zinc-500" data-cloak data-show="$loading">asking…</span>
+      </div>
+      <p id="greeting" class="text-sm text-zinc-600 dark:text-zinc-300">The signals travel in the JSON body; Express parses them with <code>express.json()</code>.</p>
+    </section>
+
+    <section class="space-y-3 rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900" data-signals="{ q: '', stale: false }">
+      <h2 class="text-lg font-semibold">Server-rendered search</h2>
+      <div class="flex items-center gap-3">
+        <input class="w-full rounded-lg border border-zinc-300 bg-transparent px-3 py-2 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/30 dark:border-zinc-700" type="search" placeholder="Filter towns…" data-bind:q data-on:input="$stale = true" data-on:input__debounce.200ms="@get('/api/towns')" data-indicator:searching>
+        <span class="text-sm text-zinc-500" data-cloak data-show="$searching">searching…</span>
+      </div>
+      <ul id="towns" class="divide-y divide-zinc-200 transition-opacity duration-200 dark:divide-zinc-800" data-class="{ 'opacity-40': $stale }">
+        <li class="py-1.5">Bath</li><li class="py-1.5">Bristol</li><li class="py-1.5">Cardiff</li><li class="py-1.5">Exeter</li><li class="py-1.5">Oxford</li>
+      </ul>
+    </section>
+
+    <section class="space-y-3 rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+      <h2 class="text-lg font-semibold">A real form</h2>
+      <form class="flex items-center gap-3" data-on:submit__prevent="@post('/api/subscribe', { contentType: 'form' })" data-indicator:sending>
+        <input class="w-full rounded-lg border border-zinc-300 bg-transparent px-3 py-2 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/30 dark:border-zinc-700" type="email" name="email" placeholder="you@example.com" required>
+        <button type="submit" class="rounded-lg bg-teal-600 px-3 py-1.5 font-semibold text-white hover:bg-teal-500 disabled:opacity-50" data-attr:disabled="$sending">Subscribe</button>
+      </form>
+      <div id="subscribe" class="text-sm text-zinc-600 dark:text-zinc-300">Posted as a normal form body; Express parses it with <code>express.urlencoded()</code>.</div>
+    </section>
+
+    <section class="space-y-3 rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900" data-signals="{ progress: 0, running: false }">
+      <h2 class="text-lg font-semibold">Streamed progress</h2>
+      <div class="flex items-center gap-3">
+        <button type="button" class="rounded-lg bg-teal-600 px-3 py-1.5 font-semibold text-white hover:bg-teal-500 disabled:opacity-50" data-on:click="@get('/api/progress', { openWhenHidden: true })" data-attr:disabled="$running">Start</button>
+        <span class="tabular-nums" data-text="$progress + '%'">0%</span>
+      </div>
+      <div class="h-2 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800"><div class="h-full bg-teal-500 transition-[width]" data-style:width="$progress + '%'"></div></div>
+    </section>
+  </main>
+  <script type="module" src="/vendor/sigmx/sigmx.standalone.js"></script>
+</body>
+</html>

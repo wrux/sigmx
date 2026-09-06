@@ -1,0 +1,49 @@
+{
+  // Project settings for Zed. Install the "Biome" extension once; the languages below then format through
+  // biome.jsonc instead of Zed's bundled Prettier defaults. Astro and MDX stay on Prettier, which reads .prettierrc.
+  "format_on_save": "on",
+  "ensure_final_newline_on_save": true,
+  "remove_trailing_whitespace_on_save": true,
+  "tab_size": 2,
+  "hard_tabs": false,
+  "lsp": {
+    "biome": {
+      "settings": {
+        "require_config_file": true
+      }
+    }
+  },
+  "languages": {
+    "JavaScript": {
+      "formatter": { "language_server": { "name": "biome" } },
+      "code_actions_on_format": { "source.fixAll.biome": true, "source.organizeImports.biome": true },
+      "prettier": { "allowed": false }
+    },
+    "TypeScript": {
+      "formatter": { "language_server": { "name": "biome" } },
+      "code_actions_on_format": { "source.fixAll.biome": true, "source.organizeImports.biome": true },
+      "prettier": { "allowed": false }
+    },
+    "TSX": {
+      "formatter": { "language_server": { "name": "biome" } },
+      "code_actions_on_format": { "source.fixAll.biome": true, "source.organizeImports.biome": true },
+      "prettier": { "allowed": false }
+    },
+    "JSON": {
+      "formatter": { "language_server": { "name": "biome" } },
+      "prettier": { "allowed": false }
+    },
+    "JSONC": {
+      "formatter": { "language_server": { "name": "biome" } },
+      "prettier": { "allowed": false }
+    },
+    "CSS": {
+      "formatter": { "language_server": { "name": "biome" } },
+      "prettier": { "allowed": false }
+    },
+    "HTML": {
+      "formatter": { "language_server": { "name": "biome" } },
+      "prettier": { "allowed": false }
+    }
+  }
+}

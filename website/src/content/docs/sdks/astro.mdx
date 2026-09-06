@@ -1,6 +1,6 @@
 ---
 title: "Astro"
-description: "The sigmx-astro integration: inject the client and stream patches from endpoints."
+description: "The @sigmx/astro integration: inject the client and stream patches from endpoints."
 sidebar: {"order": 1}
 ---
 
@@ -8,18 +8,18 @@ import Demo from '../../../components/Demo.astro'
 import Search from '../../../components/demos/Search.astro'
 import searchSrc from '../../../components/demos/Search.astro?raw'
 
-`sigmx-astro` does two things: it injects the client into every page, and it gives your endpoints helpers for reading signals and answering with HTML, JSON or a stream of patches. This documentation site is built with it; every live example that talks to a server goes through an Astro endpoint.
+`@sigmx/astro` does two things: it injects the client into every page, and it gives your endpoints helpers for reading signals and answering with HTML, JSON or a stream of patches. This documentation site is built with it; every live example that talks to a server goes through an Astro endpoint.
 
 ## Install
 
 ```bash
-npm install sigmx sigmx-astro
+npm install sigmx @sigmx/astro
 ```
 
 ```js
 // astro.config.mjs
 import { defineConfig } from 'astro/config'
-import sigmx from 'sigmx-astro'
+import sigmx from '@sigmx/astro'
 
 export default defineConfig({
   integrations: [sigmx({ plugins: 'all' })],
@@ -45,7 +45,7 @@ An app-local entrypoint lets you add your own plugins:
 
 ```ts
 // src/sigmx.ts
-import { createSigmx, all, attribute } from 'sigmx-astro/client'
+import { createSigmx, all, attribute } from '@sigmx/astro/client'
 
 const shout = attribute({ name: 'shout', value: 'required', mount: ({ el, evaluate, effect }) => effect(() => (el.textContent = String(evaluate()).toUpperCase())) })
 export const app = createSigmx({ plugins: [...all, shout] })
@@ -59,7 +59,7 @@ import {
   sse, sseStream, html, json,                  // responses
   patchElements, patchSignals, removeElements, removeSignals, executeScript,  // event builders
   SigmxStream, formatEvent,                    // lower level
-} from 'sigmx-astro/server'
+} from '@sigmx/astro/server'
 ```
 
 ### Reading signals
@@ -102,7 +102,7 @@ const fragment = await container.renderToString(Results, { props: { q } })
 // src/pages/api/search.ts
 import type { APIRoute } from 'astro'
 import { experimental_AstroContainer as AstroContainer } from 'astro/container'
-import { patchElements, patchSignals, readSignals, sse } from 'sigmx-astro/server'
+import { patchElements, patchSignals, readSignals, sse } from '@sigmx/astro/server'
 import Towns from '../../components/partials/Towns.astro'
 import { towns } from '../../data/towns'
 

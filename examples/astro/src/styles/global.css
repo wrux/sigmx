@@ -1,0 +1,4 @@
+@import "tailwindcss";
+[data-cloak] {
+  display: none !important;
+}

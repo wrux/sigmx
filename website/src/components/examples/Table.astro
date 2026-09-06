@@ -1,7 +1,8 @@
 ---
-import ProductTable from './table/ProductTable.astro'
-import { products } from '../../data/products'
-const rows = [...products].sort((a, b) => a.name.localeCompare(b.name)).slice(0, 8)
+import { products } from '../../data/products';
+import ProductTable from './table/ProductTable.astro';
+
+const rows = [...products].sort((a, b) => a.name.localeCompare(b.name)).slice(0, 8);
 ---
 <div class="ex table-app"
      data-signals__ifmissing="{ q: '', sort: 'name', dir: 'asc', page: 1, pages: 4, total: 30 }"

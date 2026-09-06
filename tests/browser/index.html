@@ -6,8 +6,8 @@
 <div id="stage"></div>
 <script type="module">
 import { createSigmx } from '../../dist/kernel/index.js'
-import { all } from '../../dist/presets/all.js'
 import { morph, morphInner } from '../../dist/plugins/index.js'
+import { all } from '../../dist/presets/all.js'
 
 const out = document.getElementById('out'), stage = document.getElementById('stage')
 const results = []; window.__results = results
@@ -15,7 +15,7 @@ const eq = (a, b, msg='') => { if (a !== b) throw new Error(`${msg} expected ${J
 const tick = (ms=0) => new Promise(r => setTimeout(r, ms))
 // Poll instead of fixed waits: timers are throttled when the tab is hidden.
 const until = async (fn, ms=8000) => { const t0 = performance.now(); while (!fn()) { if (performance.now() - t0 > ms) throw new Error('timeout waiting'); await tick(25) } }
-const t = async (name, fn) => { const li = document.createElement('li'); li.textContent = name; out.append(li); try { await fn(); li.className='ok'; results.push({name, ok:true}) } catch (e) { li.className='fail'; li.textContent += ' — ' + e.message; results.push({name, ok:false, error:e.message}) } }
+const t = async (name, fn) => { const li = document.createElement('li'); li.textContent = name; out.append(li); try { await fn(); li.className='ok'; results.push({name, ok:true}) } catch (e) { li.className='fail'; li.textContent += ` — ${e.message}`; results.push({name, ok:false, error:e.message}) } }
 const errors = []
 const app = createSigmx({ plugins: all, autoStart: false, eventPrefix: ['sigmx-', 'datastar-'], onError: (e) => errors.push(String(e?.message ?? e)) })
 app.apply(stage)

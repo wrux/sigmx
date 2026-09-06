@@ -16,7 +16,7 @@ What you gain:
 
 ```js
 // astro.config.mjs
-import sigmx from 'sigmx-astro'
+import sigmx from '@sigmx/astro'
 
 export default defineConfig({
   integrations: [sigmx({ precompile: true })],

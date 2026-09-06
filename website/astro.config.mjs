@@ -1,21 +1,33 @@
-import { defineConfig } from 'astro/config'
-import starlight from '@astrojs/starlight'
-import node from '@astrojs/node'
-import sigmx from 'sigmx-astro'
+import node from '@astrojs/node';
+import starlight from '@astrojs/starlight';
+import sigmx from '@sigmx/astro';
+import { defineConfig } from 'astro/config';
 
 export default defineConfig({
   adapter: node({ mode: 'standalone' }),
   integrations: [
-    sigmx({ plugins: 'auto', auto: { always: ['jsonSignals'] }, eventPrefix: ['sigmx-', 'datastar-'], precompile: true }),
+    sigmx({
+      plugins: 'auto',
+      auto: { always: ['jsonSignals'] },
+      eventPrefix: ['sigmx-', 'datastar-'],
+      precompile: true,
+    }),
     starlight({
       title: 'sigmx',
-      description: 'A small hypermedia library: declarative attributes, signals, streaming server patches. Zero dependencies.',
+      description:
+        'A small hypermedia library: declarative attributes, signals, streaming server patches. Zero dependencies.',
       social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/wrux/sigmx' }],
       editLink: { baseUrl: 'https://github.com/wrux/sigmx/edit/main/website/' },
       customCss: ['./src/styles/custom.css'],
       head: [
         { tag: 'link', attrs: { rel: 'preconnect', href: 'https://fonts.googleapis.com' } },
-        { tag: 'link', attrs: { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap' } },
+        {
+          tag: 'link',
+          attrs: {
+            rel: 'stylesheet',
+            href: 'https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap',
+          },
+        },
       ],
       sidebar: [
         { label: 'Start here', items: [{ autogenerate: { directory: 'start' } }] },
@@ -28,4 +40,4 @@ export default defineConfig({
       ],
     }),
   ],
-})
+});

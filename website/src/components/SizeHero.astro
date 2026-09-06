@@ -1,24 +1,46 @@
 ---
-import sizes from '../data/sizes.json'
-import compare from '../data/compare.json'
-const kb = (n: number) => (n / 1024).toFixed(1)
-const find = (prefix: string) => sizes.bundles.find((b: any) => b.name.startsWith(prefix))!
+import compare from '../data/compare.json';
+import sizes from '../data/sizes.json';
+
+const kb = (n: number) => (n / 1024).toFixed(1);
+function must<T>(v: T | undefined, what: string): T {
+  if (v === undefined) throw new Error(`sizes data is missing ${what}`);
+  return v;
+}
+const find = (prefix: string) =>
+  must(
+    sizes.bundles.find((b: any) => b.name.startsWith(prefix)),
+    prefix,
+  );
 const tiers = [
   { label: 'core', sub: 'signals, store, expressions, the engine', size: find('core only').brotli },
   { label: 'essentials', sub: 'state, rendering, forms, requests, morph', size: find('essentials preset').brotli },
-  { label: 'everything', sub: `all ${sizes.perPlugin.length} plugins, shipped file`, size: find('everything, shipped').brotli },
-]
+  {
+    label: 'everything',
+    sub: `all ${sizes.perPlugin.length} plugins, shipped file`,
+    size: find('everything, shipped').brotli,
+  },
+];
 const bars = [
   ...tiers.map((t) => ({ name: `sigmx ${t.label}`, size: t.size, mine: true })),
   ...compare.libraries.map((l: any) => ({ name: `${l.name} ${l.version}`, size: l.brotli, mine: false, note: l.note })),
-]
-const max = Math.max(...bars.map((b) => b.size))
-const lib = (n: string) => compare.libraries.find((l: any) => l.name === n)!
-const pct = (a: number, b: number) => Math.round((1 - a / b) * 100)
-const everything = tiers[2].size
-const vsHtmx = pct(everything, lib('htmx').brotli)
-const vsDatastar = pct(everything, lib('Datastar').brotli)
-const datastarLine = vsDatastar >= 2 ? `${vsDatastar}% smaller than Datastar` : vsDatastar <= -2 ? `${-vsDatastar}% larger than Datastar` : `within 2% of Datastar`
+];
+const max = Math.max(...bars.map((b) => b.size));
+const lib = (n: string) =>
+  must(
+    compare.libraries.find((l: any) => l.name === n),
+    n,
+  );
+const pct = (a: number, b: number) => Math.round((1 - a / b) * 100);
+const everything = tiers[2].size;
+const vsHtmx = pct(everything, lib('htmx').brotli);
+const vsDatastar = pct(everything, lib('Datastar').brotli);
+const datastarLine =
+  vsDatastar >= 2
+    ? `${vsDatastar}% smaller than Datastar`
+    : vsDatastar <= -2
+      ? `${-vsDatastar}% larger than Datastar`
+      : `within 2% of Datastar`;
 ---
 <section class="hero-sizes not-content">
   <div class="tiers">

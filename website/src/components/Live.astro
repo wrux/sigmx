@@ -1,9 +1,14 @@
 ---
 /** Renders a sigmx HTML snippet live, then shows its source. */
-import { Code } from '@astrojs/starlight/components'
-interface Props { html: string; title?: string; code?: boolean }
-const { html, title = 'Live', code = true } = Astro.props
-const src = html.trim()
+import { Code } from '@astrojs/starlight/components';
+
+interface Props {
+  html: string;
+  title?: string;
+  code?: boolean;
+}
+const { html, title = 'Live', code = true } = Astro.props;
+const src = html.trim();
 ---
 <div class="live not-content">
   <div class="live-label">{title}</div>

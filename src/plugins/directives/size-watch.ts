@@ -1,4 +1,4 @@
-import { attribute, withTiming } from '../../kernel/index.js'
+import { attribute, withTiming } from '../../kernel/index.js';
 
 export const onResize = attribute({
   name: 'on-resize',
@@ -6,9 +6,9 @@ export const onResize = attribute({
   value: 'required',
   returns: false,
   mount({ el, mods, evaluate }) {
-    const run = withTiming(() => evaluate(), mods)
-    const ro = new ResizeObserver(() => run())
-    ro.observe(el)
-    return () => ro.disconnect()
+    const run = withTiming(() => evaluate(), mods);
+    const ro = new ResizeObserver(() => run());
+    ro.observe(el);
+    return () => ro.disconnect();
   },
-})
+});

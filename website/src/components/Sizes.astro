@@ -1,9 +1,12 @@
 ---
-import sizes from '../data/sizes.json'
-interface Props { plugins?: boolean }
-const { plugins = false } = Astro.props
-const kb = (n: number) => (n / 1024).toFixed(1) + ' KB'
-const rows = plugins ? [...sizes.perPlugin].sort((a, b) => b.gzip - a.gzip) : sizes.bundles
+import sizes from '../data/sizes.json';
+
+interface Props {
+  plugins?: boolean;
+}
+const { plugins = false } = Astro.props;
+const kb = (n: number) => `${(n / 1024).toFixed(1)} KB`;
+const rows = plugins ? [...sizes.perPlugin].sort((a, b) => b.gzip - a.gzip) : sizes.bundles;
 ---
 <div class="sizes">
 <table>

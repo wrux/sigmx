@@ -1,7 +1,9 @@
 ---
-interface Props { posts: { id: number; author: string; text: string; minutesAgo: number }[] }
-const { posts } = Astro.props
-const hue = (s: string) => [...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 360, 7)
+interface Props {
+  posts: { id: number; author: string; text: string; minutesAgo: number }[];
+}
+const { posts } = Astro.props;
+const hue = (s: string) => [...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 360, 7);
 ---
 {posts.map((p) => (
   <li id={`post-${p.id}`} class="post card">

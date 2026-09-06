@@ -52,13 +52,13 @@ It exposes the instance as `window.sigmx`.
 ## Astro
 
 ```bash
-npm install sigmx sigmx-astro
+npm install sigmx @sigmx/astro
 ```
 
 ```js
 // astro.config.mjs
 import { defineConfig } from 'astro/config'
-import sigmx from 'sigmx-astro'
+import sigmx from '@sigmx/astro'
 
 export default defineConfig({ integrations: [sigmx()] })
 ```

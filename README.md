@@ -41,7 +41,7 @@ Or pick plugins by hand (`sigmx/plugins` is tree-shakeable), use `sigmx/presets/
 <script type="module" src="/sigmx.standalone.js"></script>
 ```
 
-Astro users: `npm install sigmx sigmx-astro` and add `sigmx()` to the integrations; see [sdks/astro](sdks/astro).
+Astro users: `npm install sigmx @sigmx/astro` and add `sigmx()` to the integrations; see [sdks/astro](sdks/astro).
 
 ## How it works
 
@@ -151,7 +151,8 @@ cd website && npm install && npm run dev
 src/kernel/        reactive graph, store, expression compiler, runtime (DOM-free core)
 src/plugins/       directives, functions, server-event handlers, the morph
 src/presets/       minimal, essentials, all
-sdks/astro/        sigmx-astro: integration, server helpers, auto mode, precompilation
+sdks/astro/        @sigmx/astro: integration, server helpers, auto mode, precompilation
+examples/          standalone Vite, Express, Hono and Astro projects using the published packages
 website/           documentation site
 scripts/           build, size and comparison measurements, dev server
 tests/             node:test suite for the core; browser suite under tests/browser
@@ -160,13 +161,15 @@ tests/             node:test suite for the core; browser suite under tests/brows
 ```bash
 npm install
 npm run check    # type-check
+npm run lint     # biome: formatting and lint rules
+npm run format   # biome: rewrite files in the house style
 npm test         # build, then node:test over the DOM-free core
 npm run dev      # dev server with SSE and WebSocket endpoints; open /tests/browser/index.html
 npm run size     # bundle sizes for representative plugin sets
 npm run compare  # sizes of htmx, Datastar and Alpine at pinned versions
 ```
 
-Contributions are welcome. Open an issue first for anything larger than a fix, keep plugins as small as their reference-page size table suggests, and run both test suites before a pull request.
+Contributions are welcome. Open an issue first for anything larger than a fix, keep plugins as small as their reference-page size table suggests, and run `npm run lint` and both test suites before a pull request.
 
 ## Licence
 

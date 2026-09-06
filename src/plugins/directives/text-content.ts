@@ -1,4 +1,4 @@
-import { attribute } from '../../kernel/index.js'
+import { attribute } from '../../kernel/index.js';
 
 export const text = attribute({
   name: 'text',
@@ -6,6 +6,6 @@ export const text = attribute({
   value: 'required',
   mount: ({ el, evaluate, effect }) =>
     effect(() => {
-      el.textContent = String(evaluate() ?? '')
+      el.textContent = String(evaluate() ?? '');
     }),
-})
+});

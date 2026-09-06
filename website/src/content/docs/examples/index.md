@@ -4,7 +4,7 @@ description: "Feature-rich, server-backed examples: a streaming chat agent, a li
 sidebar: { order: 0, label: "Overview" }
 ---
 
-Each example is a real application slice: an Astro component on this page talking to an endpoint written with the `sigmx-astro` SDK. The full source of both is shown under every demo. Together they use nearly every directive and function in the library.
+Each example is a real application slice: an Astro component on this page talking to an endpoint written with the `@sigmx/astro` SDK. The full source of both is shown under every demo. Together they use nearly every directive and function in the library.
 
 | example | what it shows |
 |---|---|

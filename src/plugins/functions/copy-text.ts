@@ -1,4 +1,4 @@
-import { action } from '../../kernel/index.js'
+import { action } from '../../kernel/index.js';
 
 /** `@clipboard(text, isBase64?)` copies text; base64 input is decoded first. */
 export const clipboard = action({
@@ -7,4 +7,4 @@ export const clipboard = action({
     navigator.clipboard.writeText(
       base64 ? new TextDecoder().decode(Uint8Array.from(atob(text), (c) => c.charCodeAt(0))) : text,
     ),
-})
+});

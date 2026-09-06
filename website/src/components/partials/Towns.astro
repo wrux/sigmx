@@ -1,6 +1,9 @@
 ---
-interface Props { q: string; towns: string[] }
-const { q, towns } = Astro.props
+interface Props {
+  q: string;
+  towns: string[];
+}
+const { q, towns } = Astro.props;
 ---
 <ul id="towns">
   {towns.length === 0 && <li class="empty">No towns match “{q}”.</li>}

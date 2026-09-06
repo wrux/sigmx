@@ -1,0 +1,14 @@
+{
+  "name": "sigmx-example-hono",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch server.js",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@hono/node-server": "^2.1.0",
+    "hono": "^4.13.0",
+    "sigmx": "^0.1.0"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "name": "sigmx-example-express",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch server.js",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "sigmx": "^0.1.0"
+  }
+}

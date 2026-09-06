@@ -1,5 +1,5 @@
 {
-  "name": "sigmx-astro",
+  "name": "@sigmx/astro",
   "version": "0.1.0",
   "description": "Astro integration and server helpers for sigmx: inject the client, stream patches from endpoints, read signals from requests.",
   "keywords": [
