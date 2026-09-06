@@ -1,0 +1,67 @@
+---
+title: "Extending sigmx"
+description: "Directives, functions and server-event handlers are plain values; the built-ins are written the same way you would write your own."
+sidebar: { order: 0, label: "Overview" }
+---
+
+Everything you write in markup is served by a plugin: `data-text` is a directive, `@post()` is a function, `event: sigmx-patch-elements` is handled by a server-event handler. sigmx ships fifty of them and treats yours exactly the same way. This section shows how to write each kind, how to test and package one, and walks through a complete analytics plugin.
+
+## Why it is built this way
+
+- **A plugin is a plain value.** `attribute()`, `action()` and `handler()` add a `type` field and give you typed contexts; they do not touch any global. Nothing registers on import, so a plugin can live in any module, be tree-shaken, and be tested without a page.
+- **Three shapes, no special cases.** Every built-in is one of the same three objects you can create. There is no privileged core plugin API, so anything the built-ins can do, yours can do.
+- **Auto mode reads your plugin like a built-in.** Point [auto mode](/tooling/auto-mode/) at the file and the scanner works out from your templates whether it is used, ships it only then, and precompiles its expressions along with everything else.
+- **Teardown is automatic.** Effects, listeners and cleanups registered through the context are undone when the attribute changes, the element leaves the document, or the instance is destroyed. A plugin that only uses the context cannot leak.
+- **Errors are routed, not lost.** Anything thrown while mounting, evaluating or running later is reported through `onError` with the plugin name, element and attribute attached.
+
+## The three kinds
+
+| kind | written as | defined with | example |
+|---|---|---|---|
+| directive | `data-x` | `attribute({ name: 'x', mount })` | `data-clock:now__every.1s` writes the time into `$now` |
+| function | `@x()` | `action({ name: 'x', call })` | `@share({ url })` returns a promise |
+| server-event handler | `event: sigmx-x` | `handler({ name: 'x', handle })` | `event: sigmx-toast` shows a message |
+
+```ts
+import { attribute, action, handler } from 'sigmx'
+
+export const upper = attribute({ name: 'upper', value: 'required', mount({ el, evaluate, effect }) {
+  effect(() => { el.textContent = String(evaluate()).toUpperCase() })
+} })
+
+export const shout = action({ name: 'shout', call: (_, text: string) => text.toUpperCase() })
+
+export const toast = handler({ name: 'toast', handle: (_, { message }) => show(message) })
+```
+
+Register them once, with the built-ins:
+
+```ts
+import { createSigmx } from 'sigmx'
+import { essentials } from 'sigmx/presets/essentials'
+
+createSigmx({ plugins: [...essentials, upper, shout, toast] })
+```
+
+or later, on a running instance, with `app.use(upper)`. Directives registered late are applied to the page straight away.
+
+## When to write one
+
+Most behaviour belongs in an expression. `data-on:click="$open = !$open"` needs no plugin, and neither does a one-off `data-init="el.focus()"`. Reach for a plugin when:
+
+- the same few lines of `data-init` or `data-effect` keep appearing across templates;
+- the behaviour needs teardown (an interval, an observer, a listener on `window`) that an expression cannot register;
+- it wraps a browser or third-party API that should not leak into markup, such as an analytics script;
+- the server needs to say something to the page that is not a signal patch or an element patch.
+
+If the code fits in one attribute and never needs undoing, keep it as an expression.
+
+## In this section
+
+| page | what you will build |
+|---|---|
+| [Writing a directive](/extending/directives/) | `data-upper` and a `data-clock` with a key, a modifier and an interval that is cleared for you |
+| [Writing a function](/extending/functions/) | `@shout` and an async `@share` with a clipboard fallback |
+| [Writing a server-event handler](/extending/server-events/) | a `toast` handler fed by a streaming endpoint |
+| [Recipe: Plausible analytics](/extending/plausible/) | a complete plugin: `data-track`, `@track()` and `event: sigmx-track`, registered through auto mode |
+| [Packaging a plugin](/extending/packaging/) | shipping it as a project file or an npm package, with a test and a size check |

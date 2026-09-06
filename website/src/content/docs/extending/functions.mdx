@@ -1,0 +1,92 @@
+---
+title: "Writing a function"
+description: "The anatomy of an @name() plugin: arguments, return values, promises, cancellable work and late errors."
+sidebar: { order: 2 }
+---
+
+import Demo from '../../../components/Demo.astro'
+import Functions from '../../../components/demos/Functions.astro'
+import functionsSrc from '../../../components/demos/Functions.astro?raw'
+
+A function is something an expression can call as `@name(...)`. The built-in requests, `@dispatch`, `@confirm` and `@clipboard` are all functions; so is anything you define with `action()`.
+
+```ts
+import { action } from 'sigmx'
+
+export const shout = action({
+  name: 'shout',                                       // @shout('hi')
+  call: (_, text: string) => String(text ?? '').toUpperCase(),
+})
+```
+
+```html
+<button data-on:click="$result = @shout($text)">…</button>
+```
+
+## The context
+
+`call` receives the calling context first, then the arguments the expression passed:
+
+| member | purpose |
+|---|---|
+| `el` | the element whose attribute is running the expression |
+| `evt` | the event, when the expression was triggered by one (`data-on`); otherwise `undefined` |
+| `store`, `runtime` | the store and the instance's services |
+| `error(message)` | build an `Error` carrying the attribute name and element |
+| `report(error)` | route an error that happened later to `onError` with the same context |
+| `cleanup(fn)` | run `fn` when the attribute that invoked the function is torn down; returns a function to unregister it |
+
+Name a function the way you would a JavaScript identifier (`@setAll`, `@toggleAll`): the expression compiler turns `@name(` into a property access, so a kebab-case name would not parse.
+
+## Arguments and return values
+
+Arguments are whatever the expression evaluates: signals, literals, objects, events. Validate what you need and throw `error()` for a misuse, since it carries the attribute name and element:
+
+```ts
+call: ({ error }, url: string) => {
+  if (!url) throw error('needs a URL')
+  …
+}
+```
+
+Whatever `call` returns is the value of the `@name()` expression, so `$result = @shout($text)` and `@confirm('Sure?') && @delete('/x')` both work. A function that returns a promise is awaited by nobody; the expression gets the promise, and the runtime reports its rejection through `onError` exactly once. Chain from markup with `.then()`:
+
+```html
+<button data-on:click="@share({ url: location.href }).then((r) => $status = r)">Share</button>
+```
+
+## Cancellable work
+
+`cleanup(fn)` ties a long-running operation to the life of the attribute that started it. The request functions register an abort this way, so removing an element aborts its in-flight request. Unregister with the returned function once the work has finished, or the list of cleanups grows with every call:
+
+```ts
+call: (ctx, url: string) => {
+  const ac = new AbortController()
+  const forget = ctx.cleanup(() => ac.abort())
+  return fetch(url, { signal: ac.signal }).finally(forget)
+}
+```
+
+## Late errors
+
+Rejections of the returned promise are reported for you. For callbacks that fire outside that promise (a timer, a third-party callback, an event) use `report`:
+
+```ts
+call: ({ report }, name: string) => {
+  window.thirdParty(name, { callback: (r) => { if (r.error) report(r.error) } })
+}
+```
+
+## Worked example
+
+`@shout` is the smallest possible function. `@share` is asynchronous: it uses `navigator.share` where the browser has it, treats a cancelled share sheet as a result rather than an error, and falls back to the clipboard elsewhere. The button chains on the returned promise to show what happened.
+
+<Demo app title="@shout and @share" source={functionsSrc}><Functions /></Demo>
+
+## Registering
+
+```ts
+createSigmx({ plugins: [...essentials, shout, share] })
+```
+
+Under [auto mode](/tooling/auto-mode/) a function ships when `@share(` appears in any scanned file. The demo registers its functions at runtime with `window.sigmx.use()`, which works the same but is invisible to the scanner.

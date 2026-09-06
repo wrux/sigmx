@@ -1,0 +1,30 @@
+<div class="ex toasts" data-signals="{ busy: false }" data-indicator:busy>
+  <div class="row">
+    <button class="btn" data-on:click="@get('/api/toast')" data-attr:disabled="$busy">Run export</button>
+    <span class="muted">three <code>sigmx-toast</code> events, one stream</span>
+  </div>
+  <ol id="toast-stack" class="stack" aria-live="polite"></ol>
+</div>
+<script>
+  import { handler } from 'sigmx'
+  const toast = handler({
+    name: 'toast',
+    handle: (_, { message, tone = 'info' }) => {
+      const stack = document.getElementById('toast-stack')
+      if (!stack || !message) return
+      const li = document.createElement('li')
+      li.className = tone
+      li.textContent = message
+      stack.append(li)
+      setTimeout(() => li.remove(), 4000)
+    },
+  })
+  ;(window as any).sigmx.use(toast)
+</script>
+<style is:global>
+  .toasts { padding: 1rem; display: grid; gap: .7rem; background: var(--ex-surface); }
+  .toasts .row { display: flex; align-items: center; gap: .8rem; flex-wrap: wrap; font-size: .85rem; }
+  .toasts .stack { list-style: none; margin: 0; padding: 0; display: grid; gap: .4rem; min-height: 2.4rem; }
+  .toasts .stack li { padding: .5rem .8rem; border-radius: .5rem; border-left: 3px solid var(--ex-accent); background: var(--ex-surface-2); font-size: .85rem; animation: msg-in .25s ease-out; }
+  .toasts .stack li.good { border-left-color: var(--ex-good); }
+</style>

@@ -42,7 +42,6 @@ The response's content type decides what happens.
 | `text/html` | patched as elements: morphed by `id`, or targeted by the `sigmx-selector` and `sigmx-mode` response headers (`append`, `inner`, `replace`, …) |
 | `application/json` | merged as signals (`sigmx-only-if-missing: true` keeps existing values) |
 | `text/event-stream` | each event is routed by name to a server-event handler; see below |
-| `text/javascript` | executed |
 | `204`, `304` | nothing |
 | `4xx`, `5xx` | a `sigmx-fetch` event with `type: 'error'`; no retry unless `retry.onStatusError` |
 
@@ -87,7 +86,7 @@ import {
 } from 'sigmx/server'
 ```
 
-Use it directly wherever handlers take a `Request` and return a `Response` (Hono, Bun, Deno, Cloudflare Workers, SvelteKit, Next route handlers). With Node's `http` or Express, `formatEvent` and `SSE_HEADERS` cover fixed responses and `Readable.fromWeb(sseStream(...).body)` pipes a live stream. The framework packages build on the same module: [`@sigmx/astro`](/sdks/astro/) re-exports it and [`@sigmx/hono`](/sdks/hono/) wraps it in middleware.
+Use it directly wherever handlers take a `Request` and return a `Response` (Hono, Bun, Deno, Cloudflare Workers, SvelteKit, Next route handlers). With Node's `http` or Express, `formatEvent` and `SSE_HEADERS` cover fixed responses and `Readable.fromWeb(sseStream(...).body)` pipes a live stream. The framework packages build on the same module: [`@sigmx/astro`](/sdks/astro/) re-exports it and [`@sigmx/hono`](/sdks/hono/) wraps it in middleware. Outside JavaScript, the [Rust crate](/sdks/rust/) implements the same protocol for axum, Cloudflare Workers and anything on the `http` crate, and a server in any other language writes the same headers and event lines by hand.
 
 ## Options
 
@@ -98,7 +97,7 @@ Use it directly wherever handlers take a `Request` and return a `Response` (Hono
   selector: '#other-form',
   filter: { include: /^form\./ },
   payload: { anything: true },
-  abort: 'replace' | 'none' | controller,   // 'replace' cancels an earlier request with the same method and URL
+  abort: 'replace' | 'none',                // 'replace' cancels an earlier request with the same method and URL
   reconnect: true,                          // reconnect after a stream closes normally
   retry: { attempts: 5, interval: 1000, factor: 2, max: 30000, onStatusError: false },
 })
@@ -108,7 +107,7 @@ Requests are aborted when the element that started them is removed.
 
 ## Lifecycle events
 
-`sigmx-fetch` fires on `document` with `detail.type` of `started`, `finished`, `error` or `retrying`, plus `el`, `method`, `url` and `status` or `attempt` where relevant. `data-indicator` is a convenience over it.
+`sigmx-fetch` fires on `document` with `detail.type` of `started`, `finished` or `error`, plus `el`, `method`, `url` and `rid` (an id that ties one request's events together). An `error` event carries the HTTP `status` or the network error's `message`; a `finished` event carries the `url`, `status` and `redirected` fields of the final response, the same values the request's promise resolves with. `data-indicator` is a convenience over it.
 
 ## Accepting another library's event names
 

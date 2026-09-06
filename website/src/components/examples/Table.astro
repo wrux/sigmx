@@ -6,7 +6,7 @@ const rows = [...products].sort((a, b) => a.name.localeCompare(b.name)).slice(0,
 ---
 <div class="ex table-app"
      data-signals__ifmissing="{ q: '', sort: 'name', dir: 'asc', page: 1, pages: 4, total: 30 }"
-     data-query-string="{ include: /^(q|sort|dir|page)$/ }"
+     data-query-string:q="''" data-query-string:sort="'name'" data-query-string:dir="'asc'" data-query-string:page="1"
      data-init="($q || $sort !== 'name' || $dir !== 'asc' || $page !== 1) && @get('/api/products')"
      data-indicator:loading>
   <header class="bar">
@@ -53,5 +53,6 @@ const rows = [...products].sort((a, b) => a.name.localeCompare(b.name)).slice(0,
   #products .stock.mid i { background: var(--ex-warm); } #products .stock.low i { background: var(--ex-bad); }
   #products .stock.low span { color: var(--ex-bad); font-weight: 700; }
   .table-app .pager { display: flex; align-items: center; gap: .5rem; font-size: .85rem; }
+  @media (max-width: 40rem) { #products .stock { grid-template-columns: auto; } #products .stock i { display: none; } #products th, #products td { padding-left: .6rem; padding-right: .6rem; } }
   .table-app .pager .btn { padding: .3rem .7rem; }
 </style>

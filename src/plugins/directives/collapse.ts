@@ -3,7 +3,7 @@ import { dir } from '../def.js';
 
 /**
  * Animates the element's height open and closed: `collapse="$open"`.
- * Modifiers: `__duration.250ms`, `__min.40px` (collapsed height, default 0).
+ * Modifier: `__duration.250ms`.
  */
 export const collapse = dir('collapse', 6, ({ el, mods, evaluate, effect, cleanup }) => {
   const style = (el as HTMLElement).style;

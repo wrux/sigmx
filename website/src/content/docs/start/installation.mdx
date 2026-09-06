@@ -1,6 +1,6 @@
 ---
 title: "Installation"
-description: "Add sigmx with npm and a bundler, with a script tag, or through the Astro integration."
+description: "Add sigmx with npm and a bundler, with a script tag, or through one of the SDKs; the server side is HTML over HTTP from any language."
 sidebar: { order: 2 }
 ---
 
@@ -35,7 +35,7 @@ import { Tabs, TabItem, Steps } from '@astrojs/starlight/components'
    ```
 </Steps>
 
-Prefer not to maintain the list by hand? [Auto mode](/guides/auto-mode/) scans your source and registers exactly what it uses.
+Prefer not to maintain the list by hand? [Auto mode](/tooling/auto-mode/) scans your source and registers exactly what it uses.
 
 The instance scans the document once the DOM is ready and keeps watching it, so markup added later (by a server patch, a template, or any other script) is picked up automatically.
 
@@ -65,6 +65,10 @@ export default defineConfig({ integrations: [sigmx()] })
 
 The integration injects the client on every page and gives your endpoints helpers for reading signals and streaming patches. See [the Astro SDK](/sdks/astro/).
 
+## Any other server
+
+The client does not care what produced the response. The protocol is HTML over HTTP, optionally a JSON object of signals, and a plain text event stream for several patches in one request; it is described in full in [Talking to the server](/guides/server/). Use whatever renders your HTML today: `sigmx/server` gives JavaScript runtimes (Node, Bun, Deno, Cloudflare Workers) the request readers and response builders, the [Rust crate](/sdks/rust/) does the same for axum and Workers, [`@sigmx/hono`](/sdks/hono/) is middleware for Hono, and any other language writes the responses by hand: a `text/html` body whose root element carries the id to morph, or `event:` and `data:` lines for a stream.
+
 ## Options
 
 ```ts
@@ -84,4 +88,4 @@ The returned instance has `store`, `$` (the root store proxy, so `sigmx.$.count+
 
 ## Browser support
 
-Modern evergreen browsers. sigmx uses `Proxy`, `MutationObserver`, `fetch` with streaming bodies, `ReadableStream`, `AbortSignal.any` (2024), and optional APIs it feature-detects: `moveBefore`, `startViewTransition`, `ResizeObserver`, `IntersectionObserver`.
+Modern evergreen browsers. sigmx uses `Proxy`, `MutationObserver`, `fetch` with streaming bodies and `ReadableStream`, and optional APIs it feature-detects: `moveBefore`, the Web Animations API, `localStorage`, `ResizeObserver`, `IntersectionObserver`.

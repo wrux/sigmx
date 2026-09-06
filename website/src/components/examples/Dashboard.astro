@@ -1,10 +1,10 @@
 <div class="ex dash" data-signals="{ metrics: { cpu: 0, mem: 0, rps: 0, errors: 0 }, tick: 0, updatedAt: 0, history: [] }"
-     data-init="@get('/api/metrics', { openWhenHidden: true, reconnect: true })"
+     data-init="@get('/api/metrics', { reconnect: true })"
      data-on-signal-patch:metrics.cpu="$history.push($metrics.cpu); if ($history.length > 30) $history.shift()">
   <header class="bar">
     <div><b>edge-cluster-01</b><small class="muted"><span class="pulse"></span> live · tick <span class="num" data-text="$tick"></span> · <span data-text="$updatedAt ? @intl('datetime', new Date($updatedAt), { timeStyle: 'medium' }) : '–'"></span></small></div>
     <span class="chip" data-class="{ good: $metrics.errors <= 2, warn: $metrics.errors > 2 && $metrics.errors <= 5, bad: $metrics.errors > 5 }" data-text="$metrics.errors > 5 ? 'degraded' : $metrics.errors > 2 ? 'watch' : 'healthy'"></span>
-    <button class="btn ghost" type="button" data-on:click="@get('/api/metrics', { openWhenHidden: true, reconnect: true })">Reconnect</button>
+    <button class="btn ghost" type="button" data-on:click="@get('/api/metrics', { reconnect: true })">Reconnect</button>
   </header>
   <div class="tiles">
     <div class="tile card" data-class="{ warn: $metrics.cpu > 60, bad: $metrics.cpu > 85 }">

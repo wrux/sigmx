@@ -1,0 +1,142 @@
+---
+title: "Packaging a plugin"
+description: "Shipping a plugin as a project file or an npm package: the shape auto mode can read, types, a happy-dom test and a size check."
+sidebar: { order: 5 }
+---
+
+A plugin is a module that exports plain objects, so packaging is mostly a matter of keeping that shape. The same rules apply to a file under `src/plugins/` in your project and to a package on npm.
+
+## Shape
+
+- **One export per plugin, with a literal `name`.** Auto mode reads `export const track = attribute({ name: 'track', … })` from the source without running it. A name built from a variable, a plugin created in a loop, or several plugins in one exported array are invisible to the scanner and have to be listed under `always`.
+- **Put `name`, `key`, `value`, `literal` and `args` first**, before `mount`, `call` or `handle`, so the scanner sees them.
+- **Directives and handlers take kebab-case names** (`data-on-interval`, `event: sigmx-patch-elements`); HTML lowercases attributes, and hyphens read well on the wire. **Functions take identifier names** (`@toggleAll`), because `@name(` compiles to a property access.
+- **Use the context, not globals.** Anything registered through `effect`, `listen` and `cleanup` is undone for the author; a listener added with `addEventListener` directly is not.
+- **Do not register on import.** Export the objects and let the application pass them to `createSigmx` or `use()`.
+
+## Types
+
+Everything a plugin needs is exported from `sigmx`:
+
+```ts
+import { attribute, action, handler } from 'sigmx'
+import type { Ctx, ActionCtx, Runtime, AttributePlugin, ActionPlugin, HandlerPlugin } from 'sigmx'
+import { toMs, withTiming, debounce, throttle, delay } from 'sigmx'
+import { camel, kebab, pascal, snake, recase } from 'sigmx'
+import { effect, computed, signal, batch, untracked } from 'sigmx'
+```
+
+The helpers give you typed contexts in place; annotate explicitly when a plugin is built by a factory:
+
+```ts
+const make = (name: string, method: string): ActionPlugin => action({ name, call: (ctx, url: string) => send(method, ctx, url) })
+```
+
+## A project file
+
+```
+src/
+  plugins/
+    plausible.ts
+  sigmx.ts           ← createSigmx({ plugins: [...essentials, track, trackFunction, trackHandler] })
+```
+
+or, with [auto mode](/tooling/auto-mode/), `npx sigmx scan src --custom track=src/plugins/plausible.ts` from the [CLI](/tooling/cli/), the equivalent `custom` option of the [Vite plugin](/tooling/vite/), or the same option in a framework integration.
+
+## An npm package
+
+`package.json`:
+
+```json
+{
+  "name": "sigmx-plugin-plausible",
+  "type": "module",
+  "sideEffects": false,
+  "exports": { ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" } },
+  "files": ["dist", "src"],
+  "peerDependencies": { "sigmx": "^0.2.0" }
+}
+```
+
+- `sideEffects: false` lets bundlers drop plugins the application never imports.
+- `peerDependencies` on `sigmx` keeps one copy of the runtime; a plugin that bundled its own would build objects the host instance does not recognise as the same types, and would ship a second reactive graph.
+- Ship `src` too, or point auto mode at the compiled `dist/index.js`; the scanner reads either, as long as the `export const name = attribute({ name: '…' })` shape survives compilation.
+- Name it `sigmx-plugin-<name>` or `@scope/sigmx-<name>` so it is easy to find, and export the plugins under names that will not collide when several packages are registered together (`track`, not `plugin`).
+
+Users then write:
+
+```ts
+import { track, trackFunction, trackHandler } from 'sigmx-plugin-plausible'
+createSigmx({ plugins: [...essentials, track, trackFunction, trackHandler] })
+```
+
+and, under auto mode, `custom: { track: 'node_modules/sigmx-plugin-plausible/src/index.ts' }`.
+
+## Testing
+
+A plugin needs a DOM, an instance and a stage element. [happy-dom](https://github.com/capricorn86/happy-dom) with `node:test` is enough for everything except layout, animation and a real network:
+
+```js
+import { GlobalRegistrator } from '@happy-dom/global-registrator'
+GlobalRegistrator.register()
+
+import assert from 'node:assert/strict'
+import { test } from 'node:test'
+import { createSigmx } from 'sigmx'
+import { on, signals } from 'sigmx/plugins'
+import { track } from './plausible.js'
+
+const tick = () => new Promise((r) => setTimeout(r))
+
+const app = (t) => {
+  const stage = document.body.appendChild(document.createElement('div'))
+  const errors = []
+  const sigmx = createSigmx({ plugins: [signals, on, track], autoStart: false, onError: (e) => errors.push(e) })
+  sigmx.apply(stage)
+  t.after(() => { sigmx.destroy(); stage.remove() })
+  return { stage, errors, render: async (html) => { stage.innerHTML = html; await tick(); return stage.firstElementChild } }
+}
+
+test('data-track sends the recased name and the props', async (t) => {
+  const calls = []
+  window.plausible = (name, o) => { calls.push([name, o.props]); o.callback?.() }
+  const { render, errors } = app(t)
+  const el = await render(`<button data-signals="{ plan: 'team' }" data-track:add-to-cart="{ plan: $plan }"></button>`)
+  el.click()
+  await tick()
+  assert.deepEqual(calls, [['AddToCart', { plan: 'team' }]])
+  assert.equal(errors.length, 0)
+})
+
+test('the listener is removed with the attribute', async (t) => {
+  const calls = []
+  window.plausible = (name) => calls.push(name)
+  const { render } = app(t)
+  const el = await render('<button data-track:signup></button>')
+  el.removeAttribute('data-track:signup')
+  await tick()
+  el.click()
+  assert.equal(calls.length, 0)
+})
+```
+
+`onError` is the assertion that matters most: a plugin that throws during mount is reported there rather than failing the test loudly, so collect and check it. For a handler, call `sigmx.runtime.handle('sigmx-track', { name: 'Purchase' })` directly; for a function, evaluate it through an attribute (`data-init="@track('X')"`) so it gets a real context.
+
+## Size
+
+Measure the plugin as a delta over the core, the way the [bundle size tables](/tooling/bundle-sizes/) are made: bundle `createSigmx()` with and without the plugin, minify, compress, subtract.
+
+```js
+import { brotliCompressSync } from 'node:zlib'
+import * as esbuild from 'esbuild'
+
+const size = async (contents) => {
+  const r = await esbuild.build({ stdin: { contents, resolveDir: 'src', loader: 'ts' }, bundle: true, minify: true, format: 'esm', write: false })
+  return brotliCompressSync(r.outputFiles[0].contents).length
+}
+const core = await size(`import { createSigmx } from 'sigmx'; createSigmx()`)
+const withIt = await size(`import { createSigmx } from 'sigmx'; import { track } from './plugins/plausible'; createSigmx({ plugins: [track] })`)
+console.log(withIt - core, 'bytes brotli')
+```
+
+A typical directive is 100 to 300 bytes. If yours is much larger, look for a dependency that could be a peer, or a utility the core already exports.

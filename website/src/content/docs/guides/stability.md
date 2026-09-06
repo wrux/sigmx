@@ -28,7 +28,7 @@ Anything else is internal: module paths under `dist/` other than the exports abo
 - **Additions** (a new plugin, modifier, option or event field) are minor releases. Existing markup keeps working.
 - **Behaviour fixes** that change observable results are called out in the CHANGELOG under "Changed", even when the old behaviour was a bug.
 - **Removals** happen only in a major release and are first deprecated for at least one minor release, during which the old form still works and logs nothing in production.
-- **Bundle size** is a feature, not a promise: every release records it in the CHANGELOG (11.5 KB brotli for the `everything` build with all 50 plugins at the time of writing), and a change that costs bytes is weighed against what it buys, correctness first.
+- **Bundle size** is a feature, not a promise: every release records it in the CHANGELOG (11.5 KB brotli for the shipped `everything` build with all 50 plugins at the time of writing), and a change that costs bytes is weighed against what it buys, correctness first.
 
 ## How the promise is tested
 
@@ -39,7 +39,7 @@ Anything else is internal: module paths under `dist/` other than the exports abo
 
 ## Runtime requirements
 
-The client needs a browser with ES2022, `Proxy`, `MutationObserver`, `fetch` with `ReadableStream`, `AbortSignal.any` and `CSS.escape`: Chrome and Edge 116+, Firefox 124+, Safari 17.4+. Optional APIs degrade quietly: without the Web Animations API `data-transition` switches display instantly, without `moveBefore` moved elements are re-inserted, without `localStorage` `data-persist` keeps state in memory. The server helpers need any runtime with the Fetch API (Node 20+, Deno, Bun, Cloudflare Workers).
+The client needs a browser with ES2022, `Proxy`, `MutationObserver` and `fetch` with `ReadableStream` bodies: current evergreen versions of Chrome, Edge, Firefox and Safari. Optional APIs degrade quietly: without the Web Animations API `data-transition` switches display instantly, without `moveBefore` moved elements are re-inserted, without `localStorage` `data-persist` keeps state in memory. The server helpers need any runtime with the Fetch API (Node 20+, Deno, Bun, Cloudflare Workers).
 
 ## Rules, settled
 
@@ -55,4 +55,4 @@ These were the open design questions before 1.0; each is now a rule with a mecha
 
 ## Failure policy
 
-Expressions and plugins fail one attribute at a time: an error in one `data-text` is reported through `onError` (the console by default) with the plugin name and element, and everything else on the page keeps running. Requests announce failures as `sigmx-fetch` events with `type: 'error'` and never throw into the page. Server patches that cannot be applied, such as an unknown mode, are reported once and are not retried. Corrupted storage, blocked clipboard access and missing optional APIs are handled where they occur.
+Expressions and plugins fail one attribute at a time: an error in one `data-text` is reported through `onError` (the console by default) with the plugin name and element, and everything else on the page keeps running. Requests announce failures as `sigmx-fetch` events with `type: 'error'` and never throw into the page. Server patches that cannot be applied, such as a `prepend` or `append` without a selector, are reported once and are not retried. Corrupted storage, blocked clipboard access and missing optional APIs are handled where they occur.

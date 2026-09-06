@@ -19,9 +19,7 @@ const params = () => new URLSearchParams(location.search);
  * drops the parameter again when the value is back at the default. The parameter name is the key
  * as written; the signal name is recased as usual.
  *
- * Bare form syncs existing signals: `query-string="{ include: /^(q|sort)$/ }"` mirrors matching
- * paths both ways. `__history` pushes an entry per change and restores on back/forward;
- * `__filter` drops empty values from the URL.
+ * `__history` pushes an entry per change and restores on back/forward.
  */
 export const queryString = dir('query-string', 1, ({ key, value, mods, evaluate, cased, store, listen, effect }) => {
   const history = mods.has('history');

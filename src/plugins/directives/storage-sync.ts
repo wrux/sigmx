@@ -1,7 +1,7 @@
 import { dir } from '../def.js';
 
 /**
- * Saves matching signals to localStorage (`__session` for sessionStorage) and restores them on
+ * Saves matching signals to localStorage and restores them on
  * mount. `persist:key` sets the storage key; the value is an optional `{ include, exclude }` filter.
  * Declare defaults with `signals:x__ifmissing` so restored values are not overwritten.
  */

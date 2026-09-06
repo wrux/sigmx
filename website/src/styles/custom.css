@@ -106,7 +106,7 @@
   color: var(--sl-color-gray-3);
 }
 .live-body .error {
-  color: #d33;
+  color: var(--ex-bad);
 }
 .live-body:not(.app) ul {
   padding-left: 1.2rem;
@@ -212,9 +212,6 @@
     box-shadow 0.12s ease,
     opacity 0.12s;
 }
-:root[data-theme="light"] .ex .btn {
-  color: #fff;
-}
 .ex .btn:hover:not(:disabled) {
   transform: translateY(-1px);
   box-shadow: 0 6px 16px -8px var(--ex-accent);
@@ -231,6 +228,9 @@
 .ex .btn.ghost:hover:not(:disabled) {
   box-shadow: none;
   background: var(--ex-surface-2);
+}
+:root[data-theme="light"] .ex .btn.ghost {
+  border-color: var(--sl-color-gray-5);
 }
 .ex .btn.round {
   width: 2.5rem;
@@ -295,4 +295,16 @@
   min-width: 3ch;
   text-align: center;
   font-variant-numeric: tabular-nums;
+}
+
+/* shared entrance animation for rows and messages the server appends */
+@keyframes msg-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.3rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }

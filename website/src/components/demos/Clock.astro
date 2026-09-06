@@ -1,0 +1,39 @@
+<div class="ex clock" data-signals="{ running: true, now: '' }" data-clock:now__every.1s="$running">
+  <div class="face">
+    <span class="time num" data-text="$now || '--:--:--'">--:--:--</span>
+    <span class="chip" data-class="{ good: $running }" data-text="$running ? 'ticking' : 'paused'">ticking</span>
+  </div>
+  <div class="row">
+    <button class="btn ghost" data-on:click="$running = !$running" data-text="$running ? 'Pause' : 'Resume'">Pause</button>
+    <span class="muted">data-clock:now__every.1s="$running"</span>
+  </div>
+</div>
+<script>
+  import { attribute, toMs } from 'sigmx'
+  const clock = attribute({
+    name: 'clock',
+    key: 'required',
+    mount({ cased, mods, value, evaluate, store, effect, cleanup }) {
+      const path = cased()
+      const every = toMs(mods.get('every'), 1000)
+      const tick = () => store.set(path, new Date().toLocaleTimeString('en-GB'))
+      let id: ReturnType<typeof setInterval> | undefined
+      const stop = () => clearInterval(id)
+      cleanup(stop)
+      effect(() => {
+        stop()
+        if (value && !evaluate()) return
+        tick()
+        id = setInterval(tick, every)
+      })
+    },
+  })
+  ;(window as any).sigmx.use(clock)
+</script>
+<style is:global>
+  .clock { padding: 1rem; display: grid; gap: .7rem; background: var(--ex-surface); }
+  .clock .face { display: flex; align-items: center; gap: .8rem; }
+  .clock .time { font-family: var(--sl-font-mono); font-size: 1.6rem; font-weight: 500; }
+  .clock .row { display: flex; align-items: center; gap: .8rem; flex-wrap: wrap; }
+  .clock .row .muted { font-family: var(--sl-font-mono); font-size: .75rem; }
+</style>

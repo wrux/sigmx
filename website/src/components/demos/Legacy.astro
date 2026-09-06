@@ -1,6 +1,6 @@
 <div class="ex legacy" data-signals="{ legacy: 'not yet' }">
   <div><b>Datastar-style endpoint</b><small class="muted">emits <code>datastar-patch-signals</code>; accepted through <code>eventPrefix</code></small></div>
-  <button class="btn ghost" data-on:click="@get('/api/legacy', { openWhenHidden: true })">Call it</button>
+  <button class="btn ghost" data-on:click="@get('/api/legacy')">Call it</button>
   <span class="chip" data-class:good="$legacy === 'accepted'" data-text="$legacy"></span>
 </div>
 <style is:global>

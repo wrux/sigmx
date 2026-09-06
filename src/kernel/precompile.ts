@@ -78,7 +78,7 @@ export const extractExpressions = (
 export const lintSource = (source: string, prefixes: string[] = ['data-']): string[] => {
   const out: string[] = [];
   for (const p of prefixes)
-    for (const m of source.matchAll(new RegExp(`(?<![\\w-])(${p}[a-z-]+:[^\\s="'<>]*[A-Z][^\\s="'<>]*)`, 'g')))
+    for (const m of source.matchAll(new RegExp(`(?<![\\w-\`])(${p}[a-z-]+:[^\\s="'<>\`]*[A-Z][^\\s="'<>\`]*)`, 'g')))
       out.push(`${m[1]}: attribute names are lowercased by HTML; write the key in kebab-case`);
   return out;
 };

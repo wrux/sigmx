@@ -32,4 +32,4 @@ The default handler is `console.error`. Errors thrown by an expression carry the
 
 ## Requests
 
-Failed requests do not throw into your markup. They emit `sigmx-fetch` with `type: 'error'` and `status` or `message`, and `type: 'retrying'` while the retry policy runs. Listen with `data-on:sigmx-fetch__document="…"` or from JavaScript.
+Failed requests do not throw into your markup. They emit `sigmx-fetch` with `type: 'error'` and `status` or `message`; the retry policy runs quietly, and a `finished` event follows once it gives up. Listen with `data-on:sigmx-fetch__document="…"` or from JavaScript.

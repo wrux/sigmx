@@ -1,0 +1,151 @@
+---
+title: "Writing a directive"
+description: "The anatomy of a data-* attribute plugin: keys, modifiers, the mount context, reactivity, listeners, cleanup and errors."
+sidebar: { order: 1 }
+---
+
+import Demo from '../../../components/Demo.astro'
+import CustomPlugin from '../../../components/demos/CustomPlugin.astro'
+import customSrc from '../../../components/demos/CustomPlugin.astro?raw'
+import Clock from '../../../components/demos/Clock.astro'
+import clockSrc from '../../../components/demos/Clock.astro?raw'
+
+A directive is an attribute the runtime mounts when it sees the element and unmounts when the attribute or element goes away. You write the mount; the runtime handles parsing, evaluation, teardown and error reporting.
+
+```ts
+import { attribute } from 'sigmx'
+
+export const upper = attribute({
+  name: 'upper',            // data-upper
+  value: 'required',
+  mount({ el, evaluate, effect }) {
+    effect(() => { el.textContent = String(evaluate()).toUpperCase() })
+  },
+})
+```
+
+<Demo app title="data-upper" source={customSrc}><CustomPlugin /></Demo>
+
+## Anatomy
+
+An attribute is parsed into a plugin name, an optional key, modifiers and a value:
+
+```
+data-on:click__debounce.300ms__prevent="@get('/search')"
+     ─┬ ──┬── ──────────┬──────────── ─────────┬────────
+   name  key         modifiers               value
+```
+
+The definition says what the directive accepts:
+
+| field | meaning |
+|---|---|
+| `name` | the attribute name after the prefix; use kebab-case (`data-on-interval`), since HTML lowercases attribute names |
+| `key` | `'required'`, `'forbidden'` or left out for optional; the part after the colon |
+| `value` | `'required'`, `'forbidden'` or optional; the attribute's text |
+| `literal` | `true` when the value is plain text (a selector, a mask, a duration) rather than an expression; `__dynamic` then opts an attribute back into evaluation |
+| `args` | extra names the expression may reference, in the order you pass them to `evaluate` |
+
+The runtime checks `key` and `value` before calling `mount` and reports `data-x: needs a key` or `data-x: takes no value` through `onError`, so `mount` can assume the contract holds.
+
+## The context
+
+`mount` receives one object. Everything registered through it is undone automatically when the attribute changes, the element leaves the document, or the instance is destroyed.
+
+| member | purpose |
+|---|---|
+| `el` | the element |
+| `key`, `value`, `mods`, `attr`, `plugin` | what was written: the key, the raw value, a `Map` of modifiers to their dotted arguments, the full attribute name, the plugin name |
+| `cased(style?)` | the key recased (`camel` by default, or `kebab`, `snake`, `pascal`), honouring a `__case.<style>` modifier on the attribute |
+| `evaluate(evt?, ...args)` | compile the expression once and run it; `evt` and any `args` are in scope by name, and `el` always is |
+| `effect(fn)` | a reactive effect that re-runs when a signal it read changes; disposed with the attribute |
+| `listen(target, type, fn, options?)` | `addEventListener` that is removed on teardown; exceptions in `fn` are reported |
+| `cleanup(fn)` | run `fn` on teardown; returns a function that unregisters it if the work finished early |
+| `error(message)` | build an `Error` prefixed with the attribute name and carrying the element |
+| `report(error)` | send an error that happened later (a callback, a promise) to `onError` with the same context |
+| `store`, `runtime` | the store and the instance's services (`emit`, `handle`, `attr`, the other plugins) |
+
+Return a function from `mount` for extra teardown; it is registered like `cleanup`. A `mount` that returns a promise has its rejection reported too.
+
+## Keys and modifiers
+
+`data-bind:first-name` reaches you as `key: 'first-name'`. Use `cased()` rather than the raw key so authors get the same `__case` override every built-in offers:
+
+```ts
+const path = cased()          // 'firstName'
+const type = cased('kebab')   // 'first-name', what data-on uses for event names
+```
+
+Modifiers arrive split on `__` and their arguments on `.`: `data-x__after.300ms__once` gives `mods.get('after')` → `['300ms']` and `mods.has('once')` → `true`. Numbers with a dot (`__every.1.5s`) are re-joined by `toMs`.
+
+The timing helpers are exported for reuse:
+
+| helper | use |
+|---|---|
+| `toMs(args, fallback)` | `['300ms']` → `300`, `['2s']` → `2000`, `['1', '5s']` → `1500` |
+| `withTiming(fn, mods, cleanup)` | applies `__debounce` and `__throttle` with their `.leading` / `.trailing` options, and cancels a pending call on teardown |
+| `debounce(fn, ms)`, `throttle(fn, ms)`, `delay(fn, ms)` | the same primitives on their own |
+
+```ts
+import { attribute, withTiming } from 'sigmx'
+
+export const typed = attribute({
+  name: 'typed',                    // data-typed__debounce.250ms="$draft = el.value"
+  value: 'required',
+  mount({ el, mods, evaluate, listen, cleanup }) {
+    listen(el, 'input', withTiming((e) => evaluate(e), mods, cleanup))
+  },
+})
+```
+
+## Reactivity
+
+`evaluate()` inside `effect()` subscribes to every signal the expression reads, so the effect re-runs when any of them changes. That is the whole implementation of `data-text`, `data-show` and `data-attr`. Two rules keep effects cheap:
+
+- Read inside the effect, write outside it where you can. A write inside an effect is fine as long as the effect does not also read that signal, otherwise it loops and the runtime reports it.
+- An effect has no cleanup of its own. If it schedules work, keep the handle in a closure, clear it at the top of the next run, and register one `cleanup` for the final teardown.
+
+The clock below does exactly that: the key names the signal to write, `__every` sets the interval, and the value is an expression that pauses it. Toggling `$running` re-runs the effect, which clears the old interval before starting a new one.
+
+<Demo app title="data-clock:now__every.1s" source={clockSrc}><Clock /></Demo>
+
+Both `store.set` and the `$signal` syntax write the same store; use `store` in plugins because the compiled expression is not in scope there.
+
+## Listeners and other cleanup
+
+`listen` covers most cases. For anything else with a handle, `cleanup` registers the undo and gives you back a function to unregister it early:
+
+```ts
+mount({ el, cleanup, report }) {
+  const observer = new ResizeObserver((entries) => { /* … */ })
+  observer.observe(el)
+  cleanup(() => observer.disconnect())
+
+  const ac = new AbortController()
+  const forget = cleanup(() => ac.abort())
+  fetch('/hint', { signal: ac.signal }).then(apply, report).finally(forget)
+}
+```
+
+The request functions use the same pattern so an in-flight request is aborted when the element that started it is removed.
+
+## Errors
+
+Throw `error('message')` for a misuse the author can fix; it carries the attribute name and element. For anything that fails later, in a callback or a promise, call `report(e)` so it reaches `onError` with the same context instead of an unhandled rejection. Exceptions thrown inside `effect` and `listen` callbacks are reported for you, and a promise returned from `evaluate()` (an expression calling `@post`) has its rejection reported once.
+
+```ts
+mount({ mods, error, report }) {
+  const ms = toMs(mods.get('after'))
+  if (!ms) throw error('needs __after.<duration>')
+  navigator.wakeLock?.request('screen').catch(report)
+}
+```
+
+## Registering
+
+```ts
+createSigmx({ plugins: [...essentials, upper, clock] })
+app.use(typed)   // later; applied to observed roots immediately
+```
+
+The demos on this page register their directives with `window.sigmx.use()` from a script in the component, which is why the markup has to render before the effect runs. In an application, put the plugin in a file of its own, register it at creation, and let [auto mode](/tooling/auto-mode/) include it only when a template uses it. [Packaging a plugin](/extending/packaging/) covers the shape that makes that possible.

@@ -34,21 +34,32 @@ Add `@get` and an endpoint. The endpoint reads the signals the browser sent, ren
 
 <Demo app source={searchSrc}><Search /></Demo>
 
-The endpoint, written with the Astro SDK:
+Any server language can answer. The response the demo receives is a short text event stream: one event carrying the re-rendered list, one carrying a signal.
+
+```
+event: sigmx-patch-elements
+data: elements <ul id="towns"><li>Bristol</li><li>Brighton</li></ul>
+
+event: sigmx-patch-signals
+data: signals {"results": 2}
+
+```
+
+A plain `text/html` response containing the same `<ul id="towns">` would work as well; the stream is only needed to update signals in the same round trip. The signals the browser sent arrive in the `sigmx` query parameter for `@get` (and in the JSON body for `@post`), so the handler reads `q` from there. Nothing about this is tied to a runtime: the format is described in [Talking to the server](/guides/server/), and a template engine in any language can produce it.
+
+For JavaScript runtimes, `sigmx/server` builds those responses from Fetch-API primitives. The same handler in that form:
 
 ```ts
-// src/pages/api/search.ts
-import { patchElements, patchSignals, readSignals, sse } from '@sigmx/astro/server'
-import { experimental_AstroContainer as AstroContainer } from 'astro/container'
-import Towns from '../../components/partials/Towns.astro'
+import { patchElements, patchSignals, readSignals, sse } from 'sigmx/server'
 
-export const GET = async ({ request }) => {
+export const GET = async (request: Request) => {
   const { q = '' } = await readSignals(request)
-  const matches = towns.filter((t) => t.toLowerCase().includes(q.toLowerCase()))
-  const container = await AstroContainer.create()
-  const list = await container.renderToString(Towns, { props: { q, towns: matches } })
+  const matches = towns.filter((t) => t.toLowerCase().includes(String(q).toLowerCase()))
+  const list = `<ul id="towns">${matches.map((t) => `<li>${t}</li>`).join('')}</ul>`
   return sse(patchElements(list), patchSignals({ results: matches.length }))
 }
 ```
+
+The demo above happens to be served by an Astro route on this site; the [Astro](/sdks/astro/), [Hono](/sdks/hono/) and [Rust](/sdks/rust/) SDKs wrap the same protocol for their frameworks.
 
 Three things happen in that one response: the `<ul id="towns">` is morphed, the `results` signal is updated, and the `data-indicator:searching` signal flips back to `false` when the request finishes. Every other page on this site is built the same way; read on for the details.

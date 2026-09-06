@@ -1,0 +1,83 @@
+---
+title: "Bundle sizes"
+description: "What each configuration and each plugin costs, brotli-compressed first, then gzip and minified."
+sidebar: { order: 5 }
+---
+
+import Sizes from '../../../components/Sizes.astro'
+import sizes from '../../../data/sizes.json'
+import compare from '../../../data/compare.json'
+
+export const kb = (n) => (n / 1024).toFixed(1)
+export const bundle = (prefix) => sizes.bundles.find((b) => b.name.startsWith(prefix))
+export const datastar = compare.libraries.find((l) => l.name === 'Datastar')
+
+sigmx has no runtime dependencies, so the numbers below are the whole cost. They come from building the real source with esbuild and are regenerated with `npm run size -- --json website/src/data/sizes.json`; the headline figure everywhere in these docs is brotli, which is what a CDN serves.
+
+## Configurations
+
+<Sizes />
+
+For comparison, Datastar {datastar.version}'s bundle ({datastar.note}, 23 plugins) is {kb(datastar.brotli)} KB brotli, {kb(datastar.gzip)} KB gzip and {kb(datastar.raw)} KB minified, measured {compare.measuredAt} by `npm run compare`. sigmx's "everything" build carries {sizes.perPlugin.length} plugins.
+
+## Per plugin
+
+Each row is the increase over the core-only build when that plugin alone is registered. Plugins that share helpers cost less together than the sum of these rows.
+
+<Sizes plugins />
+
+## Reading the table
+
+- **Core** is `createSigmx` with no plugins: the signal graph, store, expression compiler and mutation observer. With [precompiled expressions](/tooling/precompiled-expressions/) the compiler goes and the core is {kb(bundle('core, precompiled').brotli)} KB.
+- The **request functions** share one client, so registering all five costs about the same as one.
+- **patch-elements** carries the DOM morph. Register it only if the server sends HTML; [auto mode](/tooling/auto-mode/) adds it whenever a request function is used.
+- Import from `sigmx/plugins` freely: the barrel is side-effect free and tree-shakes to what you name. Auto mode picks the list from your source for you.
+- The shipped `dist/sigmx.standalone.js` is passed through terser after esbuild, which is worth {Math.round((1 - bundle('everything, shipped').brotli / bundle('everything (standalone').brotli) * 100)}% brotli against the plain esbuild build of the same file. When you bundle sigmx yourself, your minifier decides; repeated plain statements compress better than clever compaction, which is why the source is written that way.
+
+## What real projects ship
+
+The four example apps under `examples/` use auto mode for real, measured from their own `npm run build` on 2026-09-06:
+
+| example | plugins | brotli | gzip | minified |
+|---|---:|---:|---:|---:|
+| `express` and `hono` (`sigmxAuto`, runtime compiler) | 14 | 9.1 KB | 9.9 KB | 23.2 KB |
+| `vite` (`sigmxAuto` with a custom plugin, runtime compiler) | 12 | 9.2 KB | 10.1 KB | 23.6 KB |
+| `astro` (auto mode and precompiled expressions, no fallback) | 13 | 8.2 KB | 8.9 KB | 21.8 KB |
+
+The [overview](/tooling/) walks through how those lists were chosen.
+
+## Going smaller
+
+The kernel is close to its floor for what it does; build targets from `es2021` to `esnext` make no measurable difference. The remaining levers were each measured by removing the feature from a scratch copy of the 0.1.x source and rebuilding; the table is in **gzipped bytes saved on that build** and has not been re-measured since, so read it for the order of magnitude. Rows for features 0.2.0 has since removed are gone.
+
+| lever | core | everything | what you give up |
+|---|---:|---:|---|
+| drop the last-statement value in expressions | 104 | 100 | `data-text="$a = 1; $a * 2"` would yield `undefined`; single expressions unaffected |
+| drop namespace enumeration on `$` | 95 | 102 | `Object.keys($.user)`, `'x' in $.user`, `delete $.user.x`; `JSON.stringify` keeps working |
+| drop `data-ignore` | 60 | 65 | no way to fence off a subtree |
+| drop per-attribute error isolation | 28 | 37 | one broken expression aborts the scan; `onError` goes away |
+| plain arrays (no mutation notify) | 22 | 16 | `$items.push(x)` would need `$items = [...$items, x]` |
+| request client without form encoding | – | 194 | `contentType: 'form'` |
+| request client without retry, backoff, reconnect | – | 153 | streams end on the first failure |
+| morph without moving elements by id | – | 150 | elements with ids cannot move across ancestors; they are recreated |
+| patch-elements without full-document responses | – | 95 | responses containing `<!doctype>`, `<html>`, `<head>` or `<body>` |
+
+Two levers change nothing for people who do not use the feature and are the natural next step: making form encoding a plugin the request client looks up (about 190 bytes only when registered), and splitting the retry policy the same way. The rest trade documented behaviour for a few dozen bytes, which is not worth it by default; the numbers are here so the trade is explicit if you ever need it. The larger lever already taken is precompiling expressions, which removes {bundle('core only').brotli - bundle('core, precompiled').brotli} bytes brotli from any build.
+
+## Exotic options, measured
+
+Transport matters more than code at this size. Three rows below were re-measured on the shipped {kb(bundle('everything, shipped').raw)} KB standalone file on {sizes.measuredAt}; the rest were measured on the 0.1.x standalone file (30.1 KB minified, 11.6 KB gzip, 10.5 KB brotli) and are marked as such.
+
+| approach | result | verdict |
+|---|---|---|
+| **brotli instead of gzip** | {kb(bundle('everything, shipped').gzip)} KB → {kb(bundle('everything, shipped').brotli)} KB (−{Math.round((1 - bundle('everything, shipped').brotli / bundle('everything, shipped').gzip) * 100)}%), current build | do it: precompress and serve `Content-Encoding: br` |
+| **zstd** (`Content-Encoding: zstd`, Chrome and Firefox) | 12.3 KB at level 19, current build | between gzip and brotli; no reason to prefer it here |
+| **Precompiled expressions** (a build plugin turns every attribute expression into a function table) | core {kb(bundle('core only').brotli)} KB → {kb(bundle('core, precompiled').brotli)} KB (−{Math.round((1 - bundle('core, precompiled').brotli / bundle('core only').brotli) * 100)}%), current build, and no `new Function` at all | implemented: see [precompiled expressions](/tooling/precompiled-expressions/) |
+| **Shared-dictionary brotli** (Compression Dictionary Transport, `Use-As-Dictionary`) | a new release compressed against the previous one: 10.5 KB → 4.9 KB (−54%), 0.1.x build | real for returning visitors on Chromium; a server header, not a code change |
+| **Lazy directive chunks** (core first, each directive loaded on first sight) | initial payload 4.4 KB gzip; a typical directive chunk 200 B, the request client 1.9 KB, 0.1.x build | practical with HTTP/2 and `modulepreload`; trades bytes on first paint for round trips |
+| **Roadroller** (demoscene self-extracting packer) | raw 30.1 KB → 13.8 KB, but 10.5 KB → 10.3 KB under brotli, 0.1.x build | only for raw-byte limits such as 13 KB game jams; pointless behind HTTP compression |
+| **Closure Compiler** SIMPLE / ADVANCED | SIMPLE grew the file to 14.8 KB gzip (it re-lowered syntax); ADVANCED refused the code, 0.1.x build | whole-program renaming also cannot survive a Proxy-based store, where property names are data |
+| **Bytecode** (V8 code cache, Hermes, QuickJS) | not measurable: browsers do not accept bytecode from the network; shipping an engine such as QuickJS in WebAssembly costs 200 KB and more before any of our code | dead end on the web |
+| **WebAssembly** (Rust, Zig, AssemblyScript) | not measured: WebAssembly cannot touch the DOM, so every attribute, event and mutation becomes a JavaScript import call; the smallest DOM-binding toolchains start above 20 KB, and Wasm bytecode compresses worse than JavaScript because brotli's built-in dictionary is tuned for text | wrong tool for a DOM library |
+
+The short version: serve brotli, add a dictionary header if your users come back, and precompile expressions if your templates are static. Bytecode and WebAssembly cannot help a library whose entire job is talking to the DOM.
