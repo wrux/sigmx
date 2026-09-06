@@ -3,6 +3,7 @@ dist
 website/node_modules
 website/dist
 website/.astro
+website/.wrangler
 sdks/*/node_modules
 sdks/*/dist
 examples/*/node_modules

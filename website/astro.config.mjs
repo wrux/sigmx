@@ -1,11 +1,13 @@
-import node from '@astrojs/node';
+import cloudflare from '@astrojs/cloudflare';
 import starlight from '@astrojs/starlight';
 import sigmx from '@sigmx/astro';
 import { defineConfig } from 'astro/config';
 
 export default defineConfig({
   site: 'https://sigmx.dev',
-  adapter: node({ mode: 'standalone' }),
+  // Prerendered pages are optimised with sharp at build time; the on-demand routes only stream
+  // markup, so no Images binding is needed at runtime.
+  adapter: cloudflare({ imageService: 'compile' }),
   redirects: {
     '/guides/auto-mode/': '/tooling/auto-mode/',
     '/guides/precompiled-expressions/': '/tooling/precompiled-expressions/',

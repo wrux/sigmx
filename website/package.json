@@ -6,14 +6,17 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
+    "build:workers": "npm --prefix .. ci && npm --prefix .. run build && npm --prefix ../sdks/astro ci && npm --prefix ../sdks/astro run build && astro build",
+    "deploy": "npm run build:workers && wrangler deploy",
     "sizes": "node ../scripts/size.mjs --json src/data/sizes.json"
   },
   "dependencies": {
-    "@astrojs/node": "^11.1.5",
+    "@astrojs/cloudflare": "^14.3.0",
     "@astrojs/starlight": "^0.42.0",
+    "@sigmx/astro": "file:../sdks/astro",
     "astro": "^7.3.1",
     "sharp": "^0.35.4",
     "sigmx": "file:..",
-    "@sigmx/astro": "file:../sdks/astro"
+    "wrangler": "^4.129.0"
   }
 }
