@@ -6,7 +6,8 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "sizes": "node ../scripts/size.mjs --json src/data/sizes.json"
+    "sizes": "node ../scripts/size.mjs --json src/data/sizes.json",
+    "icons": "node scripts/icons.mjs"
   },
   "dependencies": {
     "@astrojs/node": "^11.1.5",

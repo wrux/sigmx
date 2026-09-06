@@ -308,3 +308,12 @@
     transform: none;
   }
 }
+
+/* header mark: keep it at the wordmark's height rather than Starlight's full nav height */
+.site-title img {
+  height: 1.35rem;
+  width: auto;
+}
+.hero > img {
+  width: min(45%, 13rem);
+}
