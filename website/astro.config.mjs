@@ -29,12 +29,24 @@ export default defineConfig({
     }),
     starlight({
       title: 'sigmx',
+      logo: { light: './src/assets/logo-light.svg', dark: './src/assets/logo-dark.svg', alt: '' },
+      favicon: '/favicon.svg',
       description:
         'A small hypermedia library: declarative attributes, signals, streaming server patches. Zero dependencies.',
       social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/wrux/sigmx' }],
       editLink: { baseUrl: 'https://github.com/wrux/sigmx/edit/main/website/' },
       customCss: ['./src/styles/custom.css'],
       head: [
+        { tag: 'link', attrs: { rel: 'icon', type: 'image/png', sizes: '32x32', href: '/favicon-32x32.png' } },
+        { tag: 'link', attrs: { rel: 'icon', type: 'image/png', sizes: '16x16', href: '/favicon-16x16.png' } },
+        { tag: 'link', attrs: { rel: 'apple-touch-icon', sizes: '180x180', href: '/apple-touch-icon.png' } },
+        { tag: 'link', attrs: { rel: 'manifest', href: '/site.webmanifest' } },
+        { tag: 'meta', attrs: { name: 'theme-color', content: '#23262f' } },
+        { tag: 'meta', attrs: { property: 'og:image', content: 'https://sigmx.dev/og.png' } },
+        { tag: 'meta', attrs: { property: 'og:image:width', content: '1200' } },
+        { tag: 'meta', attrs: { property: 'og:image:height', content: '630' } },
+        { tag: 'meta', attrs: { name: 'twitter:card', content: 'summary_large_image' } },
+        { tag: 'meta', attrs: { name: 'twitter:image', content: 'https://sigmx.dev/og.png' } },
         { tag: 'link', attrs: { rel: 'preconnect', href: 'https://fonts.googleapis.com' } },
         {
           tag: 'link',
