@@ -1,0 +1,232 @@
+---
+// Starlight `Hero` override. Only the homepage declares `hero` frontmatter, so this is the landing
+// hero: the headline, then one complete round trip (markup, what renders, what crossed the wire).
+import { Code, LinkButton } from '@astrojs/starlight/components';
+import sizes from '../../data/sizes.json';
+
+const { data } = Astro.locals.starlightRoute.entry;
+const { title = data.title, tagline, actions = [] } = data.hero || {};
+
+const core = sizes.bundles.find((b) => b.name === 'core only');
+if (!core) throw new Error('sizes data is missing "core only"');
+const facts = [
+  `${(core.brotli / 1024).toFixed(1)} KB core`,
+  `${sizes.perPlugin.length} plugins`,
+  '0 dependencies',
+  'MIT',
+];
+
+const demo = `<div data-signals="{ count: 0 }" class="row">
+  <button data-on:click="$count++">Clicked <b data-text="$count"></b> times</button>
+  <button data-on:click="@get('/api/time')">Ask the server</button>
+  <span id="server-time" class="muted">no reply yet</span>
+</div>`;
+---
+<section class="home-hero not-content">
+  <div class="lead">
+    <h1 id="_top" data-page-title set:html={title} />
+    {tagline && <p class="tagline" set:html={tagline} />}
+    <div class="meta">
+      {
+        actions.length > 0 && (
+          <div class="actions">
+            {actions.map(({ attrs: { class: className, ...attrs } = {}, icon, link: href, text, variant }) => (
+              <LinkButton {href} {variant} icon={icon?.name} class:list={[className]} {...attrs}>
+                {text}
+                {icon?.html && <Fragment set:html={icon.html} />}
+              </LinkButton>
+            ))}
+          </div>
+        )
+      }
+      <p class="facts">
+        {facts.map((f, i) => (
+          <>
+            {i > 0 && <span class="sep">·</span>}
+            <span>{f}</span>
+          </>
+        ))}
+      </p>
+    </div>
+  </div>
+
+  <div class="trip" id="round-trip">
+    <div class="pane markup">
+      <span class="home-pl">The markup</span>
+      <Code code={demo} lang="html" frame="none" />
+    </div>
+    <div class="pane rendered">
+      <span class="home-pl">In the browser</span>
+      <div class="live-body" set:html={demo} />
+      <p class="hint">Signals update in place. The second button asks this site's server for HTML.</p>
+    </div>
+    <div class="pane wire">
+      <span class="home-pl">On the wire</span>
+      <pre><span class="req">GET /api/time
+Accept: text/event-stream, text/html, application/json</span>
+
+<span class="res">200 OK
+Content-Type: text/html</span>
+
+<span id="wire-html" class="html">…</span></pre>
+      <p class="hint">Same <code>id</code> as the page, so it is morphed in. JSON would merge into signals. An event stream keeps delivering.</p>
+    </div>
+  </div>
+</section>
+
+<script>
+  // Mirror what actually landed in the page into the "on the wire" pane, so the response shown is real.
+  const pane = document.querySelector('#round-trip .rendered .live-body');
+  const out = document.getElementById('wire-html');
+  const initial = document.getElementById('server-time')?.outerHTML;
+  if (pane && out) {
+    new MutationObserver(() => {
+      const el = document.getElementById('server-time');
+      if (el && el.outerHTML !== initial) {
+        out.textContent = el.outerHTML;
+        out.classList.add('got');
+      }
+    }).observe(pane, { childList: true, characterData: true, subtree: true });
+  }
+</script>
+
+<style>
+  .home-hero {
+    padding-block: clamp(2rem, 5vw, 4.5rem) clamp(2.5rem, 5vw, 4rem);
+  }
+  .lead {
+    display: grid;
+    gap: 1.5rem;
+  }
+  h1 {
+    margin: 0;
+    font-size: clamp(2.1rem, 1.2rem + 3.4vw, 3.9rem);
+    line-height: 1.04;
+    letter-spacing: -0.03em;
+    font-weight: 600;
+    color: var(--sl-color-white);
+    max-width: 19ch;
+    text-wrap: balance;
+  }
+  .tagline {
+    margin: 0;
+    font-size: clamp(1rem, 0.9rem + 0.45vw, 1.2rem);
+    line-height: 1.6;
+    color: var(--sl-color-gray-2);
+    max-width: 58ch;
+  }
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1rem 2.5rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem 1.5rem;
+  }
+  .facts {
+    margin: 0;
+    font-family: var(--sl-font-mono);
+    font-size: 0.8rem;
+    color: var(--sl-color-gray-3);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+  }
+  .facts .sep {
+    color: var(--sl-color-gray-5);
+  }
+
+  .trip {
+    margin-top: clamp(2.5rem, 5vw, 4rem);
+    display: grid;
+    grid-template-columns: 100%;
+    gap: 1px;
+    background: var(--sl-color-hairline);
+    border: 1px solid var(--sl-color-hairline);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  @media (min-width: 54rem) {
+    .trip {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .pane.markup {
+      grid-column: 1 / -1;
+    }
+  }
+  .pane {
+    background: var(--sl-color-bg);
+    padding: 1rem 1.25rem 1.25rem;
+    display: grid;
+    gap: 0.9rem;
+    align-content: start;
+    min-width: 0;
+  }
+  .pane.markup {
+    padding-inline: 0;
+  }
+  .pane.markup .home-pl {
+    padding-inline: 1.25rem;
+  }
+  .pane.markup :global(.expressive-code),
+  .pane.markup :global(.expressive-code .frame),
+  .pane.markup :global(.expressive-code pre) {
+    margin: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+  }
+  .pane.markup :global(.expressive-code pre) {
+    font-size: 0.8rem;
+    padding-inline: 0.25rem;
+  }
+  .rendered .live-body {
+    padding: 0;
+    background: transparent;
+  }
+  .rendered :global(.row) {
+    display: grid;
+    justify-items: start;
+    gap: 0.6rem;
+  }
+  .rendered :global(#server-time) {
+    font-family: var(--sl-font-mono);
+    font-size: 0.85rem;
+  }
+  .hint {
+    margin: 0;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    color: var(--sl-color-gray-3);
+  }
+  .hint code {
+    font-size: 0.75rem;
+  }
+  .wire pre {
+    margin: 0;
+    padding: 0;
+    font-family: var(--sl-font-mono);
+    font-size: 0.76rem;
+    line-height: 1.6;
+    color: var(--sl-color-gray-3);
+    background: transparent;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .wire .req {
+    color: var(--sl-color-gray-2);
+  }
+  .wire .res {
+    color: var(--sl-color-gray-2);
+  }
+  .wire .html {
+    color: var(--sl-color-gray-4);
+  }
+  .wire .html.got {
+    color: var(--sl-color-accent-high);
+  }
+</style>

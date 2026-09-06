@@ -1,0 +1,105 @@
+---
+import { Code } from '@astrojs/starlight/components';
+
+const helpers = [
+  { code: 'attribute()', kind: 'a directive', eg: 'data-upper, data-clock, data-persist' },
+  { code: 'action()', kind: 'a function in expressions', eg: '@confirm, @clipboard, @share' },
+  { code: 'handler()', kind: 'a server event', eg: 'patch-elements, patch-signals, toast' },
+];
+const code = `import { attribute } from 'sigmx'
+
+// <h1 data-upper="$title"></h1>
+export const upper = attribute({
+  name: 'upper',
+  value: 'required',
+  mount({ el, evaluate, effect }) {
+    effect(() => { el.textContent = String(evaluate()).toUpperCase() })
+  },
+})`;
+---
+<section class="home-s not-content">
+  <h2>Every built-in is twenty lines you could have written.</h2>
+  <p class="lede">
+    Three helpers make every directive, function and server-event handler in the library, and they are the same three
+    you get. Nothing registers on import, so your plugins tree-shake, teardown is automatic, and auto mode scans them
+    like the built-ins.
+  </p>
+  <div class="grid">
+    <ul class="helpers">
+      {helpers.map((h) => (
+        <li>
+          <code>{h.code}</code>
+          <b>{h.kind}</b>
+          <span>{h.eg}</span>
+        </li>
+      ))}
+      <li class="more">
+        <a href="/extending/">Extending</a> walks through all three and ends with a complete <a href="/extending/plausible/">Plausible analytics plugin</a> in one small file.
+      </li>
+    </ul>
+    <div class="code">
+      <Code code={code} lang="ts" title="upper.ts" />
+    </div>
+  </div>
+</section>
+<style>
+  .grid {
+    margin-top: 2.25rem;
+    display: grid;
+    grid-template-columns: 100%;
+    gap: 2rem;
+    align-items: start;
+  }
+  @media (min-width: 58rem) {
+    .grid {
+      grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+      gap: 3rem;
+    }
+  }
+  .helpers {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+  }
+  .helpers li {
+    display: grid;
+    gap: 0.2rem;
+    padding: 0.9rem 0;
+    border-top: 1px solid var(--sl-color-hairline);
+  }
+  .helpers li code {
+    font-family: var(--sl-font-mono);
+    font-size: 0.95rem;
+    color: var(--sl-color-accent-high);
+  }
+  .helpers li b {
+    font-weight: 600;
+    color: var(--sl-color-white);
+  }
+  .helpers li span {
+    font-family: var(--sl-font-mono);
+    font-size: 0.74rem;
+    color: var(--sl-color-gray-3);
+  }
+  .helpers .more {
+    display: block;
+    font-size: 0.88rem;
+    line-height: 1.6;
+    color: var(--sl-color-gray-2);
+  }
+  .helpers .more a {
+    color: var(--sl-color-accent-high);
+  }
+  .code {
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+  }
+  .code :global(.expressive-code) {
+    margin: 0;
+  }
+  .code :global(.expressive-code pre) {
+    font-size: 0.8rem;
+  }
+</style>

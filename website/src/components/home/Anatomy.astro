@@ -1,0 +1,156 @@
+---
+import sizes from '../../data/sizes.json';
+
+const bytes = (name: string) => sizes.perPlugin.find((p) => p.name === name)?.brotli;
+const parts = [
+  {
+    k: 'prefix',
+    code: 'data-',
+    text: 'The attribute prefix. Configurable per project; hx- and x- style prefixes work too.',
+  },
+  {
+    k: 'plugin',
+    code: 'on',
+    text: `The plugin that owns this attribute, ${bytes('on')} bytes, registered because this line uses it.`,
+  },
+  {
+    k: 'key',
+    code: ':input',
+    text: 'The key: here an event name. For data-bind it names a signal, for data-class a class.',
+  },
+  {
+    k: 'modifiers',
+    code: '__debounce.300ms',
+    text: 'Modifiers with arguments: debounce, throttle, prevent, once, window, outside and more.',
+  },
+  {
+    k: 'action',
+    code: '@get',
+    text: 'An action from a plugin. The HTML that comes back is morphed into the page by id.',
+  },
+  { k: 'signal', code: '$q', text: 'A signal, two-way bound to the input by data-bind and read like any variable.' },
+];
+---
+<section class="home-s not-content">
+  <h2>One attribute, read left to right.</h2>
+  <p class="lede">
+    Everything the runtime does is declared in markup, and every part of an attribute means something. The browser and
+    the build-time scanner read the same six pieces.
+  </p>
+  <figure class="anat">
+    <pre><code>&lt;input data-bind="q" <span class="p1">data-</span><span class="p2">on</span><span class="p3">:input</span><span class="p4">__debounce.300ms</span>="<span class="p5">@get</span>('/search?q=' + <span class="p6">$q</span>)"&gt;</code></pre>
+    <ol>
+      {parts.map((p, i) => (
+        <li class={`p${i + 1}`}>
+          <span class="n">{i + 1}</span>
+          <div>
+            <b><code>{p.code}</code> <small>{p.k}</small></b>
+            <span>{p.text}</span>
+          </div>
+        </li>
+      ))}
+    </ol>
+  </figure>
+</section>
+<style>
+  .anat {
+    --c1: var(--sl-color-gray-3);
+    --c2: var(--sl-color-accent);
+    --c3: #7c5cff;
+    --c4: #d9a400;
+    --c5: #30a46c;
+    --c6: #e5484d;
+    margin: 2.25rem 0 0;
+  }
+  pre {
+    margin: 0;
+    padding: 1.4rem 1.5rem 1.6rem;
+    border-radius: 12px;
+    background: var(--sl-color-gray-6);
+    font-family: var(--sl-font-mono);
+    font-size: clamp(0.8rem, 0.6rem + 0.7vw, 1.05rem);
+    line-height: 2.2;
+    color: var(--sl-color-gray-2);
+    overflow-x: auto;
+  }
+  pre span {
+    color: var(--sl-color-white);
+    border-bottom: 3px solid;
+    padding-bottom: 0.15rem;
+  }
+  pre .p1 { border-color: var(--c1); }
+  pre .p2 { border-color: var(--c2); }
+  pre .p3 { border-color: var(--c3); }
+  pre .p4 { border-color: var(--c4); }
+  pre .p5 { border-color: var(--c5); }
+  pre .p6 { border-color: var(--c6); }
+  ol {
+    list-style: none;
+    margin: 1.5rem 0 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.5rem 2rem;
+  }
+  @media (max-width: 54rem) {
+    ol {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  @media (max-width: 36rem) {
+    ol {
+      grid-template-columns: 1fr;
+    }
+  }
+  li {
+    display: grid;
+    grid-template-columns: 1.4rem minmax(0, 1fr);
+    gap: 0.6rem;
+    align-items: start;
+  }
+  .n {
+    width: 1.4rem;
+    height: 1.4rem;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-family: var(--sl-font-mono);
+    font-size: 0.7rem;
+    color: var(--sl-color-black);
+    background: var(--sl-color-gray-3);
+  }
+  li.p2 .n { background: var(--c2); }
+  li.p3 .n { background: var(--c3); color: #fff; }
+  li.p4 .n { background: var(--c4); }
+  li.p5 .n { background: var(--c5); color: #fff; }
+  li.p6 .n { background: var(--c6); color: #fff; }
+  li div {
+    display: grid;
+    gap: 0.25rem;
+  }
+  li b {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    font-weight: 600;
+    color: var(--sl-color-white);
+  }
+  li b code {
+    font-family: var(--sl-font-mono);
+    font-size: 0.85rem;
+    background: transparent;
+    padding: 0;
+  }
+  li b small {
+    font-weight: 400;
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--sl-color-gray-3);
+  }
+  li > div > span {
+    font-size: 0.88rem;
+    line-height: 1.55;
+    color: var(--sl-color-gray-2);
+  }
+</style>

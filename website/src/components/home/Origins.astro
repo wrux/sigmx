@@ -1,0 +1,165 @@
+---
+import { LinkButton } from '@astrojs/starlight/components';
+
+const roots = [
+  {
+    name: 'htmx',
+    url: 'https://htmx.org',
+    showed:
+      'that the browser already is a hypermedia client, and only needed a few more verbs. Any element can make a request, the server answers with HTML, and the page swaps it in. Server-sent events carry updates.',
+    keeps: ['the server sends HTML', 'boosted links and forms', 'event streams for updates'],
+  },
+  {
+    name: 'Alpine.js',
+    url: 'https://alpinejs.dev',
+    showed:
+      'that state and behaviour belong next to the markup they drive. x-data, x-model and x-show made reactive attributes feel like HTML, with expressions that are simply JavaScript.',
+    keeps: ['state declared in attributes', 'expressions as plain JavaScript', 'the attribute style itself'],
+  },
+  {
+    name: 'Datastar',
+    url: 'https://data-star.dev',
+    showed:
+      'that the two ideas are one. Signals in the browser and patches from the server share a single attribute vocabulary, and the server can drive the page as easily as the page drives itself.',
+    keeps: ['the attribute vocabulary', 'signals and server patches together', 'markup written for it runs unchanged'],
+  },
+];
+---
+<section class="home-s not-content">
+  <h2>Three libraries made this one possible.</h2>
+  <p class="lede">
+    sigmx is not a new idea. It is a small, independent implementation of ideas three libraries proved first, and it
+    would not exist without them. If you already use one, you will feel at home.
+  </p>
+  <div class="roots">
+    {roots.map((r) => (
+      <article>
+        <h3><a href={r.url} rel="noopener">{r.name}<span aria-hidden="true">↗</span></a></h3>
+        <p><em>Showed</em> {r.showed}</p>
+        <ul>
+          <li class="k">what sigmx keeps</li>
+          {r.keeps.map((k) => <li>{k}</li>)}
+        </ul>
+      </article>
+    ))}
+  </div>
+  <p class="lede after">
+    What is different is the implementation: no shared code, a smaller and simpler codebase, plugins you register
+    rather than side effects that register themselves, and a build that does the heavy lifting. <a href="/start/introduction/">The introduction</a> tells the full story.
+  </p>
+</section>
+<section class="home-s not-content start">
+  <h2>A script tag, or an npm install.</h2>
+  <div class="row">
+    <code class="install"><span>$</span> npm install sigmx</code>
+    <div class="actions">
+      <LinkButton href="/start/installation/" icon="right-arrow">Get started</LinkButton>
+      <LinkButton href="/examples/" variant="minimal">See the examples</LinkButton>
+      <LinkButton href="https://github.com/wrux/sigmx" variant="minimal" icon="github" iconPlacement="start">GitHub</LinkButton>
+    </div>
+  </div>
+</section>
+<style>
+  .roots {
+    margin-top: 2.25rem;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 2.5rem;
+  }
+  @media (max-width: 54rem) {
+    .roots {
+      grid-template-columns: 1fr;
+      gap: 2rem;
+    }
+  }
+  article {
+    display: grid;
+    gap: 0.9rem;
+    align-content: start;
+    padding-top: 1rem;
+    border-top: 2px solid var(--sl-color-white);
+  }
+  h3 {
+    margin: 0;
+    font-size: 1.5rem;
+    letter-spacing: -0.02em;
+    font-weight: 600;
+  }
+  h3 a {
+    color: var(--sl-color-white);
+    text-decoration: none;
+  }
+  h3 a span {
+    margin-left: 0.3rem;
+    font-size: 0.9rem;
+    color: var(--sl-color-gray-3);
+    transition: color 0.15s;
+  }
+  h3 a:hover span {
+    color: var(--sl-color-accent);
+  }
+  article p {
+    margin: 0;
+    font-size: 0.93rem;
+    line-height: 1.6;
+    color: var(--sl-color-gray-2);
+  }
+  article em {
+    font-style: normal;
+    font-weight: 600;
+    color: var(--sl-color-white);
+  }
+  article ul {
+    list-style: none;
+    margin: 0.25rem 0 0;
+    padding: 0;
+    display: grid;
+    gap: 0.25rem;
+    font-size: 0.85rem;
+    color: var(--sl-color-gray-2);
+  }
+  article li::before {
+    content: '·';
+    margin-right: 0.5rem;
+    color: var(--sl-color-accent);
+  }
+  article li.k {
+    font-family: var(--sl-font-mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--sl-color-gray-3);
+    margin-bottom: 0.15rem;
+  }
+  article li.k::before {
+    content: none;
+  }
+  .after {
+    margin-top: 2.5rem;
+  }
+  .start .row {
+    margin-top: 1.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1rem 2rem;
+  }
+  .install {
+    font-family: var(--sl-font-mono);
+    font-size: 0.95rem;
+    padding: 0.6rem 1rem;
+    border-radius: 10px;
+    background: var(--sl-color-gray-6);
+    color: var(--sl-color-white);
+  }
+  .install span {
+    color: var(--sl-color-accent);
+    margin-right: 0.5rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem 1.5rem;
+  }
+</style>

@@ -1,0 +1,405 @@
+---
+// Auto mode as a scan: the beam sweeps a page of markup, and every attribute it passes drops its plugin
+// into the bundle on the right. The selection is the real scanner's answer, computed at build time; the
+// per-plugin bytes are the measured ones, and the total is the measured bundle for exactly this set.
+import { selectPlugins } from 'sigmx/scan';
+import sizes from '../../data/sizes.json';
+
+const sample = `<form data-signals="{ open: false, sent: false }"
+      data-on:submit__prevent="@post('/subscribe')">
+  <button type="button" data-on:click="$open = !$open"
+          data-text="$open ? 'Close' : 'Subscribe'"></button>
+  <fieldset data-show="$open">
+    <input name="email" data-on:input__debounce.300ms="@get('/check')">
+    <p id="check"></p>
+    <button>Send</button>
+  </fieldset>
+  <p data-show="$sent">Thanks, check your inbox.</p>
+</form>`;
+
+const sel = selectPlugins([sample]);
+const bundle = sizes.bundles.find((b) => b.name.startsWith('minimal + fetch + server handlers'));
+const core = sizes.bundles.find((b) => b.name === 'core only');
+if (!bundle || !core) throw new Error('sizes data is missing a bundle the homepage needs');
+const measured = ['signals', 'text', 'show', 'on', 'httpGet', 'httpPost', 'applyElements', 'applyState'];
+const chosen = sel.plugins.map((p) => p.export).sort();
+if (chosen.join() !== [...measured].sort().join())
+  throw new Error(`auto-mode sample selects ${chosen.join(', ')}, which is not the measured bundle`);
+
+type Meta = (typeof sel.plugins)[number];
+const token = (p: Meta) => (p.type === 'action' ? `@${p.name}(` : `data-${p.name}`);
+const label = (p: Meta) => (p.type === 'action' ? `@${p.name}` : p.type === 'handler' ? p.name : `data-${p.name}`);
+const bytesOf = (p: Meta) => {
+  const key = p.type === 'action' ? `@${p.name}` : p.name;
+  const row = sizes.perPlugin.find((x) => x.name === key || x.name.startsWith(`${key} `));
+  if (!row) throw new Error(`sizes data has no per-plugin row for ${key}`);
+  return row.brotli;
+};
+const lines = sample.split('\n');
+const firstLine = (p: Meta) => lines.findIndex((l) => l.includes(token(p)));
+const step = 0.3; // seconds the beam spends per markup line
+const found = sel.plugins
+  .map((p) => {
+    const why = sel.reasons[p.export];
+    const cause = why === 'used' ? p : sel.plugins.find((q) => q.export === why);
+    if (!cause) throw new Error(`auto-mode sample: ${p.export} is implied by unknown plugin ${why}`);
+    return { ...p, why, line: firstLine(cause), bytes: bytesOf(p), cause: label(cause) };
+  })
+  .sort((a, b) => a.line - b.line || (a.why === 'used' ? -1 : 1));
+const widest = Math.max(...found.map((p) => p.bytes));
+const total = lines.length * step;
+const kb = (n: number) => (n / 1024).toFixed(1);
+const escapeHtml = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const rx = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const marked = lines
+  .map((l, i) => {
+    let html = escapeHtml(l);
+    for (const p of sel.plugins) {
+      if (p.type === 'handler') continue;
+      const re =
+        p.type === 'action'
+          ? new RegExp(`${rx(`@${p.name}`)}(?=\\()`, 'g')
+          : new RegExp(`${rx(`data-${p.name}`)}(?=[\\s=:_>"'/]|$)`, 'g');
+      html = html.replace(re, (m) => `<mark data-p="${p.export}" style="--t:${(i * step).toFixed(2)}s">${m}</mark>`);
+    }
+    return `<span class="ln">${html}</span>`;
+  })
+  .join('');
+---
+<section class="home-s not-content" id="auto">
+  <h2>You write the markup. The scanner writes the bundle.</h2>
+  <p class="lede">
+    Auto mode reads your source the way a CSS framework scans for class names. Every attribute and action it finds
+    drops its plugin into the bundle, along with the plugins that one needs; the other
+    {sizes.perPlugin.length - sel.plugins.length} never leave the bundler. Nothing to maintain, nothing to forget,
+    nothing shipped by accident.
+  </p>
+  <div class="scan" style={`--total:${total.toFixed(2)}s`}>
+    <div class="pane src">
+      <span class="tab">src/pages/subscribe.html</span>
+      <pre><code set:html={marked} /><i class="beam" aria-hidden="true"></i></pre>
+    </div>
+    <div class="pane out">
+      <span class="tab">dist/app.js <em>what ships</em></span>
+      <div class="jar">
+        <p class="total" style={`--t:${(total + 0.3).toFixed(2)}s`}>
+          <b>{kb(bundle.brotli)} KB</b> brotli, measured for exactly these {found.length} plugins
+        </p>
+        <div class="stack">
+          {found.map((p) => (
+            <div
+              class:list={['brick', { implied: p.why !== 'used' }]}
+              data-p={p.export}
+              style={`--t:${(p.line * step + (p.why === 'used' ? 0.15 : 0.4)).toFixed(2)}s;--w:${Math.max(50, (p.bytes / widest) * 100).toFixed(0)}%`}
+            >
+              <b>{label(p)}</b>
+              <span>{p.bytes} B{p.why === 'used' ? `, line ${p.line + 1}` : `, needed by ${p.cause}`}</span>
+            </div>
+          ))}
+          <div class="brick core">
+            <b>core</b>
+            <span>{kb(core.brotli)} KB, signals, store, expressions, the engine</span>
+          </div>
+        </div>
+        <p class="left">{sel.unused.length} plugins never entered the file.</p>
+      </div>
+    </div>
+    <button type="button" class="replay" id="auto-replay">replay the scan</button>
+  </div>
+  <p class="home-note">
+    Brick widths are each plugin measured on its own; together they compress to the total on top. The same scanner runs
+    as a CLI for any build, a Vite plugin for any framework, an Astro integration, and inside the Rust crate for projects
+    without Node. Turn on precompilation as well and every expression becomes a real function in a table, so the runtime
+    compiler leaves the bundle and a strict Content-Security-Policy needs no exceptions. <a class="home-link" href="/tooling/auto-mode/">How auto mode works</a>.
+  </p>
+</section>
+
+<script>
+  const scan = document.querySelector<HTMLElement>('#auto .scan');
+  if (scan) {
+    const play = () => {
+      scan.classList.remove('play');
+      void scan.offsetWidth; // restart the animations
+      scan.classList.add('play');
+    };
+    new IntersectionObserver(
+      (entries, io) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          play();
+          io.disconnect();
+        }
+      },
+      { threshold: 0.35 },
+    ).observe(scan);
+    document.getElementById('auto-replay')?.addEventListener('click', play);
+    const all = scan.querySelectorAll<HTMLElement>('[data-p]');
+    for (const el of all) {
+      el.addEventListener('mouseenter', () => {
+        for (const o of all) o.classList.toggle('hot', o.dataset.p === el.dataset.p);
+      });
+      el.addEventListener('mouseleave', () => {
+        for (const o of all) o.classList.remove('hot');
+      });
+    }
+  }
+</script>
+
+<style>
+  .scan {
+    position: relative;
+    margin-top: 2.25rem;
+    display: grid;
+    grid-template-columns: minmax(0, 11fr) minmax(0, 9fr);
+    gap: 1px;
+    background: var(--sl-color-hairline);
+    border: 1px solid var(--sl-color-hairline);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  @media (max-width: 60rem) {
+    .scan {
+      grid-template-columns: 1fr;
+    }
+  }
+  .pane {
+    background: var(--sl-color-bg);
+    min-width: 0;
+    display: grid;
+    grid-template-rows: auto 1fr;
+    align-content: start;
+  }
+  .tab {
+    display: block;
+    padding: 0.55rem 1.1rem;
+    font-family: var(--sl-font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.06em;
+    color: var(--sl-color-gray-3);
+    background: var(--sl-color-gray-6);
+    border-bottom: 1px solid var(--sl-color-hairline);
+  }
+  .tab em {
+    font-style: normal;
+    margin-left: 0.6rem;
+    padding: 0.1rem 0.4rem;
+    border-radius: 4px;
+    background: var(--sl-color-accent-low);
+    color: var(--sl-color-accent-high);
+  }
+  .src pre {
+    position: relative;
+    margin: 0;
+    padding: 1rem 1.1rem 1.1rem;
+    font-family: var(--sl-font-mono);
+    font-size: 0.76rem;
+    line-height: 1.75;
+    color: var(--sl-color-gray-2);
+    overflow-x: auto;
+    background: transparent;
+  }
+  .src pre code {
+    display: block;
+  }
+  .src :global(.ln) {
+    display: block;
+    white-space: pre;
+  }
+  .src :global(mark) {
+    color: var(--sl-color-white);
+    background: transparent;
+    border-radius: 3px;
+    padding: 0 0.15em;
+    margin: 0 -0.15em;
+  }
+  .play :global(mark) {
+    animation: lit 0.45s ease-out both;
+    animation-delay: var(--t);
+  }
+  @keyframes lit {
+    from {
+      background: transparent;
+      color: var(--sl-color-white);
+    }
+    50% {
+      background: var(--sl-color-accent);
+      color: var(--sl-color-black);
+    }
+    to {
+      background: var(--sl-color-accent-low);
+      color: var(--sl-color-accent-high);
+    }
+  }
+  .beam {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 1rem;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--sl-color-accent) 15%, var(--sl-color-accent) 85%, transparent);
+    box-shadow: 0 0 12px var(--sl-color-accent);
+    opacity: 0;
+    pointer-events: none;
+  }
+  .play .beam {
+    animation: sweep var(--total) linear both;
+  }
+  @keyframes sweep {
+    from {
+      transform: translateY(0);
+      opacity: 1;
+    }
+    95% {
+      opacity: 1;
+    }
+    to {
+      transform: translateY(calc(1.75em * 11));
+      opacity: 0;
+    }
+  }
+
+  .jar {
+    display: grid;
+    gap: 0.75rem;
+    padding: 1rem 1.1rem 1.1rem;
+    align-content: end;
+    min-height: 100%;
+  }
+  .total {
+    margin: 0;
+    font-size: 0.86rem;
+    color: var(--sl-color-gray-2);
+    opacity: 0;
+  }
+  .total b {
+    color: var(--sl-color-white);
+    font-size: 1.05rem;
+    font-variant-numeric: tabular-nums;
+  }
+  .play .total {
+    animation: appear 0.4s ease-out both;
+    animation-delay: var(--t);
+  }
+  .stack {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 3px;
+  }
+  .brick {
+    width: var(--w, 100%);
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    padding: 0.3rem 0.6rem;
+    border-radius: 4px;
+    background: var(--sl-color-accent-low);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--sl-color-accent) 50%, transparent);
+    font-family: var(--sl-font-mono);
+    font-size: 0.72rem;
+    line-height: 1.3;
+    color: var(--sl-color-accent-high);
+    white-space: nowrap;
+    overflow: hidden;
+    opacity: 0;
+  }
+  .brick b {
+    font-weight: 600;
+  }
+  .brick span {
+    font-size: 0.66rem;
+    color: var(--sl-color-gray-3);
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .brick.implied {
+    background: transparent;
+    box-shadow: inset 0 0 0 1px var(--sl-color-accent);
+    outline: 1px dashed color-mix(in srgb, var(--sl-color-accent) 60%, transparent);
+    outline-offset: -3px;
+  }
+  .brick.core {
+    width: 100%;
+    background: var(--sl-color-accent);
+    color: var(--sl-color-black);
+    box-shadow: none;
+    opacity: 1;
+    padding-block: 0.45rem;
+  }
+  .brick.core span {
+    color: color-mix(in srgb, var(--sl-color-black) 70%, var(--sl-color-accent));
+  }
+  .play .brick:not(.core) {
+    animation: drop 0.4s cubic-bezier(0.2, 0.8, 0.3, 1.2) both;
+    animation-delay: var(--t);
+  }
+  @keyframes drop {
+    from {
+      opacity: 0;
+      transform: translateY(-0.8rem);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes appear {
+    from {
+      opacity: 0;
+      transform: translateY(0.3rem);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  .brick.hot,
+  .src :global(mark.hot) {
+    background: var(--sl-color-accent) !important;
+    color: var(--sl-color-black) !important;
+  }
+  .brick.hot span {
+    color: color-mix(in srgb, var(--sl-color-black) 70%, var(--sl-color-accent));
+  }
+  .left {
+    margin: 0;
+    font-size: 0.74rem;
+    color: var(--sl-color-gray-3);
+  }
+  .replay {
+    position: absolute;
+    right: 0.75rem;
+    top: 0.35rem;
+    font: inherit;
+    font-family: var(--sl-font-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.06em;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--sl-color-gray-3);
+    cursor: pointer;
+  }
+  .replay:hover {
+    color: var(--sl-color-accent-high);
+    border-color: var(--sl-color-hairline);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .play :global(mark),
+    .play .brick,
+    .play .total,
+    .play .beam {
+      animation: none;
+    }
+    .play :global(mark) {
+      background: var(--sl-color-accent-low);
+      color: var(--sl-color-accent-high);
+    }
+    .brick,
+    .total {
+      opacity: 1;
+    }
+    .beam {
+      display: none;
+    }
+  }
+</style>

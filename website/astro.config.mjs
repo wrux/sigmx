@@ -35,7 +35,8 @@ export default defineConfig({
         'A small hypermedia library: declarative attributes, signals, streaming server patches. Zero dependencies.',
       social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/wrux/sigmx' }],
       editLink: { baseUrl: 'https://github.com/wrux/sigmx/edit/main/website/' },
-      customCss: ['./src/styles/custom.css'],
+      customCss: ['./src/styles/custom.css', './src/styles/home.css'],
+      components: { Hero: './src/components/home/Hero.astro' },
       head: [
         { tag: 'link', attrs: { rel: 'icon', type: 'image/png', sizes: '32x32', href: '/favicon-32x32.png' } },
         { tag: 'link', attrs: { rel: 'icon', type: 'image/png', sizes: '16x16', href: '/favicon-16x16.png' } },
