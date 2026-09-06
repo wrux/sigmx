@@ -98,6 +98,15 @@ await t('animate tweens a numeric style over time', async () => {
   app.$.open = false; await tick(20); const back = +getComputedStyle(el).opacity; if (!(back < 1)) throw new Error(`retarget ${back}`)
 })
 
+await t('query-string:key declares a default, reads the URL, writes changes and drops defaults', async () => {
+  const url0 = location.href
+  history.replaceState(null, '', '/tests/browser/index.html?page=3&q=hello')
+  const el = html('<div data-query-string:page="1" data-query-string:q="\'\'" data-query-string:sort-by="\'name\'"></div>')
+  await tick(); eq(app.$.page, 3, 'number parsed from URL'); eq(app.$.q, 'hello'); eq(app.$.sortBy, 'name', 'default when absent')
+  app.$.page = 1; app.$.q = ''; eq(new URLSearchParams(location.search).has('page'), false, 'default dropped'); eq(location.search, '', 'both dropped')
+  app.$.sortBy = 'price'; eq(location.search, '?sort-by=price', 'param name is the key as written')
+  history.replaceState(null, '', url0)
+})
 await t('cloak is removed on mount; html sets innerHTML; remove-me removes after its delay', async () => {
   app.$.markup = '<b>bold</b>'
   const el = html('<div><p id="c" data-cloak>x</p><div id="h" data-html="$markup"></div><span id="rm" data-remove-me="50ms">bye</span></div>')

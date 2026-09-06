@@ -3,7 +3,7 @@ import { gzipSync, brotliCompressSync, constants } from 'node:zlib'
 import { writeFileSync } from 'node:fs'
 const libs = [
   { name: 'htmx', version: '2.0.10', url: 'https://unpkg.com/htmx.org@2.0.10/dist/htmx.min.js', note: 'htmx.min.js, core only' },
-  { name: 'Datastar', version: '1.0.3', url: 'https://cdn.jsdelivr.net/gh/starfederation/datastar@v1.0.3/bundles/datastar.js', note: 'datastar.js, free plugins only' },
+  { name: 'Datastar', version: '1.0.3', url: 'https://cdn.jsdelivr.net/gh/starfederation/datastar@v1.0.3/bundles/datastar.js', note: 'datastar.js' },
   { name: 'Alpine.js', version: '3.17.1', url: 'https://unpkg.com/alpinejs@3.17.1/dist/cdn.min.js', note: 'cdn.min.js, core only' },
 ]
 const out = []

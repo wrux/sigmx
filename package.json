@@ -1,53 +1,96 @@
 {
   "name": "sigmx",
-  "version": "0.0.0",
-  "description": "sigmx: a modular TypeScript hypermedia library with a minimal core, opt-in plugins, signals, and zero runtime dependencies.",
-  "type": "module",
+  "version": "0.1.0",
+  "description": "htmx on steroids in a runtime smaller than htmx: server-driven HTML, streaming patches, signals and a state-preserving morph from a 4 KB core. Zero dependencies.",
+  "keywords": [
+    "hypermedia",
+    "htmx",
+    "signals",
+    "sse",
+    "server-sent-events",
+    "datastar",
+    "alpine",
+    "html",
+    "reactive"
+  ],
+  "author": "Callum Bonnyman",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wrux/sigmx.git"
+  },
+  "homepage": "https://github.com/wrux/sigmx#readme",
+  "bugs": {
+    "url": "https://github.com/wrux/sigmx/issues"
+  },
+  "type": "module",
+  "main": "./dist/kernel/index.js",
+  "types": "./dist/kernel/index.d.ts",
   "sideEffects": [
     "./dist/standalone.js",
     "./dist/cli.js"
   ],
   "files": [
-    "dist"
+    "dist",
+    "README.md",
+    "LICENSE"
   ],
+  "bin": {
+    "sigmx": "./dist/cli.js"
+  },
   "exports": {
     ".": {
       "types": "./dist/kernel/index.d.ts",
-      "import": "./dist/kernel/index.js"
+      "import": "./dist/kernel/index.js",
+      "default": "./dist/kernel/index.js"
     },
     "./csp": {
       "types": "./dist/kernel/strict-csp.d.ts",
-      "import": "./dist/kernel/strict-csp.js"
+      "import": "./dist/kernel/strict-csp.js",
+      "default": "./dist/kernel/strict-csp.js"
     },
     "./plugins": {
       "types": "./dist/plugins/index.d.ts",
-      "import": "./dist/plugins/index.js"
+      "import": "./dist/plugins/index.js",
+      "default": "./dist/plugins/index.js"
     },
     "./plugins/*": {
       "types": "./dist/plugins/*.d.ts",
-      "import": "./dist/plugins/*.js"
+      "import": "./dist/plugins/*.js",
+      "default": "./dist/plugins/*.js"
     },
     "./presets/*": {
       "types": "./dist/presets/*.d.ts",
-      "import": "./dist/presets/*.js"
+      "import": "./dist/presets/*.js",
+      "default": "./dist/presets/*.js"
     },
     "./standalone": {
       "types": "./dist/standalone.d.ts",
-      "import": "./dist/standalone.js"
+      "import": "./dist/standalone.js",
+      "default": "./dist/standalone.js"
     },
     "./precompile": {
       "types": "./dist/kernel/precompile.d.ts",
-      "import": "./dist/kernel/precompile.js"
+      "import": "./dist/kernel/precompile.js",
+      "default": "./dist/kernel/precompile.js"
     },
     "./scan": {
       "types": "./dist/kernel/scan.d.ts",
-      "import": "./dist/kernel/scan.js"
+      "import": "./dist/kernel/scan.js",
+      "default": "./dist/kernel/scan.js"
     },
     "./vite": {
       "types": "./dist/vite.d.ts",
-      "import": "./dist/vite.js"
-    }
+      "import": "./dist/vite.js",
+      "default": "./dist/vite.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "scripts": {
     "check": "tsc --noEmit",
@@ -55,15 +98,14 @@
     "size": "node scripts/size.mjs",
     "test": "node scripts/build.mjs && node --test tests/*.test.mjs",
     "dev": "node scripts/dev.mjs",
-    "compare": "node scripts/compare.mjs website/src/data/compare.json"
+    "compare": "node scripts/compare.mjs website/src/data/compare.json",
+    "prepublishOnly": "npm run check && npm test",
+    "prepack": "npm run build"
   },
   "devDependencies": {
     "@types/node": "^22.20.1",
     "esbuild": "^0.28.2",
     "terser": "^5.51.2",
     "typescript": "^5.9.0"
-  },
-  "bin": {
-    "sigmx": "./dist/cli.js"
   }
 }

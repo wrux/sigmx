@@ -4,7 +4,7 @@ description: "What sigmx is, how to say it, and where it comes from."
 sidebar: { order: 1 }
 ---
 
-sigmx is htmx on steroids in a tiny runtime. Like htmx, your server renders HTML and the browser swaps it in; unlike htmx, the page also has **signals** it can read, write and bind to, the swaps are morphs that keep focus and typed input, and updates can stream over one connection. You write `data-*` attributes; there is no component model, no virtual DOM and no client-side router. The whole thing, every plugin included, is smaller than htmx alone and within a few hundred bytes of Datastar's free bundle, with more than twice its plugins.
+sigmx is htmx on steroids in a tiny runtime. Like htmx, your server renders HTML and the browser swaps it in; a plain `text/html` response is all a backend needs to return. Unlike htmx, the page also has **signals** it can read, write and bind to, the swaps are morphs that keep focus and typed input, and when you want them, updates can stream over one connection. You write `data-*` attributes; there is no component model, no virtual DOM and no client-side router. The whole thing, every plugin included, is smaller than htmx alone and within a few hundred bytes of Datastar's free bundle, with more than twice its plugins.
 
 ## The name
 
@@ -16,7 +16,7 @@ Three libraries shaped it.
 
 - **htmx** established the model: the server sends HTML, the browser swaps it in, and Server-Sent Events carry updates. sigmx keeps that model and its streaming protocol.
 - **Alpine.js** showed that declarative attributes with a little reactivity can replace a framework for most interface work. sigmx's attribute syntax, modifiers and expression style come from that tradition.
-- **Datastar** fused the two ideas into one library. sigmx started as a study of Datastar and shares its attribute vocabulary, so markup written for it usually runs unchanged. Everything under the hood was then written from scratch with different goals: a smaller and simpler codebase, no paid tier, plugins you register rather than side effects that register themselves, and an attribute prefix you can change at runtime for migrations.
+- **Datastar** fused the two ideas into one library. sigmx started as a study of Datastar and shares its attribute vocabulary, so markup written for it usually runs unchanged. Everything under the hood was then written from scratch with different goals: a smaller and simpler codebase, plugins you register rather than side effects that register themselves, and an attribute prefix you can change at runtime for migrations.
 
 ## Principles
 

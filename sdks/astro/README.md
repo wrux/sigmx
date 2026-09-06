@@ -23,4 +23,4 @@ export const GET = async ({ request }) => {
 }
 ```
 
-See the docs site in `website/` for the full guide.
+Full guide: the sigmx documentation site in `website/` of https://github.com/wrux/sigmx, page "SDKs → Astro".

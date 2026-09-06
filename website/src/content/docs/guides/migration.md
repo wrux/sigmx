@@ -11,7 +11,7 @@ Markup is compatible: the attribute names, key syntax, modifiers and `@action()`
 1. Replace the script tag or import with sigmx and register the plugins you use (or the `all` preset).
 2. If you cannot change every attribute at once, scan both prefixes: `prefix: ['data-', 'datastar-']` also accepts `datastar-text`.
 3. Backends emit `datastar-patch-elements` and `datastar-patch-signals`. Accept them with `eventPrefix: ['sigmx-', 'datastar-']` and switch the server to `sigmx-*` names at your own pace. The request header is `Sigmx-Request` and the GET query parameter is `sigmx`; update server code that reads them.
-4. The former Pro attributes (`data-persist`, `data-query-string`, `data-animate`, `@fit`, …) are included; remove the Pro bundle.
+4. Attributes such as `data-persist`, `data-query-string`, `data-animate` and `@fit` are ordinary plugins here; register them like any other.
 
 Behavioural differences to know about:
 

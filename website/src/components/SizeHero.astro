@@ -18,7 +18,7 @@ const pct = (a: number, b: number) => Math.round((1 - a / b) * 100)
 const everything = tiers[2].size
 const vsHtmx = pct(everything, lib('htmx').brotli)
 const vsDatastar = pct(everything, lib('Datastar').brotli)
-const datastarLine = vsDatastar >= 2 ? `${vsDatastar}% smaller than Datastar's free bundle` : vsDatastar <= -2 ? `${-vsDatastar}% larger than Datastar's free bundle` : `within 2% of Datastar's free bundle`
+const datastarLine = vsDatastar >= 2 ? `${vsDatastar}% smaller than Datastar` : vsDatastar <= -2 ? `${-vsDatastar}% larger than Datastar` : `within 2% of Datastar`
 ---
 <section class="hero-sizes not-content">
   <div class="tiers">
@@ -30,7 +30,7 @@ const datastarLine = vsDatastar >= 2 ? `${vsDatastar}% smaller than Datastar's f
       </div>
     ))}
   </div>
-  <p class="how">Brotli-compressed, the way a CDN serves it. Register only what you use and the runtime is whatever those plugins weigh. Everything, all {sizes.perPlugin.length} plugins including the Alpine and htmx extensions, is {vsHtmx}% smaller than htmx alone and {datastarLine} (23 plugins, no paid tier).</p>
+  <p class="how">Brotli-compressed, the way a CDN serves it. Register only what you use and the runtime is whatever those plugins weigh. Everything, all {sizes.perPlugin.length} plugins including the Alpine and htmx extensions, is {vsHtmx}% smaller than htmx alone and {datastarLine} (23 plugins).</p>
   <div class="bars">
     {bars.map((b) => (
       <div class={`bar ${b.mine ? 'mine' : ''}`}>

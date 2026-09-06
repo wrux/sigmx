@@ -48,4 +48,4 @@ Most of what the Alpine and htmx ecosystems add as plugins or extensions exists 
 
 ## Datastar
 
-Everything in the reference, including the former Pro attributes and actions, plus the plugins above. Markup is compatible; see [Migration](/guides/migration/).
+Everything in the reference, plus the plugins above. Markup is compatible; see [Migration](/guides/migration/).

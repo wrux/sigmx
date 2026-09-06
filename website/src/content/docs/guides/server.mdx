@@ -18,6 +18,15 @@ The functions `@get`, `@post`, `@put`, `@patch` and `@delete` send a request and
 <button data-on:click="@post('/cart/add', { payload: { sku: 42 } })">Add</button>
 ```
 
+The simplest backend returns plain HTML. Render the fragment with whatever you already use, give its root element the same `id` as the one on the page, and send it with `Content-Type: text/html`:
+
+```html
+<!-- GET /cart → morphed over the existing <ul id="cart"> -->
+<ul id="cart"><li>Kettle × 2</li></ul>
+```
+
+Streams and JSON are for when you need them, not a requirement.
+
 ## What is sent
 
 - **Signals** as JSON: in the body for POST, PUT and PATCH; in the `sigmx` query parameter for GET and DELETE. Paths starting with `_` are left out. Change the set with `filter: { include, exclude }` or send something else with `payload`.
@@ -30,9 +39,9 @@ The response's content type decides what happens.
 
 | content type | handling |
 |---|---|
-| `text/event-stream` | each event is routed by name to a server-event handler; see below |
-| `text/html` | patched as elements: morphed by `id`, or targeted by the `sigmx-selector` and `sigmx-mode` response headers |
+| `text/html` | patched as elements: morphed by `id`, or targeted by the `sigmx-selector` and `sigmx-mode` response headers (`append`, `inner`, `replace`, …) |
 | `application/json` | merged as signals (`sigmx-only-if-missing: true` keeps existing values) |
+| `text/event-stream` | each event is routed by name to a server-event handler; see below |
 | `text/javascript` | executed |
 | `204`, `304` | nothing |
 | `4xx`, `5xx` | a `sigmx-fetch` event with `type: 'error'`; no retry unless `retry.onStatusError` |

@@ -10,6 +10,8 @@ export default defineConfig({
     starlight({
       title: 'sigmx',
       description: 'A small hypermedia library: declarative attributes, signals, streaming server patches. Zero dependencies.',
+      social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/wrux/sigmx' }],
+      editLink: { baseUrl: 'https://github.com/wrux/sigmx/edit/main/website/' },
       customCss: ['./src/styles/custom.css'],
       head: [
         { tag: 'link', attrs: { rel: 'preconnect', href: 'https://fonts.googleapis.com' } },

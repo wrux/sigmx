@@ -3,7 +3,7 @@ title: "sigmx"
 description: "htmx on steroids in a tiny runtime: server-driven HTML, streaming patches, signals and two-way binding, from a 4 KB core."
 template: splash
 hero:
-  tagline: htmx on steroids, in a runtime smaller than htmx. Your server renders HTML and streams patches; the browser reacts with signals, two-way binding and a morph that never loses your place. Register only the plugins you use. Zero dependencies.
+  tagline: htmx on steroids, in a runtime smaller than htmx. Your server keeps rendering HTML; sigmx fetches it, morphs it into the page without losing your place, and adds signals, two-way binding and optional streaming. Register only the plugins you use. Zero dependencies.
   actions:
     - text: Get started
       link: /start/installation/
@@ -32,7 +32,7 @@ import SizeHero from '../../components/SizeHero.astro'
 
 <CardGrid>
   <Card title="Server-driven HTML" icon="rocket">
-    `@get`, `@post` and friends send your state and apply whatever comes back: HTML morphed by id, JSON merged as signals, or a stream of patches over one connection. Boosted links and forms, history, and `Last-Event-ID` reconnects are all in.
+    Return plain HTML from any endpoint and `@get` or `@post` morphs it into the page by id. Return JSON to merge signals. Return an event stream when one request should keep delivering. Boosted links and forms, history, and `Last-Event-ID` reconnects are all in.
   </Card>
   <Card title="Signals, not sprinkles" icon="star">
     Client state lives in signals you declare in markup. `data-bind`, `data-show`, `data-class`, computed values and effects keep the page in step without a component model or a virtual DOM.

@@ -14,7 +14,7 @@
       "name": "Datastar",
       "version": "1.0.3",
       "url": "https://cdn.jsdelivr.net/gh/starfederation/datastar@v1.0.3/bundles/datastar.js",
-      "note": "datastar.js, free plugins only",
+      "note": "datastar.js",
       "raw": 33538,
       "gzip": 13370,
       "brotli": 12100

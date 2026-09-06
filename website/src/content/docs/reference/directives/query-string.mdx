@@ -11,15 +11,16 @@ Sync signals with the URL query string, both ways.
 ## Syntax
 
 ```html
-data-query-string
-data-query-string__history="{ include: /^(q|page)$/ }"
+data-query-string:page="1"                  <!-- declare `page` with a default, synced with ?page= -->
+data-query-string:sort-by="'name'"          <!-- parameter ?sort-by=, signal $sortBy -->
+data-query-string__history="{ include: /^(q|page)$/ }"   <!-- sync existing signals -->
 data-query-string__filter
 ```
 
 | part | |
 |---|---|
-| key | forbidden |
-| value | optional filter `{ include, exclude }` |
+| key | optional: a parameter name; the value is then the default |
+| value | with a key, the default expression; without one, an optional `{ include, exclude }` filter |
 
 ## Modifiers
 
@@ -31,7 +32,7 @@ data-query-string__filter
 ## Example
 
 <Live html={`
-<div data-query-string="{ include: /^tab$/ }" data-signals:tab__ifmissing="'one'">
+<div data-query-string:tab="'one'">
   <div class="row"><button data-on:click="$tab = 'one'">one</button><button data-on:click="$tab = 'two'">two</button></div>
   <p>tab = <b data-text="$tab"></b> (watch the address bar)</p>
 </div>
@@ -39,7 +40,7 @@ data-query-string__filter
 
 ## Notes
 
-Values that parse as JSON come back typed (`?page=2` gives the number 2). Declare defaults with `__ifmissing`.
+The keyed form is the usual one: it declares the signal, applies the default when the parameter is absent, and removes the parameter when the value equals the default, so URLs stay clean. Values that parse as JSON come back typed (`?page=2` gives the number 2). The bare form syncs signals declared elsewhere; give those defaults with `__ifmissing`.
 
 ## Register
 

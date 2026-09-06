@@ -2,10 +2,29 @@
   "name": "sigmx-astro",
   "version": "0.1.0",
   "description": "Astro integration and server helpers for sigmx: inject the client, stream patches from endpoints, read signals from requests.",
-  "type": "module",
+  "keywords": [
+    "astro",
+    "astro-integration",
+    "sigmx",
+    "hypermedia",
+    "sse"
+  ],
+  "author": "Callum Bonnyman",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wrux/sigmx.git",
+    "directory": "sdks/astro"
+  },
+  "homepage": "https://github.com/wrux/sigmx#readme",
+  "bugs": {
+    "url": "https://github.com/wrux/sigmx/issues"
+  },
+  "type": "module",
   "files": [
-    "dist"
+    "dist",
+    "README.md",
+    "LICENSE"
   ],
   "exports": {
     ".": {
@@ -19,20 +38,29 @@
     "./server": {
       "types": "./dist/server.d.ts",
       "default": "./dist/server.js"
-    }
+    },
+    "./package.json": "./package.json"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "test": "npm run build && node --test tests/*.test.mjs"
-  },
-  "peerDependencies": {
-    "astro": "^5.0.0 || ^6.0.0 || ^7.0.0",
-    "sigmx": "*"
+    "test": "npm run build && node --test tests/*.test.mjs",
+    "prepublishOnly": "npm test",
+    "prepack": "npm run build"
   },
   "devDependencies": {
     "@types/node": "^22.20.1",
     "astro": "^7.3.1",
     "sigmx": "file:../..",
     "typescript": "^5.9.0"
+  },
+  "peerDependencies": {
+    "astro": "^5.0.0 || ^6.0.0 || ^7.0.0",
+    "sigmx": "^0.1.0"
   }
 }

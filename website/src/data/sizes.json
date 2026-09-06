@@ -45,15 +45,15 @@
     },
     {
       "name": "everything (standalone build)",
-      "raw": 36047,
-      "gzip": 14201,
-      "brotli": 12892
+      "raw": 36558,
+      "gzip": 14382,
+      "brotli": 13054
     },
     {
       "name": "everything, shipped dist/sigmx.standalone.js (esbuild + terser)",
-      "raw": 35391,
-      "gzip": 13471,
-      "brotli": 12250
+      "raw": 35903,
+      "gzip": 13636,
+      "brotli": 12394
     }
   ],
   "perPlugin": [
@@ -221,9 +221,9 @@
     {
       "export": "queryString",
       "name": "query-string",
-      "raw": 903,
-      "gzip": 414,
-      "brotli": 360
+      "raw": 1353,
+      "gzip": 553,
+      "brotli": 488
     },
     {
       "export": "replaceUrl",
@@ -242,9 +242,9 @@
     {
       "export": "animate",
       "name": "animate",
-      "raw": 1337,
-      "gzip": 687,
-      "brotli": 606
+      "raw": 1359,
+      "gzip": 701,
+      "brotli": 617
     },
     {
       "export": "peek",
@@ -354,9 +354,9 @@
     {
       "export": "collapse",
       "name": "collapse",
-      "raw": 770,
-      "gzip": 377,
-      "brotli": 334
+      "raw": 793,
+      "gzip": 393,
+      "brotli": 353
     },
     {
       "export": "html",
@@ -389,9 +389,9 @@
     {
       "export": "transition",
       "name": "transition",
-      "raw": 811,
-      "gzip": 423,
-      "brotli": 375
+      "raw": 829,
+      "gzip": 436,
+      "brotli": 386
     },
     {
       "export": "trap",
