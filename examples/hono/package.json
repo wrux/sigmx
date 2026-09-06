@@ -12,9 +12,9 @@
   },
   "dependencies": {
     "@hono/node-server": "^2.1.0",
-    "@sigmx/hono": "^0.1.0",
+    "@sigmx/hono": "^0.2.0",
     "hono": "^4.13.0",
-    "sigmx": "^0.1.1"
+    "sigmx": "^0.2.0"
   },
   "devDependencies": {
     "@types/node": "^22.20.1",

@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "express": "^5.1.0",
-    "sigmx": "^0.1.1"
+    "sigmx": "^0.2.0"
   },
   "devDependencies": {
     "vite": "^7.1.0"
