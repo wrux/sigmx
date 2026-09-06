@@ -179,6 +179,14 @@ export const createRuntime = (options: RuntimeOptions): Sigmx => {
     });
 
     try {
+      // Contract checks: a keyed directive without a key would otherwise write to the path ''.
+      for (const [k, v] of [
+        ['key', key],
+        ['value', value],
+      ] as const) {
+        const rule = plugin[k];
+        if (rule && (rule === 'required') === !v) throw error(`${rule === 'required' ? 'needs a' : 'takes no'} ${k}`);
+      }
       const r: unknown = plugin.mount(ctx);
       if (typeof r === 'function') cleanup(r as () => void);
       else watch(r); // an async mount that rejects is reported, not lost

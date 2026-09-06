@@ -19,14 +19,7 @@ export const dir = (
   value: rule(flags, 4, 8),
   returns: !(flags & 16),
   args,
-  mount: (ctx) => {
-    // Contract checks: a keyed directive without a key would otherwise write to the path ''.
-    if (flags & 1 && !ctx.key) throw ctx.error('needs a key');
-    if (flags & 2 && ctx.key) throw ctx.error('takes no key');
-    if (flags & 4 && !ctx.value) throw ctx.error('needs a value');
-    if (flags & 8 && ctx.value) throw ctx.error('takes no value');
-    return mount(ctx);
-  },
+  mount,
 });
 export const act = (name: string, call: ActionPlugin['call']): ActionPlugin => ({ type: 'action', name, call });
 export const srv = (name: string, handle: HandlerPlugin['handle']): HandlerPlugin => ({

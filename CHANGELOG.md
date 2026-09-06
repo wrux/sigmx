@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-**A 10 KB "everything" build.** The script-tag bundle with all 50 plugins is 10,190 bytes brotli (was 12,410 with 52), the core 3.5 KB (was 4.1 KB) and the essentials 7.6 KB (was 8.8 KB). About a third of that came from rewrites with unchanged behaviour; the rest came from dropping two plugins and a list of options and modifiers, recorded below so the release can be judged as a whole.
+**A smaller "everything" build, then a hardening pass.** The script-tag bundle with all 50 plugins is 11,388 bytes brotli (was 12,410 with 52; it reached 10,190 before the hardening below added about 1.2 KB of guards and teardown), the core 4.1 KB and the essentials 8.6 KB (was 8.8 KB). About a third of that came from rewrites with unchanged behaviour; the rest came from dropping two plugins and a list of options and modifiers, recorded below so the release can be judged as a whole.
 
 Rewrites with unchanged behaviour:
 

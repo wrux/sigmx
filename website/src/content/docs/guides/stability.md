@@ -28,7 +28,7 @@ Anything else is internal: module paths under `dist/` other than the exports abo
 - **Additions** (a new plugin, modifier, option or event field) are minor releases. Existing markup keeps working.
 - **Behaviour fixes** that change observable results are called out in the CHANGELOG under "Changed", even when the old behaviour was a bug.
 - **Removals** happen only in a major release and are first deprecated for at least one minor release, during which the old form still works and logs nothing in production.
-- **Bundle size** is a feature, not a promise: the CHANGELOG records it, and the `everything` build stays at or under 10 KB brotli with all plugins unless a release note says otherwise.
+- **Bundle size** is a feature, not a promise: every release records it in the CHANGELOG (11.1 KB brotli for the `everything` build with all 50 plugins at the time of writing), and a change that costs bytes is weighed against what it buys, correctness first.
 
 ## How the promise is tested
 
