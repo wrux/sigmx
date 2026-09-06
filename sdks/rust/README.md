@@ -93,7 +93,7 @@ sigmx client unpack public/vendor/sigmx      # the ES modules, for a bundle of y
 sigmx entry src --from ./vendor/sigmx --out public/sigmx.js   # auto mode: an entry registering only what src/ uses
 ```
 
-The same three calls are functions (`client::write_standalone`, `client::write_esm`, `scan::scan` + `scan::Entry`) for a project with its own Rust asset step, like the `assetc` crate in the Worker example. The generated entry imports from the unpacked tree with relative paths, so a browser can load it as-is, and swc, esbuild or Vite can bundle it into one file. ## Your own plugins
+The same three calls are functions (`client::write_standalone`, `client::write_esm`, `scan::scan` + `scan::Entry`) for a project with its own Rust asset step, like the `assetc` crate in the Worker example. The generated entry imports each selected plugin from its own module in the unpacked tree (`./vendor/sigmx/plugins/functions/request.js`, not the `plugins/index.js` barrel), so a browser loading it as-is fetches only the selected modules, and a bundler that does not tree-shake re-exports (swc_bundler, as in a Rust asset step) ships only them too. With `Source::Package` the entry imports from `sigmx/plugins`, which the npm package marks side-effect free for Vite and esbuild to prune. ## Your own plugins
 
 A plugin is a module exporting `attribute({ name, mount })`, `action({ name, call })` or `handler({ name, handle })`, importing those helpers from the unpacked tree (`./vendor/sigmx/kernel/index.js`) or from `sigmx` on npm. There are three ways to ship one:
 

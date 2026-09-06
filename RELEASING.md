@@ -21,8 +21,8 @@ npm publish
 # 4. the Rust crate: embeds dist/ from step 1 (npm run build wrote sdks/rust/client)
 cd ../rust
 # bump version in Cargo.toml to match; the tests assert the crate and the embedded client agree
-cargo test --all-features && cargo publish --dry-run
-cargo publish
+cargo test --all-features && cargo publish --dry-run --allow-dirty
+cargo publish --allow-dirty     # client/ is generated and untracked, which cargo otherwise counts as dirty
 git tag sigmx-rs-v0.2.0
 
 # 5. push commits and tags

@@ -7,7 +7,7 @@ use crate::{
 };
 use ::http::header::{HeaderMap, CONTENT_TYPE};
 use ::http::request::Parts;
-use ::http::{Response, StatusCode};
+use ::http::Response;
 use serde::de::DeserializeOwned;
 
 fn build(status: u16, headers: &[(&str, String)], body: String) -> Response<String> {
@@ -82,7 +82,7 @@ pub fn read_signals<T: DeserializeOwned>(parts: &Parts, body: &[u8]) -> Result<T
 pub fn client_response(if_none_match: Option<&str>) -> Response<String> {
     if crate::client::matches_etag(if_none_match) {
         return build(
-            StatusCode::NOT_MODIFIED.as_u16(),
+            ::http::StatusCode::NOT_MODIFIED.as_u16(),
             &[("etag", crate::client::ETAG.to_owned())],
             String::new(),
         );

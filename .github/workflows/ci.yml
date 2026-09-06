@@ -94,6 +94,8 @@ jobs:
         run: |
           cargo run --manifest-path assetc/Cargo.toml
           test -f public/sigmx.js && grep -q createSigmx public/sigmx.js
+          # Per-module imports, never the barrel: the selection must be what ships.
+          ! grep -q 'plugins/index.js' public/sigmx.js
 
   browser:
     name: browser
