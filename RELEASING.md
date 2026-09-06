@@ -26,4 +26,4 @@ Before the first publish: `npm login`, and confirm `npm view <name>` returns 404
 
 After a release that the examples depend on, run `npm install` in `examples/hono` and `examples/express` so their lockfiles pick up the published version.
 
-`npm pack --dry-run` in any of the three directories lists exactly what would ship: `dist/`, `README.md`, `LICENSE` and `package.json`.
+`npm publish` publishes the directory it runs in and ignores `--prefix`, so change into each SDK directory first. `npm pack --dry-run` in any of the three directories lists exactly what would ship: `dist/`, `README.md`, `LICENSE` and `package.json`.
