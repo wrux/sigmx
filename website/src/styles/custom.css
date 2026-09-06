@@ -50,3 +50,5 @@
 .ex .pulse { width: .55rem; height: .55rem; border-radius: 50%; background: var(--ex-good); box-shadow: 0 0 0 0 color-mix(in srgb, var(--ex-good) 60%, transparent); animation: ex-pulse 1.6s ease-out infinite; }
 @keyframes ex-pulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--ex-good) 55%, transparent) } 100% { box-shadow: 0 0 0 .6rem transparent } }
 @media (prefers-reduced-motion: reduce) { .ex *, .ex *::after { animation: none !important; transition: none !important; } }
+/* numbers sitting between controls: fixed 3ch, centred, tabular so neighbours never shift */
+.live-body:not(.app) .row > b { display: inline-block; min-width: 3ch; text-align: center; font-variant-numeric: tabular-nums; }

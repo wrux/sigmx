@@ -1,41 +1,53 @@
 ---
 title: "sigmx"
-description: "A small hypermedia library. Declarative attributes, signals, and streaming server patches, with zero dependencies."
+description: "htmx on steroids in a tiny runtime: server-driven HTML, streaming patches, signals and two-way binding, from a 4 KB core."
 template: splash
 hero:
-  tagline: Declarative attributes, signals, and streaming patches from your server. Register only what you ship. Zero dependencies.
+  tagline: htmx on steroids, in a runtime smaller than htmx. Your server renders HTML and streams patches; the browser reacts with signals, two-way binding and a morph that never loses your place. Register only the plugins you use. Zero dependencies.
   actions:
     - text: Get started
       link: /start/installation/
       icon: right-arrow
-    - text: See it live
-      link: /start/first-app/
+    - text: See the examples
+      link: /examples/
       variant: minimal
 ---
 
 import { Card, CardGrid } from '@astrojs/starlight/components'
 import Live from '../../components/Live.astro'
+import SizeHero from '../../components/SizeHero.astro'
+
+<SizeHero />
 
 <Live title="A complete app, no build step" html={`
 <div data-signals="{ count: 0 }" class="row">
   <button data-on:click="$count--">−</button>
   <b data-text="$count"></b>
   <button data-on:click="$count++">+</button>
-  <span data-show="$count > 4">that is a lot of clicks</span>
+  <span data-transition="$count > 4">that is a lot of clicks</span>
 </div>
 `} />
 
+## Everything htmx does, and what it leaves to you
+
 <CardGrid>
-  <Card title="Attributes, not components" icon="document">
-    Behaviour lives in `data-*` attributes on the HTML your server already renders. Expressions are plain JavaScript with `$signals`.
+  <Card title="Server-driven HTML" icon="rocket">
+    `@get`, `@post` and friends send your state and apply whatever comes back: HTML morphed by id, JSON merged as signals, or a stream of patches over one connection. Boosted links and forms, history, and `Last-Event-ID` reconnects are all in.
   </Card>
-  <Card title="Server in charge" icon="rocket">
-    `@get`, `@post` and friends send your signals and apply whatever comes back: HTML morphed by id, JSON merged as signals, or a stream of patches.
+  <Card title="Signals, not sprinkles" icon="star">
+    Client state lives in signals you declare in markup. `data-bind`, `data-show`, `data-class`, computed values and effects keep the page in step without a component model or a virtual DOM.
+  </Card>
+  <Card title="A morph that keeps your place" icon="approve-check">
+    Patched HTML is merged, not replaced. Focus, typed input, scroll position and playing media survive every update because elements with ids are kept, wherever they move.
   </Card>
   <Card title="Pay for what you use" icon="setting">
-    A 4.5 KB core and forty opt-in plugins. The minimal preset is 5.2 KB gzipped; everything, including a streaming client and DOM morph, is 12.2 KB, or 11.6 KB as the shipped standalone file.
-  </Card>
-  <Card title="Nothing else in the bundle" icon="approve-check">
-    No runtime dependencies. A DOM-free core with Node tests, a browser suite, and a strict-CSP mode.
+    A 4 KB core and fifty-two opt-in plugins, including the Alpine and htmx extensions you would otherwise bolt on. Auto mode scans your source and bundles exactly what it finds.
   </Card>
 </CardGrid>
+
+## Why it is small
+
+- No runtime dependencies, and a kernel written for gzip: a versioned reactive graph in 190 lines, a path-keyed store, and expressions that run as plain JavaScript.
+- Plugins are values, not side effects, so bundlers drop what you do not register.
+- Optional build-time compilation of expressions removes the compiler and `new Function` entirely.
+- The numbers above are measured from the real source on every build, not quoted from memory.

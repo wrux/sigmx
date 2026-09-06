@@ -16,6 +16,7 @@ const cases = {
   'core, precompiled expressions (no runtime compiler)': `import { createRuntime, precompiled } from './kernel'; createRuntime({ expressions: precompiled({}) })`,
   'core + text': withPlugins(['text']),
   'minimal preset (signals, text, show, on)': `import { createSigmx } from './kernel'; import { minimal } from './presets/minimal'; createSigmx({ plugins: minimal })`,
+  'essentials preset (state, rendering, forms, requests, morph)': `import { createSigmx } from './kernel'; import { essentials } from './presets/essentials'; createSigmx({ plugins: essentials })`,
   'minimal + CSP compiler': `import { createSigmx } from './kernel'; import { cspCompiler } from './kernel/strict-csp'; import { minimal } from './presets/minimal'; createSigmx({ plugins: minimal, compile: cspCompiler('x') })`,
   'minimal + fetch + server handlers (morph)': withPlugins(['signals', 'text', 'show', 'on', 'httpGet', 'httpPost', 'applyElements', 'applyState', 'indicator']),
   'everything (standalone build)': `import { sigmx } from './standalone'; console.log(sigmx)`,

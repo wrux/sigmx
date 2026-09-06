@@ -31,8 +31,11 @@ export const animate = attribute({
     const write = (v: string) => (css ? el.style.setProperty(prop, v) : el.setAttribute(prop, v))
     let frame = 0
     let first = true
+    let last: string | undefined
     effect(() => {
       const to = String(evaluate())
+      if (to === last) return
+      last = to
       cancelAnimationFrame(frame)
       let from = num(read())
       const target = num(to)

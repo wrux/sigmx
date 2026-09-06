@@ -1,0 +1,32 @@
+{
+  "measuredAt": "2026-09-06",
+  "libraries": [
+    {
+      "name": "htmx",
+      "version": "2.0.10",
+      "url": "https://unpkg.com/htmx.org@2.0.10/dist/htmx.min.js",
+      "note": "htmx.min.js, core only",
+      "raw": 51238,
+      "gzip": 16585,
+      "brotli": 14996
+    },
+    {
+      "name": "Datastar",
+      "version": "1.0.3",
+      "url": "https://cdn.jsdelivr.net/gh/starfederation/datastar@v1.0.3/bundles/datastar.js",
+      "note": "datastar.js, free plugins only",
+      "raw": 33538,
+      "gzip": 13370,
+      "brotli": 12100
+    },
+    {
+      "name": "Alpine.js",
+      "version": "3.17.1",
+      "url": "https://unpkg.com/alpinejs@3.17.1/dist/cdn.min.js",
+      "note": "cdn.min.js, core only",
+      "raw": 55744,
+      "gzip": 19844,
+      "brotli": 17976
+    }
+  ]
+}

@@ -15,6 +15,7 @@ export const collapse = attribute({
     const instant = matchMedia('(prefers-reduced-motion: reduce)').matches
     let timer: ReturnType<typeof setTimeout> | undefined
     let first = true
+    let last: boolean | undefined
     const settle = (open: boolean) => {
       style.transition = ''
       style.overflow = open ? '' : 'hidden'
@@ -22,6 +23,8 @@ export const collapse = attribute({
     }
     effect(() => {
       const open = !!evaluate()
+      if (open === last) return
+      last = open
       clearTimeout(timer)
       if (first || instant) {
         first = false

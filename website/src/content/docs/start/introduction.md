@@ -4,7 +4,7 @@ description: "What sigmx is, how to say it, and where it comes from."
 sidebar: { order: 1 }
 ---
 
-sigmx is a hypermedia library. You write HTML with `data-*` attributes, the attributes read and write **signals**, and your server answers requests with HTML or a stream of patches that sigmx applies to the page. There is no component model, no virtual DOM and no client-side router: the server renders, the browser reacts.
+sigmx is htmx on steroids in a tiny runtime. Like htmx, your server renders HTML and the browser swaps it in; unlike htmx, the page also has **signals** it can read, write and bind to, the swaps are morphs that keep focus and typed input, and updates can stream over one connection. You write `data-*` attributes; there is no component model, no virtual DOM and no client-side router. The whole thing, every plugin included, is smaller than htmx alone and within a few hundred bytes of Datastar's free bundle, with more than twice its plugins.
 
 ## The name
 

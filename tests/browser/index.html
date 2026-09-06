@@ -111,6 +111,13 @@ await t('collapse animates height and settles', async () => {
   eq(col.style.overflow, 'hidden'); await until(() => col.style.height === '0px' && col.style.transition === ''); eq(col.getBoundingClientRect().height, 0) // settled (transitions do not advance in hidden tabs)
   app.$.open = true; await until(() => col.style.height === '' && col.getBoundingClientRect().height > 70)
 })
+await t('transition and collapse ignore changes that do not flip the outcome', async () => {
+  app.$.n = 5
+  const el = html('<div><span id="tr2" data-transition="$n > 3">x</span><div id="col2" data-collapse="$n > 3">y</div></div>')
+  await tick(); const span = el.querySelector('#tr2'), col = el.querySelector('#col2')
+  app.$.n = 6; await tick(); eq(span.getAnimations().length, 0, 'no re-animation'); eq(col.style.transition, '', 'no collapse restart')
+  app.$.n = 2; await tick(); eq(span.getAnimations().length, 1, 'animates when the outcome flips')
+})
 await t('transition toggles display after the animation', async () => {
   if (document.hidden) return // web animations do not finish in hidden tabs
   app.$.open = true

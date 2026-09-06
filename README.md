@@ -1,6 +1,8 @@
 # sigmx
 
-A small hypermedia library: declarative `data-*` attributes, signals, and a plugin system where you register only what you ship. Fully TypeScript, **zero runtime dependencies**, and a DOM-free core you can unit test in Node.
+htmx on steroids, in a runtime smaller than htmx. Your server renders HTML and streams patches; the browser reacts with signals, two-way binding and a morph that keeps focus, typed input and scroll position. You write `data-*` attributes and register only the plugins you use. Fully TypeScript, **zero runtime dependencies**, and a DOM-free core you can unit test in Node.
+
+Brotli-compressed: 4.0 KB core, 8.9 KB with the essentials (state, rendering, forms, requests, morph), 12.0 KB with all fifty-two plugins, against 14.6 KB for htmx 2.0.10 and 11.8 KB for Datastar 1.0.3's free bundle (23 plugins). `npm run size` and `npm run compare` regenerate every figure.
 
 ```html
 <div data-signals="{ count: 0 }">

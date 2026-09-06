@@ -54,7 +54,8 @@
     "build": "node scripts/build.mjs",
     "size": "node scripts/size.mjs",
     "test": "node scripts/build.mjs && node --test tests/*.test.mjs",
-    "dev": "node scripts/dev.mjs"
+    "dev": "node scripts/dev.mjs",
+    "compare": "node scripts/compare.mjs website/src/data/compare.json"
   },
   "devDependencies": {
     "@types/node": "^22.20.1",
