@@ -8,7 +8,8 @@ export default defineConfig({
   vite: { plugins: [tailwindcss()] },
   integrations: [
     // Auto mode picks the plugins the templates use; precompile turns every expression into a
-    // function at build time so the page never calls `new Function`.
-    sigmx({ plugins: 'auto', precompile: true }),
+    // function at build time so the page never calls `new Function`. Every expression here is
+    // static markup the scan can see, so the runtime compiler is left out of the bundle too.
+    sigmx({ plugins: 'auto', precompile: { fallback: false } }),
   ],
 });

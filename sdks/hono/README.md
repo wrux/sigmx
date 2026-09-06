@@ -13,7 +13,7 @@ import { serveClient } from '@sigmx/hono/node';
 
 const app = new Hono();
 app.use(sigmx());
-app.get('/sigmx.js', serveClient()); // the script-tag build from node_modules; skip it if you bundle
+app.get('/sigmx.js', serveClient()); // the script-tag build from node_modules; or serveClient({ path }) for your own bundle
 
 app.get('/api/towns', async (c) => {
   const { q = '' } = await c.var.sigmx.signals();
@@ -56,7 +56,7 @@ If you define your own `app.onError`, return `error.getResponse()` for `HTTPExce
 
 ## Serving the client
 
-`serveClient()` from `@sigmx/hono/node` reads `sigmx.standalone.js` from the installed `sigmx` package and serves it with an ETag and `cache-control`. It needs a filesystem, so it is a separate entry for Node, Bun and Deno; on Workers, bundle the client with your app instead. Pass `{ file, maxAge }` to serve another file from sigmx's `dist` or change the cache lifetime.
+`serveClient()` from `@sigmx/hono/node` reads `sigmx.standalone.js` from the installed `sigmx` package and serves it with an ETag and `cache-control`. It needs a filesystem, so it is a separate entry for Node, Bun and Deno; on Workers, bundle the client with your app instead. Pass `{ file, maxAge }` to serve another file from sigmx's `dist` or change the cache lifetime. Pass `path` to serve a bundle you built yourself (for example with `sigmxAuto()` from `sigmx/vite`) with the same headers: `serveClient({ path: 'public/sigmx.js' })`.
 
 ## JSX
 

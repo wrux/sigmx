@@ -3,11 +3,17 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "build": "vite build",
+    "predev": "vite build",
     "dev": "node --watch server.js",
+    "prestart": "vite build",
     "start": "node server.js"
   },
   "dependencies": {
     "express": "^5.1.0",
     "sigmx": "^0.1.1"
+  },
+  "devDependencies": {
+    "vite": "^7.1.0"
   }
 }

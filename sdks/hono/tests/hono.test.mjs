@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
+import { unlink, writeFile } from 'node:fs/promises';
 import { test } from 'node:test';
+import { fileURLToPath } from 'node:url';
 import { Hono } from 'hono';
 import { html } from 'hono/html';
 import { executeScript, patchElements, patchSignals, removeSignals, SignalsError, sigmx } from '../dist/index.js';
@@ -147,6 +149,22 @@ test('executeScript wraps code in a self-removing script appended to body', () =
   assert.match(e.lines[2], /^elements <script data-init="el\.remove\(\)">console\.log\(1\)<\/script>$/);
   assert.deepEqual(removeSignals(['a', 'b.c']).lines, ['signals {"a":null,"b":{"c":null}}']);
   assert.equal(new SignalsError('x').status, 422);
+});
+
+test('serveClient({ path }) serves a bundle of your own with the same headers', async () => {
+  const file = new URL('./fixture-bundle.js', import.meta.url);
+  await writeFile(file, 'console.log("custom bundle")');
+  try {
+    const a = new Hono().get('/sigmx.js', serveClient({ path: fileURLToPath(file) }));
+    const r = await a.request('/sigmx.js');
+    assert.equal(r.status, 200);
+    assert.equal(await r.text(), 'console.log("custom bundle")');
+    assert.match(r.headers.get('content-type'), /javascript/);
+    const again = await a.request('/sigmx.js', { headers: { 'if-none-match': r.headers.get('etag') } });
+    assert.equal(again.status, 304);
+  } finally {
+    await unlink(file);
+  }
 });
 
 test('serveClient serves the standalone build with an ETag', async () => {
