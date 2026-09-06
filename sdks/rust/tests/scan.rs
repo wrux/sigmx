@@ -1,7 +1,8 @@
 //! The scanner: detection rules, custom plugins, generated modules.
 
 use sigmx::scan::{
-    self, custom_plugin_meta, mentions, plugins_module, Entry, Kind, Options, PluginMeta, Source,
+    self, custom_plugin_meta, mentions, plugins_module, CustomPlugin, Entry, Kind, Options,
+    PluginMeta, Source,
 };
 use std::fs;
 
@@ -142,7 +143,7 @@ fn scans_a_project_and_generates_modules() {
     o.include = vec!["src".into()];
     o.from = Source::Dir("./vendor/sigmx".into());
     o.out = Some("public/sigmx.js".into());
-    o.custom = vec![("shout".into(), "assets/js/shout.js".into())];
+    o.custom = vec![CustomPlugin::new("shout", "assets/js/shout.js")];
     let sel = scan::scan(&o).unwrap();
     let names: Vec<&str> = sel.plugins.iter().map(|p| p.export.as_str()).collect();
     assert_eq!(names, vec!["bind", "shout"]);
@@ -162,7 +163,7 @@ fn scans_a_project_and_generates_modules() {
     e.expose = None;
     assert_eq!(
         e.module(),
-        "import { createSigmx } from \"sigmx\";\nimport { essentials as plugins } from \"sigmx/presets/essentials\";\nexport const sigmx = createSigmx({ plugins, prefix: [\"data-\", \"datastar-\"], eventPrefix: [\"sigmx-\", \"datastar-\"] });\n"
+        "import { createSigmx } from \"sigmx\";\nimport { essentials } from \"sigmx/presets/essentials\";\nconst plugins = [...essentials];\nexport const sigmx = createSigmx({ plugins, prefix: [\"data-\", \"datastar-\"], eventPrefix: [\"sigmx-\", \"datastar-\"] });\n"
     );
 }
 
@@ -200,4 +201,72 @@ fn the_builtin_table_matches_the_client() {
     for name in ["all", "essentials", "minimal"] {
         assert!(sigmx::client::file(&format!("presets/{name}.js")).is_some());
     }
+}
+
+#[test]
+fn custom_plugins_can_be_declared_forced_and_added_to_any_entry() {
+    let dir = tempfile::tempdir().unwrap();
+    let root = dir.path();
+    fs::create_dir_all(root.join("src")).unwrap();
+    fs::create_dir_all(root.join("js")).unwrap();
+    fs::write(root.join("src/page.rs"), "html! { p data-text=\"$x\" {} }").unwrap();
+    // Not in the `export const x = attribute({...})` shape, so its metadata is declared.
+    fs::write(
+        root.join("js/toast.js"),
+        "const def = { type: 'handler', name: 'toast', handle() {} };\nexport { def as toast };",
+    )
+    .unwrap();
+    fs::write(
+        root.join("js/shout.js"),
+        "export const shout = attribute({ name: 'shout', mount() {} });",
+    )
+    .unwrap();
+
+    let mut o = Options {
+        root: root.to_path_buf(),
+        ..Options::default()
+    };
+    o.include = vec!["src".into()];
+    o.from = Source::Dir("./vendor/sigmx".into());
+    o.out = Some("public/sigmx.js".into());
+    o.custom = vec![
+        CustomPlugin::new("toast", "js/toast.js")
+            .named("toast", Kind::Handler)
+            .always(),
+        CustomPlugin::new("shout", "js/shout.js"), // unused by the source, so left out
+    ];
+    let sel = scan::scan(&o).unwrap();
+    let names: Vec<&str> = sel.plugins.iter().map(|p| p.export.as_str()).collect();
+    assert_eq!(names, vec!["text", "toast"]);
+    assert_eq!(sel.reasons["toast"], "always");
+    assert!(sel.unused.contains(&"shout".to_owned()));
+    assert_eq!(sel.plugins[1].from, "../js/toast.js");
+
+    // Undeclared and unparseable is an error that says what to do.
+    o.custom = vec![CustomPlugin::new("toast", "js/toast.js")];
+    let err = scan::scan(&o).unwrap_err().to_string();
+    assert!(err.contains("CustomPlugin::named"), "{err}");
+
+    let entry = Entry::preset("essentials", Source::Dir("./vendor/sigmx".into()))
+        .plugin("shout", "./js/shout.js")
+        .plugin("toast", "./js/toast.js")
+        .append("sigmx.use({ type: 'attribute', name: 'inline', mount({ el }) { el.hidden = true; } });");
+    assert_eq!(
+        entry.module(),
+        "import { createSigmx } from \"./vendor/sigmx/kernel/index.js\";\n\
+         import { essentials } from \"./vendor/sigmx/presets/essentials.js\";\n\
+         import { shout } from \"./js/shout.js\";\n\
+         import { toast } from \"./js/toast.js\";\n\
+         const plugins = [...essentials, shout, toast];\n\
+         export const sigmx = createSigmx({ plugins });\n\
+         globalThis[\"sigmx\"] = sigmx;\n\
+         sigmx.use({ type: 'attribute', name: 'inline', mount({ el }) { el.hidden = true; } });\n"
+    );
+    let entry = Entry::selection(sel, o.from.clone()).plugin("toast", "../js/toast.js");
+    let module = entry.module();
+    assert_eq!(
+        module.matches("toast").count(),
+        3,
+        "an extra already selected is not duplicated:\n{module}"
+    );
 }

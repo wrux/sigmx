@@ -122,6 +122,81 @@ pub const DEFAULT_EXTENSIONS: &[&str] = &[
 /// Directories scanned by default, relative to the root.
 pub const DEFAULT_INCLUDE: &[&str] = &["src", "templates", "index.html"];
 
+/// A plugin of your own: a module exporting an `attribute({ … })`, `action({ … })` or
+/// `handler({ … })` definition. Its name and kind are read from the source, or declared with
+/// [`CustomPlugin::named`] when the definition is not in that shape.
+///
+/// ```
+/// use sigmx::scan::{CustomPlugin, Kind};
+///
+/// let parsed = CustomPlugin::new("shout", "assets/js/shout.js");
+/// let declared = CustomPlugin::new("toast", "assets/js/toast.js").named("toast", Kind::Handler).always();
+/// ```
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CustomPlugin {
+    /// Export name in the module.
+    pub export: String,
+    /// The module, relative to the root.
+    pub path: PathBuf,
+    /// Directive, function or event name; read from the source when `None`.
+    pub name: Option<String>,
+    /// Kind; read from the source when `None`.
+    pub kind: Option<Kind>,
+    /// The value is a literal rather than an expression (directives only).
+    pub literal: bool,
+    /// Extra expression parameters (directives only).
+    pub args: Vec<String>,
+    /// Ship it whether or not the scan finds a use.
+    pub always: bool,
+}
+
+impl CustomPlugin {
+    /// A plugin exported as `export` from the module at `path`; its definition is read from the
+    /// source.
+    pub fn new(export: impl Into<String>, path: impl Into<PathBuf>) -> Self {
+        CustomPlugin {
+            export: export.into(),
+            path: path.into(),
+            name: None,
+            kind: None,
+            literal: false,
+            args: Vec::new(),
+            always: false,
+        }
+    }
+    /// Declare the name and kind instead of reading them from the source.
+    pub fn named(mut self, name: impl Into<String>, kind: Kind) -> Self {
+        self.name = Some(name.into());
+        self.kind = Some(kind);
+        self
+    }
+    /// The directive's value is a literal (`__dynamic` makes it an expression).
+    pub fn literal(mut self, literal: bool) -> Self {
+        self.literal = literal;
+        self
+    }
+    /// Extra parameter names the directive's expression can reference.
+    pub fn args<I, S>(mut self, args: I) -> Self
+    where
+        I: IntoIterator<Item = S>,
+        S: Into<String>,
+    {
+        self.args = args.into_iter().map(Into::into).collect();
+        self
+    }
+    /// Ship it whether or not the scan finds a use.
+    pub fn always(mut self) -> Self {
+        self.always = true;
+        self
+    }
+}
+
+impl<S: Into<String>, P: Into<PathBuf>> From<(S, P)> for CustomPlugin {
+    fn from((export, path): (S, P)) -> Self {
+        CustomPlugin::new(export, path)
+    }
+}
+
 /// What to scan and how to import what is found.
 #[derive(Debug, Clone)]
 pub struct Options {
@@ -135,8 +210,8 @@ pub struct Options {
     pub prefixes: Vec<String>,
     /// Export names that ship no matter what.
     pub always: Vec<String>,
-    /// Custom plugins: export name and source file, relative to the root.
-    pub custom: Vec<(String, PathBuf)>,
+    /// Your own plugins; see [`CustomPlugin`].
+    pub custom: Vec<CustomPlugin>,
     /// Where the client modules come from.
     pub from: Source,
     /// The file the module will be written to, so custom plugins get relative imports. Without
@@ -569,9 +644,9 @@ pub fn scan(o: &Options) -> io::Result<Selection> {
         .and_then(|p| p.parent().map(Path::to_path_buf));
     let mut known = builtin_plugins(&o.from);
     let mut custom_names = Vec::new();
-    for (export, path) in &o.custom {
-        let abs = root.join(path);
-        let src = std::fs::read_to_string(&abs)?;
+    let mut always = o.always.clone();
+    for c in &o.custom {
+        let abs = root.join(&c.path);
         let from = match &out_dir {
             Some(dir) => relative_specifier(dir, &abs),
             None => format!(
@@ -582,23 +657,37 @@ pub fn scan(o: &Options) -> io::Result<Selection> {
                     .replace('\\', "/")
             ),
         };
-        match custom_plugin_meta(export, &src, &from) {
-            Some(meta) => {
-                custom_names.push(export.clone());
-                known.push(meta);
+        let meta = match (&c.name, c.kind) {
+            (Some(name), Some(kind)) => PluginMeta {
+                export: c.export.clone(),
+                name: name.clone(),
+                kind,
+                from,
+                literal: c.literal,
+                args: c.args.clone(),
+            },
+            _ => {
+                let src = std::fs::read_to_string(&abs)?;
+                custom_plugin_meta(&c.export, &src, &from).ok_or_else(|| {
+                    io::Error::new(
+                        io::ErrorKind::InvalidData,
+                        format!(
+                            "could not read plugin metadata for \"{}\" in {}; declare it with \
+                             CustomPlugin::named",
+                            c.export,
+                            c.path.display()
+                        ),
+                    )
+                })?
             }
-            None => {
-                return Err(io::Error::new(
-                    io::ErrorKind::InvalidData,
-                    format!(
-                        "could not read plugin metadata for \"{export}\" in {}",
-                        path.display()
-                    ),
-                ))
-            }
+        };
+        if c.always {
+            always.push(c.export.clone());
         }
+        custom_names.push(c.export.clone());
+        known.push(meta);
     }
-    let mut sel = select_plugins(&sources, known, &o.prefixes, &o.always, &custom_names);
+    let mut sel = select_plugins(&sources, known, &o.prefixes, &always, &custom_names);
     sel.files = files;
     Ok(sel)
 }
@@ -668,6 +757,11 @@ pub struct Entry {
     pub event_prefix: Vec<String>,
     /// Global the instance is exposed as (default `sigmx`); `None` for no global.
     pub expose: Option<String>,
+    /// Plugins added on top of the preset or selection: export name and module specifier
+    /// (relative to the generated file, or a package). See [`Entry::plugin`].
+    pub extra: Vec<(String, String)>,
+    /// Statements appended after the instance is created. See [`Entry::append`].
+    pub code: Vec<String>,
 }
 
 impl Entry {
@@ -679,6 +773,8 @@ impl Entry {
             prefix: Vec::new(),
             event_prefix: Vec::new(),
             expose: Some("sigmx".into()),
+            extra: Vec::new(),
+            code: Vec::new(),
         }
     }
 
@@ -690,7 +786,25 @@ impl Entry {
             prefix: Vec::new(),
             event_prefix: Vec::new(),
             expose: Some("sigmx".into()),
+            extra: Vec::new(),
+            code: Vec::new(),
         }
+    }
+
+    /// Register a plugin of your own regardless of the scan: `export` is imported from `from`
+    /// (a specifier relative to the generated file, such as `./js/shout.js`, or a package) and
+    /// added to the plugin list. Works with presets too.
+    pub fn plugin(mut self, export: impl Into<String>, from: impl Into<String>) -> Self {
+        self.extra.push((export.into(), from.into()));
+        self
+    }
+
+    /// Append JavaScript after the instance is created, for anything the plugin list cannot
+    /// express: `sigmx.use(...)` with a plugin object built inline, event listeners, and so on.
+    /// The instance is in scope as `sigmx`.
+    pub fn append(mut self, code: impl Into<String>) -> Self {
+        self.code.push(code.into());
+        self
     }
 
     /// The module source.
@@ -699,32 +813,42 @@ impl Entry {
             "import {{ createSigmx }} from {};\n",
             js_string(&self.from.kernel())
         );
+        let mut groups: Vec<(String, Vec<String>)> = Vec::new();
+        let mut add = |from: &str, export: &str| match groups.iter_mut().find(|(f, _)| f == from) {
+            Some((_, names)) => {
+                if !names.iter().any(|n| n == export) {
+                    names.push(export.to_owned());
+                }
+            }
+            None => groups.push((from.to_owned(), vec![export.to_owned()])),
+        };
+        let mut list: Vec<String> = Vec::new();
         match &self.plugins {
             EntryPlugins::Preset(name) => {
-                out.push_str(&format!(
-                    "import {{ {name} as plugins }} from {};\n",
-                    js_string(&self.from.preset(name))
-                ));
+                add(&self.from.preset(name), name);
+                list.push(format!("...{name}"));
             }
             EntryPlugins::Selection(sel) => {
-                let mut groups: Vec<(String, Vec<String>)> = Vec::new();
                 for p in &sel.plugins {
-                    match groups.iter_mut().find(|(from, _)| *from == p.from) {
-                        Some((_, names)) => names.push(p.export.clone()),
-                        None => groups.push((p.from.clone(), vec![p.export.clone()])),
-                    }
+                    add(&p.from, &p.export);
+                    list.push(p.export.clone());
                 }
-                for (from, names) in &groups {
-                    out.push_str(&format!(
-                        "import {{ {} }} from {};\n",
-                        names.join(", "),
-                        js_string(from)
-                    ));
-                }
-                let list: Vec<&str> = sel.plugins.iter().map(|p| p.export.as_str()).collect();
-                out.push_str(&format!("const plugins = [{}];\n", list.join(", ")));
             }
         }
+        for (export, from) in &self.extra {
+            add(from, export);
+            if !list.iter().any(|l| l == export) {
+                list.push(export.clone());
+            }
+        }
+        for (from, names) in &groups {
+            out.push_str(&format!(
+                "import {{ {} }} from {};\n",
+                names.join(", "),
+                js_string(from)
+            ));
+        }
+        out.push_str(&format!("const plugins = [{}];\n", list.join(", ")));
         let mut opts = vec!["plugins".to_owned()];
         let list = |v: &[String]| {
             format!(
@@ -747,6 +871,10 @@ impl Entry {
         ));
         if let Some(name) = &self.expose {
             out.push_str(&format!("globalThis[{}] = sigmx;\n", js_string(name)));
+        }
+        for code in &self.code {
+            out.push_str(code.trim_end());
+            out.push('\n');
         }
         out
     }

@@ -6,7 +6,7 @@
 //!   sigmx entry [paths…] --out <file>       write a complete entry module (scan + createSigmx)
 //!   sigmx version
 
-use sigmx::scan::{self, Entry, Options, Source};
+use sigmx::scan::{self, CustomPlugin, Entry, Kind, Options, Source};
 use std::path::PathBuf;
 use std::process::exit;
 
@@ -14,11 +14,16 @@ const USAGE: &str = "usage:
   sigmx client standalone <out.js>
   sigmx client unpack <dir>
   sigmx scan [paths...] [--root DIR] [--out FILE] [--from ./vendor/sigmx | sigmx]
-             [--always a,b] [--custom name=path,...] [--prefix data-,hx-] [--ext .rs,.html]
+             [--always a,b] [--custom name=path[:kind:name],...] [--prefix data-,hx-] [--ext .rs,.html]
   sigmx entry [paths...] --out FILE [--from ./vendor/sigmx] [--preset all|essentials|minimal]
-             [--always a,b] [--custom name=path,...] [--prefix data-,hx-] [--event-prefix sigmx-,datastar-]
-             [--expose NAME|none] [--ext .rs,.html]
-  sigmx version";
+             [--always a,b] [--custom name=path[:kind:name],...] [--plugin name=specifier,...]
+             [--prefix data-,hx-] [--event-prefix sigmx-,datastar-] [--expose NAME|none] [--ext .rs,.html]
+  sigmx version
+
+  --custom  a plugin of yours, scanned for like the built-ins; its definition is read from the
+            file, or declared as name=path:attribute|action|handler:<directive-name>
+  --plugin  a plugin registered regardless of the scan (entry only); the specifier is relative to
+            the output file, e.g. shout=./js/shout.js, or a package";
 
 fn main() {
     let mut args: Vec<String> = std::env::args().skip(1).collect();
@@ -121,6 +126,7 @@ fn scan_cmd(mut args: Vec<String>, entry: bool) -> Result<(), String> {
     let preset = opt(&mut args, "preset")?;
     let expose = opt(&mut args, "expose")?;
     let custom = list(opt(&mut args, "custom")?);
+    let plugins = list(opt(&mut args, "plugin")?);
     if let Some(bad) = args.iter().find(|a| a.starts_with("--")) {
         return Err(format!("unknown option {bad}\n{USAGE}"));
     }
@@ -136,10 +142,29 @@ fn scan_cmd(mut args: Vec<String>, entry: bool) -> Result<(), String> {
     o.always = always;
     o.out = out.as_ref().map(PathBuf::from);
     for pair in custom {
-        let (name, path) = pair
+        let (name, rest) = pair
             .split_once('=')
-            .ok_or_else(|| format!("--custom entries are name=path, got '{pair}'"))?;
-        o.custom.push((name.to_owned(), PathBuf::from(path)));
+            .ok_or_else(|| format!("--custom entries are name=path[:kind:name], got '{pair}'"))?;
+        let mut parts = rest.splitn(3, ':');
+        let path = parts.next().unwrap_or_default();
+        let mut c = CustomPlugin::new(name, path);
+        if let (Some(kind), Some(plugin_name)) = (parts.next(), parts.next()) {
+            let kind = match kind {
+                "attribute" => Kind::Attribute,
+                "action" => Kind::Action,
+                "handler" => Kind::Handler,
+                other => return Err(format!("unknown plugin kind '{other}' in --custom {pair}")),
+            };
+            c = c.named(plugin_name, kind);
+        }
+        o.custom.push(c);
+    }
+    let mut extra = Vec::new();
+    for pair in plugins {
+        let (name, from) = pair
+            .split_once('=')
+            .ok_or_else(|| format!("--plugin entries are name=specifier, got '{pair}'"))?;
+        extra.push((name.to_owned(), from.to_owned()));
     }
 
     let code = if entry {
@@ -149,6 +174,7 @@ fn scan_cmd(mut args: Vec<String>, entry: bool) -> Result<(), String> {
         };
         e.prefix = prefixes;
         e.event_prefix = event_prefix;
+        e.extra = extra;
         e.expose = match expose.as_deref() {
             Some("none") | Some("false") => None,
             Some(n) => Some(n.to_owned()),

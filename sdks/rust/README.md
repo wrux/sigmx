@@ -93,7 +93,30 @@ sigmx client unpack public/vendor/sigmx      # the ES modules, for a bundle of y
 sigmx entry src --from ./vendor/sigmx --out public/sigmx.js   # auto mode: an entry registering only what src/ uses
 ```
 
-The same three calls are functions (`client::write_standalone`, `client::write_esm`, `scan::scan` + `scan::Entry`) for a project with its own Rust asset step, like the `assetc` crate in the Worker example. The generated entry imports from the unpacked tree with relative paths, so a browser can load it as-is, and swc, esbuild or Vite can bundle it into one file. Custom plugins are picked up by name: `--custom shout=assets/js/shout.js` (or `Options::custom`) reads `attribute({ name: 'shout', … })` from the file without running it and imports it when `data-shout` appears in the scanned source.
+The same three calls are functions (`client::write_standalone`, `client::write_esm`, `scan::scan` + `scan::Entry`) for a project with its own Rust asset step, like the `assetc` crate in the Worker example. The generated entry imports from the unpacked tree with relative paths, so a browser can load it as-is, and swc, esbuild or Vite can bundle it into one file. ## Your own plugins
+
+A plugin is a module exporting `attribute({ name, mount })`, `action({ name, call })` or `handler({ name, handle })`, importing those helpers from the unpacked tree (`./vendor/sigmx/kernel/index.js`) or from `sigmx` on npm. There are three ways to ship one:
+
+```rust
+use sigmx::scan::{CustomPlugin, Entry, Kind};
+
+// 1. Scanned like the built-ins: its definition is read from the file (never run) and it
+//    ships when `data-shout` appears in the source. Declare the metadata instead when the file
+//    is not in that shape, and `.always()` to ship it regardless.
+o.custom = vec![
+    CustomPlugin::new("shout", "public/js/shout.js"),
+    CustomPlugin::new("toast", "public/js/toast.js").named("toast", Kind::Handler).always(),
+];
+
+// 2. Added to any entry, presets included, with a specifier relative to the output file.
+let entry = Entry::preset("essentials", from).plugin("shout", "./js/shout.js");
+
+// 3. Registered at runtime from code appended to the entry. Plugins are plain objects, so this
+//    also works with the script-tag build: `window.sigmx.use({ type: 'attribute', … })`.
+let entry = entry.append("sigmx.use({ type: 'attribute', name: 'inline', mount({ el }) { … } });");
+```
+
+From the CLI: `--custom shout=assets/js/shout.js`, `--custom toast=assets/js/toast.js:handler:toast`, `--plugin shout=./js/shout.js`.
 
 Projects that do have a bundler can also install `sigmx` from npm and use `sigmx/vite`; the crate's server side does not care where the client came from.
 
