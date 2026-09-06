@@ -1,0 +1,95 @@
+---
+title: "Signals and the store"
+description: "How state is stored, patched, observed, and used from JavaScript."
+sidebar: { order: 3 }
+---
+
+import Live from '../../../components/Live.astro'
+
+All client state lives in one store per instance. Think of it as a JSON document: values are addressed by dotted paths, plain objects are namespaces, and everything else (numbers, strings, booleans, arrays, elements, dates) is a leaf signal.
+
+```html
+<div data-signals="{ user: { name: 'Ada', tags: ['x'] }, count: 0 }"></div>
+```
+
+creates the leaves `user.name`, `user.tags` and `count`.
+
+## Patching
+
+Every write is a JSON merge-patch (RFC 7396): objects merge, `null` removes, other values replace.
+
+| write | effect |
+|---|---|
+| `$user = { name: 'Bob' }` | replaces the `user` subtree |
+| `data-signals="{ user: { age: 3 } }"` | merges: `user.name` stays, `user.age` appears |
+| `data-signals__ifmissing` | only paths that do not exist yet are written |
+| `$user.age = null` | removes `user.age` |
+| a server `patch-signals` event | same rules |
+
+## Arrays
+
+Arrays are leaves that notify on mutation: `push`, `splice`, index assignment and `length` changes all re-run readers. Objects inside arrays are plain; replace the array or the element to signal a deep change.
+
+<Live html={`
+<div data-signals="{ list: [3, 1, 2] }" class="row">
+  <button data-on:click="$list.push($list.length + 1)">push</button>
+  <button data-on:click="$list.sort()">sort</button>
+  <button data-on:click="$list.splice(0, 1)">shift</button>
+  <span data-text="JSON.stringify($list)"></span>
+</div>
+`} />
+
+## Computed signals
+
+`data-computed` installs a derived value that recomputes lazily and only notifies readers when its result actually changes. Patches from the server or from storage skip computed paths instead of failing.
+
+<Live html={`
+<div data-signals="{ price: 12, qty: 2 }" data-computed:total="$price * $qty">
+  <div class="row">
+    <input type="number" data-bind:price> × <input type="number" data-bind:qty> = <b data-text="$total"></b>
+  </div>
+</div>
+`} />
+
+## Watching changes
+
+`data-effect` re-runs whenever a signal it read changes. `data-on-signal-patch` runs once per settled batch with the nested object of changed paths, optionally narrowed to one path.
+
+<Live html={`
+<div data-signals="{ a: 0, b: 0, log: '' }" data-on-signal-patch:a="$log += 'a→' + patch.a + ' '">
+  <div class="row">
+    <button data-on:click="$a++">a++</button>
+    <button data-on:click="$b++">b++ (not logged)</button>
+  </div>
+  <code data-text="$log || 'nothing yet'"></code>
+</div>
+`} />
+
+Every settled batch also dispatches a `sigmx-signal-patch` event on `document` whose `detail` is the patch, with `null` for removed paths.
+
+## From JavaScript
+
+The instance exposes the store two ways:
+
+```ts
+const app = createSigmx({ plugins })
+
+app.$.count++                         // proxy: reads and writes like the expressions do
+app.$.user = { name: 'Ada' }
+JSON.stringify(app.$)
+
+app.store.get('user.name')            // explicit API
+app.store.set('count', 5)
+app.store.merge({ user: { age: 3 } }, { ifMissing: true })
+app.store.remove('user.tags')
+app.store.snapshot({ exclude: /^_/ }) // plain object copy, filtered by path
+app.store.paths()                     // every leaf path
+app.store.onPatch((patch) => {})      // one call per settled batch
+app.store.define('total', computed(() => app.store.get('price') * 2))
+```
+
+Two instances can share one store by passing `store` to the second `createSigmx` call.
+
+## Underscore convention
+
+Paths that start with `_` are still ordinary signals, but requests exclude them by default (`filter: { exclude: /(^|\.)_/ }`). Use the prefix for purely client-side state such as `_open` or `_typing`.

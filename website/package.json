@@ -1,0 +1,19 @@
+{
+  "name": "sigmx-website",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "sizes": "node ../scripts/size.mjs --json src/data/sizes.json"
+  },
+  "dependencies": {
+    "@astrojs/node": "^11.1.5",
+    "@astrojs/starlight": "^0.42.0",
+    "astro": "^7.3.1",
+    "sharp": "^0.35.4",
+    "sigmx": "file:..",
+    "sigmx-astro": "file:../sdks/astro"
+  }
+}

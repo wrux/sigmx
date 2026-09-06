@@ -1,0 +1,42 @@
+---
+title: "data-style"
+description: "Set inline style properties from expressions."
+sidebar: {"order": 8, "label": "style"}
+---
+import Live from '../../../../components/Live.astro'
+import Cost from '../../../../components/Cost.astro'
+
+Set inline style properties from expressions.
+
+## Syntax
+
+```html
+data-style:opacity="$visible ? 1 : 0.3"
+data-style="{ backgroundColor: $bg, '--accent': $accent }"
+```
+
+| part | |
+|---|---|
+| key | optional (a property) or an object value |
+| value | required |
+
+## Example
+
+<Live html={`
+<div data-signals="{ w: 40 }">
+  <input type="range" min="10" max="100" data-bind:w>
+  <div class="box" data-style:width="$w + '%'" style="height:1rem"></div>
+</div>
+`} />
+
+## Notes
+
+Property names are converted to kebab-case, so `backgroundColor` and `background-color` both work; custom properties (`--x`) are passed through. A falsy value (other than `0`) restores the original inline value; unmounting restores everything.
+
+## Register
+
+```ts
+import { style } from 'sigmx/plugins'
+```
+
+<Cost name="style" />

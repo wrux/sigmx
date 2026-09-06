@@ -1,0 +1,20 @@
+---
+interface Props { posts: { id: number; author: string; text: string; minutesAgo: number }[] }
+const { posts } = Astro.props
+const hue = (s: string) => [...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 360, 7)
+---
+{posts.map((p) => (
+  <li id={`post-${p.id}`} class="post card">
+    <span class="avatar" style={`--h: ${hue(p.author)}`} aria-hidden="true">{p.author[0].toUpperCase()}</span>
+    <div class="body">
+      <header><b>{p.author}</b> <span class="muted">@{p.author} · <time data-text={`@intl('relativeTime', [-${p.minutesAgo}, 'minute'], { numeric: 'auto' })`}></time></span></header>
+      <p>{p.text}</p>
+      <footer>
+        <button type="button" class="like" data-class:on={`$liked.includes(${p.id})`} data-on:click={`$liked.includes(${p.id}) ? $liked.splice($liked.indexOf(${p.id}), 1) : $liked.push(${p.id})`}>
+          <span data-text={`$liked.includes(${p.id}) ? '♥' : '♡'`}></span> <span data-text={`${(p.id * 7) % 40} + ($liked.includes(${p.id}) ? 1 : 0)`}></span>
+        </button>
+        <span class="muted">#{p.id}</span>
+      </footer>
+    </div>
+  </li>
+))}

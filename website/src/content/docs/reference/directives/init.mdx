@@ -1,0 +1,46 @@
+---
+title: "data-init"
+description: "Run an expression once when the element mounts."
+sidebar: {"order": 11, "label": "init"}
+---
+import Live from '../../../../components/Live.astro'
+import Cost from '../../../../components/Cost.astro'
+
+Run an expression once when the element mounts.
+
+## Syntax
+
+```html
+data-init="$loaded = true"
+data-init__delay.500ms="@get('/late')"
+```
+
+| part | |
+|---|---|
+| key | forbidden |
+| value | required |
+
+## Modifiers
+
+| modifier | effect |
+|---|---|
+| `__delay.300ms` | wait before running |
+| `__viewtransition` | wrap in `document.startViewTransition` |
+
+## Example
+
+<Live html={`
+<div data-signals="{ started: '' }" data-init="$started = new Date().toLocaleTimeString()">Mounted at <b data-text="$started"></b></div>
+`} />
+
+## Notes
+
+Runs again if the element is removed and re-inserted, because that is a new mount.
+
+## Register
+
+```ts
+import { init } from 'sigmx/plugins'
+```
+
+<Cost name="init" />

@@ -1,0 +1,6 @@
+---
+import sizes from '../data/sizes.json'
+interface Props { name: string }
+const row = sizes.perPlugin.find((p: any) => p.export === Astro.props.name)
+---
+{row && <p class="muted">Registering <code>{row.export}</code> adds <b>{row.gzip} bytes</b> gzipped ({row.brotli} brotli, {row.raw} minified) on top of the core. See <a href="/guides/bundle-sizes/">bundle sizes</a>.</p>}

@@ -1,0 +1,41 @@
+---
+title: "sigmx"
+description: "A small hypermedia library. Declarative attributes, signals, and streaming server patches, with zero dependencies."
+template: splash
+hero:
+  tagline: Declarative attributes, signals, and streaming patches from your server. Register only what you ship. Zero dependencies.
+  actions:
+    - text: Get started
+      link: /start/installation/
+      icon: right-arrow
+    - text: See it live
+      link: /start/first-app/
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components'
+import Live from '../../components/Live.astro'
+
+<Live title="A complete app, no build step" html={`
+<div data-signals="{ count: 0 }" class="row">
+  <button data-on:click="$count--">−</button>
+  <b data-text="$count"></b>
+  <button data-on:click="$count++">+</button>
+  <span data-show="$count > 4">that is a lot of clicks</span>
+</div>
+`} />
+
+<CardGrid>
+  <Card title="Attributes, not components" icon="document">
+    Behaviour lives in `data-*` attributes on the HTML your server already renders. Expressions are plain JavaScript with `$signals`.
+  </Card>
+  <Card title="Server in charge" icon="rocket">
+    `@get`, `@post` and friends send your signals and apply whatever comes back: HTML morphed by id, JSON merged as signals, or a stream of patches.
+  </Card>
+  <Card title="Pay for what you use" icon="setting">
+    A 4.5 KB core and forty opt-in plugins. The minimal preset is 5.2 KB gzipped; everything, including a streaming client and DOM morph, is 12.6 KB.
+  </Card>
+  <Card title="Nothing else in the bundle" icon="approve-check">
+    No runtime dependencies. A DOM-free core with Node tests, a browser suite, and a strict-CSP mode.
+  </Card>
+</CardGrid>

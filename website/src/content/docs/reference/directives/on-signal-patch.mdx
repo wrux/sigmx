@@ -1,0 +1,49 @@
+---
+title: "data-on-signal-patch"
+description: "Run an expression after signals change."
+sidebar: {"order": 15, "label": "on-signal-patch"}
+---
+import Live from '../../../../components/Live.astro'
+import Cost from '../../../../components/Cost.astro'
+
+Run an expression after signals change.
+
+## Syntax
+
+```html
+data-on-signal-patch="console.log(patch)"
+data-on-signal-patch:user.name="$dirty = true"
+data-on-signal-patch__debounce.500ms="@post('/autosave')"
+```
+
+| part | |
+|---|---|
+| key | optional (a path prefix to watch) |
+| value | required |
+
+## Modifiers
+
+| modifier | effect |
+|---|---|
+| `__delay / __debounce / __throttle` | timing |
+
+## Example
+
+<Live html={`
+<div data-signals="{ a: 0, b: 0, seen: '' }" data-on-signal-patch="$seen = Object.keys(patch).join(',')">
+  <div class="row"><button data-on:click="$a++">a++</button><button data-on:click="$b++">b++</button></div>
+  <p>last patch touched: <code data-text="$seen"></code></p>
+</div>
+`} />
+
+## Notes
+
+`patch` is the nested object of changed paths, with `null` for removed ones. With a key, the expression runs only when that path (or something under it) is in the patch. Changes made by the expression itself do not re-trigger it.
+
+## Register
+
+```ts
+import { onSignalPatch } from 'sigmx/plugins'
+```
+
+<Cost name="onSignalPatch" />

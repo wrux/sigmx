@@ -1,0 +1,48 @@
+---
+title: "data-computed"
+description: "A derived signal that recalculates lazily when its inputs change."
+sidebar: {"order": 2, "label": "computed"}
+---
+import Live from '../../../../components/Live.astro'
+import Cost from '../../../../components/Cost.astro'
+
+A derived signal that recalculates lazily when its inputs change.
+
+## Syntax
+
+```html
+data-computed:total="$price * $qty"
+data-computed="{ total: () => $price * $qty, label: () => $total + ' EUR' }"
+```
+
+| part | |
+|---|---|
+| key | optional (the signal path); the object form takes functions |
+| value | required |
+
+## Modifiers
+
+| modifier | effect |
+|---|---|
+| `__case.*` | key casing |
+
+## Example
+
+<Live html={`
+<div data-signals="{ first: 'Ada', last: 'Lovelace' }" data-computed:full="$first + ' ' + $last">
+  <div class="row"><input data-bind:first> <input data-bind:last></div>
+  <p>Full name: <b data-text="$full"></b></p>
+</div>
+`} />
+
+## Notes
+
+A computed only notifies its readers when its result changes, so `data-text="$isEven"` re-renders once per parity change, not once per increment. Writing to a computed path throws; server and storage patches skip computed paths silently.
+
+## Register
+
+```ts
+import { computed } from 'sigmx/plugins'
+```
+
+<Cost name="computed" />

@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>sigmx demo</title>
+<style>
+  :root { color-scheme: light dark; --bg: #fbfbf9; --fg: #1c211f; --line: #c9cfcb; --hot: #ffe9a8; --hot-fg: #3a2a00; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #171b1a; --fg: #e8ece9; --line: #3a413e; --hot: #5a4a12; --hot-fg: #ffe9a8; } }
+  body { font: 15px/1.5 system-ui, sans-serif; max-width: 42rem; margin: 2rem auto; padding: 0 1rem; background: var(--bg); color: var(--fg); }
+  section { border: 1px solid var(--line); border-radius: 6px; padding: 1rem; margin: 1rem 0; }
+  .hot { background: var(--hot); color: var(--hot-fg); }
+  input, textarea, button { font: inherit; }
+</style>
+</head>
+<body>
+<h1>sigmx smoke test</h1>
+
+<section id="counter" data-signals="{count: 0, name: 'world', picks: []}">
+  <h2>core: signals / text / on / show / class / computed</h2>
+  <button id="inc" data-on:click="$count++">+1</button>
+  <span>count = <b id="count" data-text="$count"></b></span>
+  <span data-computed:doubled="$count * 2">doubled = <b id="doubled" data-text="$doubled"></b></span>
+  <p id="hot" data-class:hot="$count >= 3">turns yellow at 3</p>
+  <p id="hidden" data-show="$count % 2 === 0">visible on even counts</p>
+  <label><input id="cb1" type="checkbox" value="a" data-bind:picks> a</label><label><input id="cb2" type="checkbox" value="b" data-bind:picks> b</label> picks = <b id="picks" data-text="JSON.stringify($picks)"></b>
+  <input id="name" data-bind:name placeholder="type a name">
+  <p id="greeting" data-text="`hello ${$name}`"></p>
+</section>
+
+<section>
+  <h2>formerly Pro: @fit, @intl, match-media, on-resize, on-raf</h2>
+  <input id="slider" type="range" min="0" max="100" value="50" data-bind:slider>
+  <span>rgb = <b id="fit" data-text="@fit($slider, 0, 100, 0, 255, true, true)"></b></span>
+  <p>price: <b id="intl" data-text="@intl('number', 1234567.891, {style:'currency', currency:'USD'}, 'en-US')"></b></p>
+  <p data-match-media:is-dark="'prefers-color-scheme: dark'">isDark = <b id="dark" data-text="String($isDark)"></b></p>
+  <textarea id="resizer" data-signals:resizes="0" data-on-resize="$resizes++" style="width: 200px; height: 60px"></textarea>
+  <span>resizes observed: <b id="resizes" data-text="$resizes"></b></span>
+  <p data-signals:frames="0" data-on-raf__throttle.100ms="$frames++">raf ticks (throttled 100ms): <b id="frames" data-text="$frames"></b></p>
+  <button id="copy" data-on:click="@clipboard('SGVsbG8=', true)">copy 'Hello' via base64</button>
+</section>
+
+<section data-persist:demo>
+  <h2>formerly Pro: persist (localStorage key "demo")</h2>
+  <button id="persistInc" data-signals:persisted__ifmissing="0" data-on:click="$persisted++">persisted++</button>
+  <b id="persisted" data-text="$persisted"></b> (reload the page to check; the default uses <code>__ifmissing</code> so the restored value wins)
+</section>
+
+<section>
+  <h2>migration prefixes: the same plugins via <code>hx-</code> and <code>s-</code></h2>
+  <button id="hxInc" hx-on:click="$count++">hx-on:click → $count++</button>
+  <span>hx-text: <b id="hxCount" hx-text="$count"></b></span>
+  <span>s-text: <b id="sCount" s-text="$count * 10"></b></span>
+  <p id="sIgnored" s-ignore><span data-text="'should stay untouched'">untouched (s-ignore)</span></p>
+</section>
+
+<section>
+  <h2>server: @get / @post, streamed patches, morph</h2>
+  <div id="server-box">not loaded</div>
+  <ul id="list"></ul>
+  <button id="srvJson" data-on:click="@get('/api/json')">@get json</button>
+  <button id="srvHtml" data-on:click="@get('/api/html')">@get html (morph #server-box)</button>
+  <button id="srvAppend" data-on:click="@get('/api/html-append')">@get append to #list</button>
+  <button id="srvSse" data-indicator:busy data-on:click="@post('/api/sse')" data-attr:disabled="$busy">@post sse stream</button>
+  <p>fromServer = <b data-text="$fromServer ?? '-'"></b>, stream = <b data-text="$stream ?? '-'"></b>, busy = <b data-text="String($busy)"></b></p>
+</section>
+
+<pre id="dump" data-effect="el.textContent = JSON.stringify($, null, 1)"></pre>
+
+<script type="module">
+  import { createSigmx } from '../dist/kernel/index.js'
+  import { all } from '../dist/presets/all.js'
+  window.sigmx = createSigmx({ plugins: all, prefix: ['data-', 'hx-', 's-'] })
+  document.addEventListener('sigmx-ready', () => { window.__ready = true })
+</script>
+</body>
+</html>

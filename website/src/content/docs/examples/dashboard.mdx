@@ -1,0 +1,34 @@
+---
+title: "Live dashboard"
+description: "A long-lived metrics stream with animated gauges, thresholds and reconnection."
+sidebar: { order: 2 }
+---
+
+import Demo from '../../../components/Demo.astro'
+import Dashboard from '../../../components/examples/Dashboard.astro'
+import src from '../../../components/examples/Dashboard.astro?raw'
+import ep0 from '../../../pages/api/metrics.ts?raw'
+import { Code } from '@astrojs/starlight/components'
+
+On mount, `data-init` opens a GET stream that never closes on its own: the endpoint emits one `patch-signals` event per tick with an `id`. If the connection drops, the client reconnects with `Last-Event-ID` and the server resumes the tick counter from there. The bars animate towards each new value, thresholds switch classes, and a rolling history is maintained on the client by `data-on-signal-patch`.
+
+<Demo title="Live" app source={src}><Dashboard /></Demo>
+
+## What it uses
+
+- `data-init="@get('/api/metrics', { openWhenHidden: true, reconnect: true })"` for a stream that outlives any single request
+- `id:` on every event and `Last-Event-ID` on reconnect (see the endpoint's first line)
+- `data-animate:width__duration.700ms` for the gauges, `@fit` to map ranges onto percentages
+- `data-class` with an object of thresholds, `@intl` for numbers, percentages and times
+- `data-on-signal-patch:metrics.cpu` keeping a bounded history array with `push` and `shift`
+- the stream ends when the client disconnects (`stream.closed`) or after a bounded number of ticks
+
+## Server side
+
+### `src/pages/api/metrics.ts`
+
+<Code code={ep0} lang="ts" />
+
+## Notes
+
+Browsers throttle timers and animation frames in background tabs; the stream keeps flowing (`openWhenHidden: true`) and the gauges catch up when you return.

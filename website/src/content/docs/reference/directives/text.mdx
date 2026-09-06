@@ -1,0 +1,39 @@
+---
+title: "data-text"
+description: "Keep the element's text content equal to an expression."
+sidebar: {"order": 5, "label": "text"}
+---
+import Live from '../../../../components/Live.astro'
+import Cost from '../../../../components/Cost.astro'
+
+Keep the element's text content equal to an expression.
+
+## Syntax
+
+```html
+data-text="$count"
+data-text="`Hello ${$name}`"
+```
+
+| part | |
+|---|---|
+| key | forbidden |
+| value | required |
+
+## Example
+
+<Live html={`
+<div data-signals="{ who: 'world' }" class="row"><input data-bind:who> <p data-text="\`Hello, \${$who}!\`"></p></div>
+`} />
+
+## Notes
+
+`null` and `undefined` render as an empty string; other values are converted with `String()`.
+
+## Register
+
+```ts
+import { text } from 'sigmx/plugins'
+```
+
+<Cost name="text" />

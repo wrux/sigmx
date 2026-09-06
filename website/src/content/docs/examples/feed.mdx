@@ -1,0 +1,34 @@
+---
+title: "Infinite feed"
+description: "Pages appended by the server when a sentinel scrolls into view."
+sidebar: { order: 4 }
+---
+
+import Demo from '../../../components/Demo.astro'
+import Feed from '../../../components/examples/Feed.astro'
+import src from '../../../components/examples/Feed.astro?raw'
+import ep0 from '../../../pages/api/feed.ts?raw'
+import ep1 from '../../../components/examples/feed/FeedPage.astro?raw'
+import { Code } from '@astrojs/starlight/components'
+
+The list ends with a sentinel element carrying `data-on-intersect__once`. When it scrolls into view it requests the next page; the server appends the items to the list and **morphs the sentinel** into one that points at the following page (a changed attribute remounts the directive, so the observer arms again). On the last page the sentinel becomes a plain message.
+
+<Demo title="Live" app source={src}><Feed /></Demo>
+
+## What it uses
+
+- `data-on-intersect__once` on a sentinel; remounting by attribute change rather than replacing the element
+- two `patchElements` in one `sse()` response: an `append` into `#feed` and a morph of `#feed-sentinel` by id
+- `data-indicator:loading` scoped to the sentinel
+- `@intl('relativeTime', …)` for the timestamps, evaluated on the client
+
+## Server side
+
+### `src/pages/api/feed.ts`
+
+<Code code={ep0} lang="ts" />
+
+### `src/components/examples/feed/FeedPage.astro`
+
+<Code code={ep1} lang="astro" />
+

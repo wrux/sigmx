@@ -1,0 +1,79 @@
+---
+title: "Writing plugins"
+description: "Directives, functions and server-event handlers are small objects you register with the instance."
+sidebar: { order: 10 }
+---
+
+import Demo from '../../../components/Demo.astro'
+import CustomPlugin from '../../../components/demos/CustomPlugin.astro'
+import customSrc from '../../../components/demos/CustomPlugin.astro?raw'
+
+A plugin is a plain object. The helpers `attribute()`, `action()` and `handler()` only add a `type` field and give you typed contexts; nothing registers until you pass the object to `createSigmx({ plugins })` or `instance.use()`.
+
+## A directive
+
+```ts
+import { attribute } from 'sigmx'
+
+export const upper = attribute({
+  name: 'upper',                  // data-upper
+  key: 'forbidden',               // 'required' | 'forbidden' | undefined (optional)
+  value: 'required',
+  returns: true,                  // evaluate() returns a value (default); false for statement bodies
+  mount({ el, evaluate, effect }) {
+    effect(() => { el.textContent = String(evaluate()).toUpperCase() })
+  },
+})
+```
+
+The context (`Ctx`):
+
+| member | purpose |
+|---|---|
+| `el`, `key`, `value`, `mods`, `attr`, `plugin` | what was written |
+| `cased(style?)` | the key recased, honouring `__case` |
+| `evaluate(evt?, ...args)` | compile (once) and run the expression; `args` map to the plugin's `args` names |
+| `effect(fn)` | reactive effect disposed with the attribute; errors go to `onError` |
+| `listen(target, type, fn, options?)` | event listener removed on cleanup |
+| `cleanup(fn)` | anything else to undo |
+| `store`, `runtime` | the store and instance services |
+| `error(message)` | build an error with plugin and element context |
+
+Return a function from `mount` for extra teardown. Everything registered through the context is undone when the attribute changes, the element leaves the document, or the instance is destroyed.
+
+Use `mods` for options: `data-upper__trim` gives `mods.has('trim')`, `data-x__after.300ms` gives `mods.get('after')` → `['300ms']`. The timing helpers `withTiming(fn, mods)` (delay, debounce, throttle) and `withViewTransition(fn, mods)` are exported for reuse, as are `toMs`, `debounce` and `throttle`.
+
+## A function
+
+```ts
+import { action } from 'sigmx'
+
+export const shout = action({
+  name: 'shout',                  // @shout('hi')
+  call: ({ el, evt, store, error }, text: string) => alert(text.toUpperCase()),
+})
+```
+
+Functions get `cleanup(fn)` too, which runs when the attribute that invoked them is torn down. The request functions use it to abort in-flight requests.
+
+## A server-event handler
+
+```ts
+import { handler } from 'sigmx'
+
+export const toast = handler({
+  name: 'toast',                  // event: sigmx-toast
+  handle: (runtime, { message }) => showToast(message),
+})
+```
+
+Handlers receive the runtime and the event's `key value` fields as an object. Any configured `eventPrefix` is stripped before lookup.
+
+## Registering
+
+```ts
+const app = createSigmx({ plugins: [...all, upper, shout, toast] })
+app.use(anotherPlugin)   // later; applied to observed roots immediately
+```
+
+<Demo title="The upper directive, registered on this page" source={customSrc}><CustomPlugin /></Demo>

@@ -1,0 +1,51 @@
+---
+title: "Chat agent"
+description: "A streaming chat with a canned agent: morphed replies, tool cards, a stop button, and a persisted draft."
+sidebar: { order: 1 }
+---
+
+import Demo from '../../../components/Demo.astro'
+import Chat from '../../../components/examples/Chat.astro'
+import src from '../../../components/examples/Chat.astro?raw'
+import ep0 from '../../../pages/api/chat/index.ts?raw'
+import ep1 from '../../../pages/api/chat/stop.ts?raw'
+import ep2 from '../../../components/examples/chat/Message.astro?raw'
+import ep3 from '../../../components/examples/chat/ToolHandler.astro?raw'
+import { Code } from '@astrojs/starlight/components'
+
+The message you type is posted with `@post`. The endpoint appends your bubble, appends an empty assistant bubble, then streams the reply **one word at a time by re-sending the whole paragraph** and letting the morph update it in place. Because each event carries the full text so far, a dropped or duplicated event changes nothing. Ask about the time or the weather to see a tool call: the server emits a custom `sigmx-tool` event and a handler registered on this page renders the card.
+
+<Demo title="Live" app source={src}><Chat /></Demo>
+
+## What it uses
+
+- `data-on:submit` with `@post('/api/chat')`, and `data-on:keydown` so Enter sends while Shift+Enter inserts a newline
+- `patchElements` with `mode: append` for new bubbles, then `patchElements` by id for every streamed word
+- `patchSignals` for `thinking`, the word counter and clearing the draft
+- `data-indicator`, `data-attr:disabled`, `data-show` for the composer state
+- a second endpoint, `/api/chat/stop`, that flips a flag the stream checks between words; the client identifies its conversation with a `chatId` set by `data-init`
+- a custom server event (`event: sigmx-tool`) handled by a `handler()` plugin registered with `sigmx.use()`
+- `data-scroll-into-view__smooth__vnearest` on every appended bubble
+- `data-persist` so the unsent draft survives a reload
+
+## Server side
+
+### `src/pages/api/chat/index.ts`
+
+<Code code={ep0} lang="ts" />
+
+### `src/pages/api/chat/stop.ts`
+
+<Code code={ep1} lang="ts" />
+
+### `src/components/examples/chat/Message.astro`
+
+<Code code={ep2} lang="astro" />
+
+### `src/components/examples/chat/ToolHandler.astro`
+
+<Code code={ep3} lang="astro" />
+
+## Adapting it to a real model
+
+Replace `think()` with a call to your model's streaming API and forward each token into the same loop. The client does not change: it only ever sees `patch-elements` events for one paragraph. If you want partial words to render as they arrive, send the accumulated text on every token; if you want to save bandwidth, batch tokens with a short timer.

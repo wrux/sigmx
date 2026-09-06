@@ -1,0 +1,48 @@
+---
+title: "data-persist"
+description: "Save signals to local or session storage and restore them on load."
+sidebar: {"order": 23, "label": "persist"}
+---
+import Live from '../../../../components/Live.astro'
+import Cost from '../../../../components/Cost.astro'
+
+Save signals to local or session storage and restore them on load.
+
+## Syntax
+
+```html
+data-persist
+data-persist:settings="{ include: /^prefs\./ }"
+data-persist__session
+```
+
+| part | |
+|---|---|
+| key | optional (the storage key, default `sigmx`) |
+| value | optional filter `{ include, exclude }` |
+
+## Modifiers
+
+| modifier | effect |
+|---|---|
+| `__session` | use `sessionStorage` |
+
+## Example
+
+<Live html={`
+<div data-persist:docs-demo="{ include: /^kept/ }" data-signals:kept__ifmissing="0">
+  <button data-on:click="$kept++">kept = <span data-text="$kept"></span></button> <span class="muted">reload the page</span>
+</div>
+`} />
+
+## Notes
+
+Restore happens when the attribute mounts, so declare defaults with `data-signals:x__ifmissing` or they will overwrite the restored value. Computed signals are never stored.
+
+## Register
+
+```ts
+import { persist } from 'sigmx/plugins'
+```
+
+<Cost name="persist" />

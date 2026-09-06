@@ -1,0 +1,34 @@
+---
+title: "Data table"
+description: "Server-driven sorting, filtering and pagination with the state in the URL."
+sidebar: { order: 5 }
+---
+
+import Demo from '../../../components/Demo.astro'
+import Table from '../../../components/examples/Table.astro'
+import src from '../../../components/examples/Table.astro?raw'
+import ep0 from '../../../pages/api/products.ts?raw'
+import ep1 from '../../../components/examples/table/ProductTable.astro?raw'
+import { Code } from '@astrojs/starlight/components'
+
+Sort, filter and page are signals. Any change calls `@get('/api/products')`, which sends the signals in the query string, and the server answers with the rendered table plus the page count and total. Because the table is morphed by id, the search box keeps focus while you type. `data-query-string` mirrors the state into the URL, and `data-init` refetches when the page loads with a non-default state.
+
+<Demo title="Live" app source={src}><Table /></Demo>
+
+## What it uses
+
+- `data-on:input__debounce.250ms` for search, `data-on:click` on header buttons that flip `sort` and `dir`
+- `data-query-string` for shareable URLs and `data-init` to honour them on load
+- `readSignals` on the server to drive the query; `sse(patchElements(table), patchSignals({ page, pages, total }))`
+- `data-class:low` and `@intl` inside server-rendered rows: attributes in patched HTML mount like any other
+
+## Server side
+
+### `src/pages/api/products.ts`
+
+<Code code={ep0} lang="ts" />
+
+### `src/components/examples/table/ProductTable.astro`
+
+<Code code={ep1} lang="astro" />
+

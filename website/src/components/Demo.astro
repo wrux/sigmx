@@ -1,0 +1,11 @@
+---
+/** Wraps a demo component and shows its source next to it. */
+import { Code } from '@astrojs/starlight/components'
+interface Props { title?: string; source?: string; lang?: string; app?: boolean }
+const { title = 'Live', source, lang = 'astro', app = false } = Astro.props
+---
+<div class="live not-content">
+  <div class="live-label">{title}</div>
+  <div class:list={["live-body", { app }]}><slot /></div>
+</div>
+{source && <Code code={source.trim()} lang={lang} />}

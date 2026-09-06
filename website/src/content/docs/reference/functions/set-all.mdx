@@ -1,0 +1,35 @@
+---
+title: "@setAll"
+description: "Assign one value to every signal whose path matches."
+sidebar: {"order": 3}
+---
+import Live from '../../../../components/Live.astro'
+import Cost from '../../../../components/Cost.astro'
+
+Assign one value to every signal whose path matches.
+
+## Syntax
+
+```js
+@setAll(false, { include: /^flags\./ })
+@setAll('')
+```
+
+The second argument is an optional `{ include, exclude }` filter of regular expressions over dotted paths. Without it, every signal is set.
+
+## Example
+
+<Live html={`
+<div data-signals="{ flags: { a: false, b: false, c: false } }">
+  <div class="row"><label><input type="checkbox" data-bind:flags.a> a</label><label><input type="checkbox" data-bind:flags.b> b</label><label><input type="checkbox" data-bind:flags.c> c</label></div>
+  <div class="row"><button data-on:click="@setAll(true, { include: /^flags\./ })">all on</button><button data-on:click="@setAll(false, { include: /^flags\./ })">all off</button></div>
+</div>
+`} />
+
+## Register
+
+```ts
+import { setAll } from 'sigmx/plugins'
+```
+
+<Cost name="setAll" />

@@ -1,0 +1,34 @@
+---
+title: "@toggleAll"
+description: "Negate every boolean signal whose path matches."
+sidebar: {"order": 4}
+---
+import Live from '../../../../components/Live.astro'
+import Cost from '../../../../components/Cost.astro'
+
+Negate every boolean signal whose path matches.
+
+## Syntax
+
+```js
+@toggleAll({ include: /^flags\./ })
+```
+
+Like `@setAll`, but each matching signal becomes `!value`.
+
+## Example
+
+<Live html={`
+<div data-signals="{ t: { x: true, y: false } }">
+  <button data-on:click="@toggleAll({ include: /^t\./ })">toggle both</button>
+  <pre data-text="JSON.stringify($t)"></pre>
+</div>
+`} />
+
+## Register
+
+```ts
+import { toggleAll } from 'sigmx/plugins'
+```
+
+<Cost name="toggleAll" />

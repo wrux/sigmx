@@ -1,0 +1,7 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    { "name": "dev", "runtimeExecutable": "node", "runtimeArgs": ["scripts/dev.mjs"], "port": 8765 },
+    { "name": "docs", "runtimeExecutable": "npm", "runtimeArgs": ["--prefix", "website", "run", "dev", "--", "--port", "4321", "--host", "127.0.0.1"], "port": 4321 }
+  ]
+}

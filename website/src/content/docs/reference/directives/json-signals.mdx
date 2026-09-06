@@ -1,0 +1,48 @@
+---
+title: "data-json-signals"
+description: "Render the store, or part of it, as JSON."
+sidebar: {"order": 16, "label": "json-signals"}
+---
+import Live from '../../../../components/Live.astro'
+import Cost from '../../../../components/Cost.astro'
+
+Render the store, or part of it, as JSON.
+
+## Syntax
+
+```html
+data-json-signals
+data-json-signals__terse="{ include: /^form\./ }"
+```
+
+| part | |
+|---|---|
+| key | forbidden |
+| value | optional filter `{ include, exclude }` |
+
+## Modifiers
+
+| modifier | effect |
+|---|---|
+| `__terse` | single-line output |
+
+## Example
+
+<Live html={`
+<div data-signals="{ debug: { on: true, n: 2 } }">
+  <button data-on:click="$debug.n++">n++</button>
+  <pre data-json-signals="{ include: /^debug/ }"></pre>
+</div>
+`} />
+
+## Notes
+
+Useful while developing. Filters are regular expressions over dotted paths.
+
+## Register
+
+```ts
+import { jsonSignals } from 'sigmx/plugins'
+```
+
+<Cost name="jsonSignals" />

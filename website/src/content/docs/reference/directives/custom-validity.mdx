@@ -1,0 +1,40 @@
+---
+title: "data-custom-validity"
+description: "Set a form field's validity message from an expression."
+sidebar: {"order": 22, "label": "custom-validity"}
+---
+import Live from '../../../../components/Live.astro'
+import Cost from '../../../../components/Cost.astro'
+
+Set a form field's validity message from an expression.
+
+## Syntax
+
+```html
+data-custom-validity="$a === $b ? '' : 'Values must match.'"
+```
+
+| part | |
+|---|---|
+| key | forbidden |
+| value | required |
+
+## Example
+
+<Live html={`
+<form data-signals="{ user: '' }" data-on:submit="alert('submitted')">
+  <div class="row"><input data-bind:user placeholder="username" data-custom-validity="$user.length >= 3 ? '' : 'At least three characters.'"> <button>Check</button></div>
+</form>
+`} />
+
+## Notes
+
+An empty string means valid. The browser reports the message on submit and through `:invalid`.
+
+## Register
+
+```ts
+import { customValidity } from 'sigmx/plugins'
+```
+
+<Cost name="customValidity" />

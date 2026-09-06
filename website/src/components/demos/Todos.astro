@@ -1,0 +1,11 @@
+---
+import TodoList from '../partials/TodoList.astro'
+import { todos } from '../../data/todos'
+---
+<form data-signals="{ newTodo: '' }" data-on:submit="@post('/api/todos')">
+  <div class="row">
+    <input data-bind:new-todo placeholder="Add a todo, then press Enter" required>
+    <button>Add</button>
+  </div>
+  <TodoList todos={todos} />
+</form>

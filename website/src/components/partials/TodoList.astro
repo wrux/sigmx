@@ -1,0 +1,14 @@
+---
+interface Props { todos: { id: number; text: string }[] }
+const { todos } = Astro.props
+---
+<ul id="todo-list">
+  {todos.length === 0 && <li class="muted">Nothing yet.</li>}
+  {todos.map((t) => (
+    <li id={`todo-${t.id}`} class="row">
+      <span>{t.text}</span>
+      <input placeholder="note (kept across patches)" />
+      <button type="button" data-on:click={`@delete('/api/todos?id=${t.id}')`}>remove</button>
+    </li>
+  ))}
+</ul>

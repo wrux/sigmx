@@ -1,0 +1,49 @@
+---
+title: "data-indicator"
+description: "A boolean signal that is true while a request is in flight."
+sidebar: {"order": 17, "label": "indicator"}
+---
+import Live from '../../../../components/Live.astro'
+import Cost from '../../../../components/Cost.astro'
+
+A boolean signal that is true while a request is in flight.
+
+## Syntax
+
+```html
+data-indicator:saving
+data-indicator="saving"
+```
+
+| part | |
+|---|---|
+| key | or value: the signal path |
+| value | or key |
+
+## Modifiers
+
+| modifier | effect |
+|---|---|
+| `__case.*` | key casing |
+
+## Example
+
+<Live html={`
+<div data-signals="{ }" data-indicator:polling class="row">
+  <button data-on:click="@get('/api/time')">Fetch time</button>
+  <span data-text="$polling ? 'loading…' : 'idle'"></span>
+  <span id="server-time"></span>
+</div>
+`} />
+
+## Notes
+
+Counts requests started from this element or any element inside it, so one indicator can cover a whole form. Multiple overlapping requests keep it true until the last one finishes.
+
+## Register
+
+```ts
+import { indicator } from 'sigmx/plugins'
+```
+
+<Cost name="indicator" />

@@ -1,0 +1,4 @@
+export type Product = { id: number; name: string; category: string; price: number; stock: number }
+const names = ['Anvil','Bellows','Chisel','Dowel','Easel','Ferrule','Gimlet','Hammer','Ingot','Jig','Kiln','Lathe','Mallet','Nail','Oilstone','Plane','Quoin','Rasp','Spokeshave','Trowel','Ulu','Vice','Winch','Xacto','Yardstick','Zinc plate','Auger','Brace','Clamp','Divider']
+const cats = ['tools', 'materials', 'measuring']
+export const products: Product[] = names.map((name, i) => ({ id: i + 1, name, category: cats[i % 3], price: Math.round((7 + ((i * 37) % 120)) * 100) / 100, stock: (i * 13) % 50 }))

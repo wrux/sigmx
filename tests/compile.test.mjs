@@ -1,0 +1,29 @@
+import { test } from 'node:test'
+import assert from 'node:assert/strict'
+import { compile, functionCompiler, rewriteActions, splitStatements } from '../dist/kernel/compile.js'
+import { createStore } from '../dist/kernel/state.js'
+
+test('rewriteActions only touches @name( outside strings', () => {
+  assert.equal(rewriteActions("@post('/x', {a: '@nope('})"), "__a.post('/x', {a: '@nope('})")
+  assert.equal(rewriteActions('a@b.com'), 'a@b.com')
+  assert.equal(rewriteActions('@ fit(1)'), '@ fit(1)')
+})
+
+test('splitStatements respects nesting and strings', () => {
+  assert.deepEqual(splitStatements("$a = 1; $b = {x: ';'}; f(1;2)"), ['$a = 1', " $b = {x: ';'}", ' f(1;2)'])
+})
+
+test('compile returns the last statement value and exposes el/evt/args', () => {
+  const s = createStore()
+  s.set('n', 2)
+  const one = compile(functionCompiler, '$n * 2', ['el', 'evt'], true)
+  assert.equal(one(s.scope, {}, null, null), 4)
+  const many = compile(functionCompiler, '$n = 5; $n + 1', ['el', 'evt'], true)
+  assert.equal(many(s.scope, {}, null, null), 6)
+  const withArgs = compile(functionCompiler, 'patch.n + el', ['el', 'evt', 'patch'], true)
+  assert.equal(withArgs(s.scope, {}, 1, null, { n: 2 }), 3)
+  const actions = { post: (...a) => a }
+  const act = compile(functionCompiler, "@post('/u', $n)", ['el', 'evt'], true)
+  assert.deepEqual(act(s.scope, actions, null, null), ['/u', 5])
+  assert.equal(compile(functionCompiler, '$n * 2', ['el', 'evt'], true), one) // cached
+})

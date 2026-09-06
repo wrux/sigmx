@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>sigmx browser tests</title>
+<style>body{font:14px/1.4 system-ui;margin:2rem;color-scheme:light dark} li.ok{color:#2a8} li.fail{color:#d33} #stage{border:1px dashed #888;padding:.5rem;margin-top:1rem}</style>
+</head><body>
+<h1>sigmx browser tests</h1><ul id="out"></ul>
+<div id="stage"></div>
+<script type="module">
+import { createSigmx } from '../../dist/kernel/index.js'
+import { all } from '../../dist/presets/all.js'
+import { morph, morphInner } from '../../dist/plugins/index.js'
+
+const out = document.getElementById('out'), stage = document.getElementById('stage')
+const results = []; window.__results = results
+const eq = (a, b, msg='') => { if (a !== b) throw new Error(`${msg} expected ${JSON.stringify(b)} got ${JSON.stringify(a)}`) }
+const tick = (ms=0) => new Promise(r => setTimeout(r, ms))
+// Poll instead of fixed waits: timers are throttled when the tab is hidden.
+const until = async (fn, ms=8000) => { const t0 = performance.now(); while (!fn()) { if (performance.now() - t0 > ms) throw new Error('timeout waiting'); await tick(25) } }
+const t = async (name, fn) => { const li = document.createElement('li'); li.textContent = name; out.append(li); try { await fn(); li.className='ok'; results.push({name, ok:true}) } catch (e) { li.className='fail'; li.textContent += ' — ' + e.message; results.push({name, ok:false, error:e.message}) } }
+const errors = []
+const app = createSigmx({ plugins: all, autoStart: false, eventPrefix: ['sigmx-', 'datastar-'], onError: (e) => errors.push(String(e?.message ?? e)) })
+app.apply(stage)
+const html = (s) => { stage.innerHTML = s; return stage.firstElementChild }
+
+await t('engine mounts added elements and tears down removed ones', async () => {
+  app.$.n = 1
+  const el = html('<span data-text="$n"></span>')
+  await tick(); eq(el.textContent, '1')
+  app.$.n = 2; eq(el.textContent, '2')
+  el.remove(); await tick()
+  app.$.n = 3; eq(el.textContent, '2', 'after removal')
+})
+await t('attribute change remounts; one bad expression does not stop others', async () => {
+  const el = html('<b data-text="$n"></b><i data-text="this is not js (("></i>')
+  await tick(); eq(el.textContent, '3'); eq(errors.length > 0, true, 'error reported')
+  el.setAttribute('data-text', '$n * 10'); await tick(); eq(el.textContent, '30')
+})
+await t('morph keeps identity and input state by id, reorders, inserts, removes, updates text', () => {
+  const a = html('<ul><li id="x">x</li><li id="y"><input id="in"></li><li>gone</li></ul>')
+  const input = a.querySelector('#in'); input.value = 'typed'; const y = a.querySelector('#y')
+  const b = document.createElement('ul'); b.innerHTML = '<li id="y"><input id="in"></li><li id="x">x2</li><li>new</li>'
+  morph(a, b, {})
+  eq(a.children[0], y, 'same element reordered'); eq(a.querySelector('#in'), input, 'input kept'); eq(input.value, 'typed')
+  eq(a.children[1].textContent, 'x2'); eq(a.children[2].textContent, 'new'); eq(a.children.length, 3)
+})
+await t('morph: preserve-attr and ignore-morph', () => {
+  const a = html('<div><p id="p" class="keep" data-preserve-attr="class">a</p><section data-ignore-morph><em>old</em></section></div>')
+  const b = document.createElement('div'); b.innerHTML = '<p id="p" class="new" data-preserve-attr="class">b</p><section data-ignore-morph><em>new</em></section>'
+  morph(a, b, {}); eq(a.querySelector('#p').className, 'keep'); eq(a.querySelector('#p').textContent, 'b'); eq(a.querySelector('em').textContent, 'old')
+})
+await t('morph pulls a kept element out of a removed ancestor', () => {
+  const a = html('<div><section><input id="deep" value="v"></section></div>')
+  const input = a.querySelector('#deep'); input.value = 'edited'
+  const b = document.createElement('div'); b.innerHTML = '<article><input id="deep" value="v"></article>'
+  morph(a, b, {}); eq(a.querySelector('#deep'), input); eq(input.value, 'edited'); eq(a.firstElementChild.tagName, 'ARTICLE')
+})
+await t('@get json merges signals and sends signals in the query', async () => {
+  app.$.q = 'hello'
+  const el = html('<button data-on:click="@get(\'/api/json\', {openWhenHidden: true})"></button>'); await tick(); el.click()
+  await until(() => app.$.fromServer === 42); eq(app.$.echo.q, 'hello')
+})
+await t('@get html morphs by id; header selector/mode append', async () => {
+  const el = html('<div><div id="server-box"><input id="keep-me"></div><ul id="list"></ul><button id="b1" data-on:click="@get(\'/api/html\', {openWhenHidden: true})"></button><button id="b2" data-on:click="@get(\'/api/html-append\', {openWhenHidden: true})"></button></div>')
+  await tick(); const keep = el.querySelector('#keep-me'); keep.value = 'mine'
+  el.querySelector('#b1').click(); await until(() => el.querySelector('#server-box b'))
+  eq(el.querySelector('#server-box b').textContent, 'from server'); eq(el.querySelector('#keep-me'), keep); eq(keep.value, 'server', 'value attr changed → synced')
+  el.querySelector('#b2').click(); el.querySelector('#b2').click() // second click replaces the first in-flight request
+  await until(() => el.querySelectorAll('#list .row').length >= 1); await tick(100)
+  eq(el.querySelectorAll('#list .row').length, 1, 'replaced request')
+  el.querySelector('#b2').click(); await until(() => el.querySelectorAll('#list .row').length === 2)
+})
+await t('@post SSE stream: signals + elements, body echoed; indicator toggles', async () => {
+  const el = html('<div data-indicator:busy><div id="server-box">old</div><button data-on:click="@post(\'/api/sse\')"></button></div>')
+  await tick(); eq(app.$.busy, false); el.querySelector('button').click(); eq(app.$.busy, true, 'started fires synchronously')
+  await until(() => app.$.busy === false)
+  if (app.$.stream !== 1) throw new Error(`stream missing; store=${JSON.stringify(app.store.snapshot())} box=${el.querySelector('#server-box').innerHTML}`)
+  eq(el.querySelector('#server-box i').textContent, 'via sse')
+  eq(typeof app.$.posted, 'string'); eq(JSON.parse(app.$.posted).q, 'hello', 'signals at send time are the body')
+})
+await t('legacy event prefix is accepted', async () => {
+  const el = html('<button data-on:click="@get(\'/api/legacy\', {openWhenHidden: true})"></button>'); await tick(); el.click(); await until(() => app.$.legacy === true)
+})
+await t('status errors emit sigmx-fetch error and do not throw', async () => {
+  let got = null; document.addEventListener('sigmx-fetch', (e) => { if (e.detail.type === 'error') got = e.detail.status }, { once: false })
+  const el = html('<button data-on:click="@get(\'/api/fail\', {openWhenHidden: true})"></button>'); await tick(); el.click(); await until(() => got === 500)
+})
+await t('form contentType posts urlencoded fields', async () => {
+  const el = html('<form data-on:submit="@post(\'/api/form\', {contentType: \'form\'})"><input name="who" value="me"><button>go</button></form>')
+  await tick(); el.requestSubmit(); await until(() => app.$.form?.who === 'me')
+})
+await t('animate tweens a numeric style over time', async () => {
+  app.$.open = false
+  const el = html('<div data-animate:opacity__duration.3s="$open ? 1 : 0" style="width:10px;height:10px"></div>')
+  await tick(); eq(getComputedStyle(el).opacity, '0'); app.$.open = true
+  // one frame in, the value must have left 0 but not reached 1 (frames may be throttled when the tab is hidden)
+  await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))
+  const mid = +getComputedStyle(el).opacity; if (!(mid > 0 && mid < 1)) throw new Error(`mid value ${mid}`)
+  app.$.open = false; await tick(20); const back = +getComputedStyle(el).opacity; if (!(back < 1)) throw new Error(`retarget ${back}`)
+})
+window.__done = true
+</script></body></html>

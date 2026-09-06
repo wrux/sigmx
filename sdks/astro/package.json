@@ -1,0 +1,26 @@
+{
+  "name": "sigmx-astro",
+  "version": "0.1.0",
+  "description": "Astro integration and server helpers for sigmx: inject the client, stream patches from endpoints, read signals from requests.",
+  "type": "module",
+  "license": "MIT",
+  "files": ["dist"],
+  "exports": {
+    ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" },
+    "./client": { "types": "./dist/client.d.ts", "default": "./dist/client.js" },
+    "./server": { "types": "./dist/server.d.ts", "default": "./dist/server.js" }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "npm run build && node --test tests/*.test.mjs"
+  },
+  "peerDependencies": {
+    "astro": "^5.0.0 || ^6.0.0 || ^7.0.0",
+    "sigmx": "*"
+  },
+  "devDependencies": {
+    "astro": "^7.3.1",
+    "sigmx": "file:../..",
+    "typescript": "^5.9.0"
+  }
+}

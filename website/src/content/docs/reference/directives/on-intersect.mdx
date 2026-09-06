@@ -1,0 +1,52 @@
+---
+title: "data-on-intersect"
+description: "Run an expression when the element scrolls into (or out of) view."
+sidebar: {"order": 14, "label": "on-intersect"}
+---
+import Live from '../../../../components/Live.astro'
+import Cost from '../../../../components/Cost.astro'
+
+Run an expression when the element scrolls into (or out of) view.
+
+## Syntax
+
+```html
+data-on-intersect="$seen = true"
+data-on-intersect__once__half="@get('/more')"
+```
+
+| part | |
+|---|---|
+| key | forbidden |
+| value | required |
+
+## Modifiers
+
+| modifier | effect |
+|---|---|
+| `__once` | disconnect after the first run |
+| `__exit` | run when the element leaves the viewport instead |
+| `__full / __half / __threshold.N` | how much must be visible: all, half, or N percent |
+| `__delay / __debounce / __throttle` | timing |
+| `__viewtransition` | wrap in a view transition |
+
+## Example
+
+<Live html={`
+<div data-signals="{ seen: 0 }">
+  <p>Scroll this box: <b data-text="$seen"></b> intersections</p>
+  <div style="height:6rem;overflow:auto;border:1px solid var(--sl-color-hairline)"><div style="height:9rem"></div><p data-on-intersect="$seen++">I am at the bottom.</p></div>
+</div>
+`} />
+
+## Notes
+
+Backed by `IntersectionObserver`.
+
+## Register
+
+```ts
+import { onIntersect } from 'sigmx/plugins'
+```
+
+<Cost name="onIntersect" />

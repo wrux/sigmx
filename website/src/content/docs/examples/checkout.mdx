@@ -1,0 +1,31 @@
+---
+title: "Checkout wizard"
+description: "A three-step checkout validated on the server, with URL history, a computed total and a persisted draft."
+sidebar: { order: 3 }
+---
+
+import Demo from '../../../components/Demo.astro'
+import Checkout from '../../../components/examples/Checkout.astro'
+import src from '../../../components/examples/Checkout.astro?raw'
+import ep0 from '../../../pages/api/checkout.ts?raw'
+import { Code } from '@astrojs/starlight/components'
+
+Each **Continue** posts the whole order to one endpoint together with the current step. The server validates just that step and answers with either an `errors` object or the next step number; on the last step it renders a receipt and removes the card number from the store. The step lives in the query string with history entries, so the browser's back button goes back a step, and the items and address survive a reload.
+
+<Demo title="Live" app source={src}><Checkout /></Demo>
+
+## What it uses
+
+- `data-signals__ifmissing` for defaults that must not overwrite restored state, plus `data-persist` and `data-query-string__history`
+- `data-computed:total` and `@intl` currency formatting in the button label
+- `data-show` per step, `data-class` for the progress indicator and invalid fields
+- `data-custom-validity` for immediate feedback before the server is asked
+- `json()` responses merged as signals, then an `sse()` response combining a rendered receipt with a signal patch that sets `card` to `null`
+- `data-indicator` disabling the button while the request runs
+
+## Server side
+
+### `src/pages/api/checkout.ts`
+
+<Code code={ep0} lang="ts" />
+

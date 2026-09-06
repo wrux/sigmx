@@ -1,0 +1,50 @@
+---
+title: "data-query-string"
+description: "Sync signals with the URL query string, both ways."
+sidebar: {"order": 24, "label": "query-string"}
+---
+import Live from '../../../../components/Live.astro'
+import Cost from '../../../../components/Cost.astro'
+
+Sync signals with the URL query string, both ways.
+
+## Syntax
+
+```html
+data-query-string
+data-query-string__history="{ include: /^(q|page)$/ }"
+data-query-string__filter
+```
+
+| part | |
+|---|---|
+| key | forbidden |
+| value | optional filter `{ include, exclude }` |
+
+## Modifiers
+
+| modifier | effect |
+|---|---|
+| `__history` | push a history entry per change and restore on back/forward |
+| `__filter` | drop empty values from the URL |
+
+## Example
+
+<Live html={`
+<div data-query-string="{ include: /^tab$/ }" data-signals:tab__ifmissing="'one'">
+  <div class="row"><button data-on:click="$tab = 'one'">one</button><button data-on:click="$tab = 'two'">two</button></div>
+  <p>tab = <b data-text="$tab"></b> (watch the address bar)</p>
+</div>
+`} />
+
+## Notes
+
+Values that parse as JSON come back typed (`?page=2` gives the number 2). Declare defaults with `__ifmissing`.
+
+## Register
+
+```ts
+import { queryString } from 'sigmx/plugins'
+```
+
+<Cost name="queryString" />

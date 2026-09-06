@@ -1,0 +1,40 @@
+---
+title: "data-effect"
+description: "Run an expression now and whenever a signal it read changes."
+sidebar: {"order": 3, "label": "effect"}
+---
+import Live from '../../../../components/Live.astro'
+import Cost from '../../../../components/Cost.astro'
+
+Run an expression now and whenever a signal it read changes.
+
+## Syntax
+
+```html
+data-effect="document.title = $unread + ' unread'"
+```
+
+| part | |
+|---|---|
+| key | forbidden |
+| value | required |
+
+## Example
+
+<Live html={`
+<div data-signals="{ colour: '#0e7c86' }" data-effect="el.style.borderLeft = '8px solid ' + $colour" style="padding-left:.6rem">
+  <input type="color" data-bind:colour> pick a colour
+</div>
+`} />
+
+## Notes
+
+The body runs as statements. Reading a signal subscribes; writing one you also read is a loop and is reported as an error. Use `@peek(() => $x)` to read without subscribing.
+
+## Register
+
+```ts
+import { effect } from 'sigmx/plugins'
+```
+
+<Cost name="effect" />

@@ -1,0 +1,17 @@
+<!-- A custom server-event handler: the endpoint emits `event: sigmx-tool` and this renders a card. -->
+<script>
+  import { handler } from 'sigmx'
+  const icons: Record<string, string> = { clock: '🕒', weather: '🌦️' }
+  const tool = handler({
+    name: 'tool',
+    handle(_runtime, { name, result, after }) {
+      const card = document.createElement('li')
+      card.className = 'msg tool'
+      card.innerHTML = `<span class="tool-icon">${icons[name] ?? '🔧'}</span><div class="bubble"><span class="who">tool call · ${name}</span><p>${result}</p></div>`
+      card.setAttribute('data-scroll-into-view__smooth__vnearest', '')
+      const anchor = after && document.getElementById(after)
+      anchor ? anchor.after(card) : document.getElementById('chat-log')?.append(card)
+    },
+  })
+  ;(window as any).sigmx.use(tool)
+</script>

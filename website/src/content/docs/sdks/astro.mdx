@@ -1,0 +1,134 @@
+---
+title: "Astro"
+description: "The sigmx-astro integration: inject the client and stream patches from endpoints."
+sidebar: {"order": 1}
+---
+
+import Demo from '../../../components/Demo.astro'
+import Search from '../../../components/demos/Search.astro'
+import searchSrc from '../../../components/demos/Search.astro?raw'
+
+`sigmx-astro` does two things: it injects the client into every page, and it gives your endpoints helpers for reading signals and answering with HTML, JSON or a stream of patches. This documentation site is built with it; every live example that talks to a server goes through an Astro endpoint.
+
+## Install
+
+```bash
+npm install sigmx sigmx-astro
+```
+
+```js
+// astro.config.mjs
+import { defineConfig } from 'astro/config'
+import sigmx from 'sigmx-astro'
+
+export default defineConfig({
+  integrations: [sigmx({ plugins: 'all' })],
+})
+```
+
+Endpoints that answer requests need to run on the server: add an adapter and set `export const prerender = false` in each route.
+
+## Integration options
+
+| option | default | |
+|---|---|---|
+| `plugins` | `'all'` | `'all'`, `'minimal'`, or a list of export names from `sigmx/plugins`, e.g. `['signals', 'text', 'on', 'httpGet', 'applyElements']` |
+| `prefix` | `'data-'` | attribute prefix(es) |
+| `eventPrefix` | `'sigmx-'` | accepted server event prefixes |
+| `expose` | `'sigmx'` | global name for the instance; `false` for none |
+| `inject` | `true` | inject on every page; `false` to opt in per page |
+| `entrypoint` | | an app-local module that creates the instance itself, e.g. `'/src/sigmx.ts'` |
+
+An app-local entrypoint lets you add your own plugins:
+
+```ts
+// src/sigmx.ts
+import { createSigmx, all, attribute } from 'sigmx-astro/client'
+
+const shout = attribute({ name: 'shout', value: 'required', mount: ({ el, evaluate, effect }) => effect(() => (el.textContent = String(evaluate()).toUpperCase())) })
+export const app = createSigmx({ plugins: [...all, shout] })
+```
+
+## Server helpers
+
+```ts
+import {
+  readSignals, isSigmxRequest,                 // request side
+  sse, sseStream, html, json,                  // responses
+  patchElements, patchSignals, removeElements, removeSignals, executeScript,  // event builders
+  SigmxStream, formatEvent,                    // lower level
+} from 'sigmx-astro/server'
+```
+
+### Reading signals
+
+```ts
+const signals = await readSignals(request)            // { q: 'bri', page: 2 }
+const { q } = await readSignals(request, schema)      // validated with any Standard Schema validator (Zod, Valibot, ArkType…)
+```
+
+GET and DELETE requests carry signals in the `sigmx` query parameter, other methods in a JSON body, and `contentType: 'form'` requests as form fields. Validation failures throw a `SignalsError` whose `.response()` is a ready-made 422.
+
+### Responding
+
+```ts
+return html(renderedFragment)                                  // morphed by id
+return html(row, { selector: '#rows', mode: 'append' })        // targeted
+return json({ count: 3 })                                      // merged as signals
+return sse(patchElements(fragment), patchSignals({ busy: false }))   // several patches at once
+return sseStream(async (s) => {                                // patches over time
+  s.patchSignals({ progress: 0 })
+  for (const step of steps) { await work(step); s.patchSignals({ progress: step.pct }) }
+})
+```
+
+### Rendering components
+
+Astro's container API renders a component to a string on the server:
+
+```ts
+import { experimental_AstroContainer as AstroContainer } from 'astro/container'
+const container = await AstroContainer.create()
+const fragment = await container.renderToString(Results, { props: { q } })
+```
+
+## A complete example
+
+<Demo source={searchSrc}><Search /></Demo>
+
+```ts
+// src/pages/api/search.ts
+import type { APIRoute } from 'astro'
+import { experimental_AstroContainer as AstroContainer } from 'astro/container'
+import { patchElements, patchSignals, readSignals, sse } from 'sigmx-astro/server'
+import Towns from '../../components/partials/Towns.astro'
+import { towns } from '../../data/towns'
+
+export const prerender = false
+
+export const GET: APIRoute = async ({ request }) => {
+  const { q = '' } = await readSignals(request)
+  const matches = towns.filter((t) => t.toLowerCase().includes(String(q).toLowerCase()))
+  const container = await AstroContainer.create()
+  const list = await container.renderToString(Towns, { props: { q, towns: matches } })
+  return sse(patchElements(list), patchSignals({ results: matches.length }))
+}
+```
+
+```astro
+---
+// src/components/partials/Towns.astro
+interface Props { q: string; towns: string[] }
+const { q, towns } = Astro.props
+---
+<ul id="towns">
+  {towns.length === 0 && <li class="muted">No towns match “{q}”.</li>}
+  {towns.map((t) => <li>{t}</li>)}
+</ul>
+```
+
+More endpoints from this site: a [streaming job](/guides/server/), a [todo list that morphs](/guides/morphing/), a [validated form](/guides/forms/).
+
+## View transitions
+
+Astro's `<ClientRouter />` swaps the body on navigation. The client observes the document root, so swapped-in markup mounts automatically and signals survive the navigation. Use `data-signals__ifmissing` for per-page defaults that should not reset on return.

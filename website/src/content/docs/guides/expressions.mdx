@@ -1,0 +1,66 @@
+---
+title: "Expressions"
+description: "What you can write inside an attribute, how signals resolve, and what is in scope."
+sidebar: { order: 2 }
+---
+
+import Live from '../../../components/Live.astro'
+
+Attribute values are JavaScript. sigmx does not parse or rewrite signal references; it evaluates your code inside a scope where every identifier starting with `$` resolves against the store. That is why all of the following are ordinary JavaScript:
+
+```js
+$count++
+$user.name = 'Ada'
+$items.push({ done: false })
+$['odd-key']
+$              // the whole store as an object
+$total = $items.reduce((sum, i) => sum + i.price, 0)
+```
+
+<Live html={`
+<div data-signals="{ items: ['tea'], draft: '' }">
+  <div class="row">
+    <input data-bind:draft placeholder="item">
+    <button data-on:click="if ($draft) { $items.push($draft); $draft = '' }">Add</button>
+    <button data-on:click="$items = []">Clear</button>
+  </div>
+  <p data-text="$items.length + ' item(s): ' + $items.join(', ')"></p>
+</div>
+`} />
+
+## Statements and return values
+
+Directives that need a value (`text`, `show`, `class`, `computed`, …) evaluate the expression and use the value of the **last statement**. Directives that run code (`on`, `init`, `effect`, …) run the body as statements.
+
+```html
+<span data-text="$a = 1; $b = 2; $a + $b"></span>   <!-- 3 -->
+```
+
+Arrow functions, template literals, optional chaining and anything else the browser supports are fine.
+
+## What is in scope
+
+| name | meaning |
+|---|---|
+| `$name` | the signal at path `name` |
+| `$` | the root store proxy; `$.user.name`, `Object.keys($)`, `JSON.stringify($)` |
+| `el` | the element the attribute is on |
+| `evt` | the event, in `data-on` and other event-driven directives |
+| `patch` | the changed signals, in `data-on-signal-patch` |
+| `@name(...)` | a registered function, e.g. `@get('/x')` |
+
+Globals such as `window`, `document`, `Math` and `fetch` resolve normally.
+
+## Reactivity rules
+
+An expression that runs inside an effect subscribes to every signal it reads. Reading through `$`, through `$.path`, or by enumerating keys all count. Writing a signal inside the same effect that reads it is a loop; sigmx stops it after a bounded number of runs and reports the error.
+
+To read without subscribing, use `@peek(() => $x)`.
+
+## Caching
+
+Compiled expressions are cached by source text, so a table with a thousand `data-text="$row.total"` cells compiles that expression once.
+
+## Strict Content-Security-Policy
+
+By default expressions compile with `new Function`. On pages that forbid it, pass the nonce-based compiler; see [CSP](/guides/csp/).

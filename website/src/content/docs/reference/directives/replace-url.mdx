@@ -1,0 +1,38 @@
+---
+title: "data-replace-url"
+description: "Replace the address bar URL from an expression, without navigating."
+sidebar: {"order": 25, "label": "replace-url"}
+---
+import Live from '../../../../components/Live.astro'
+import Cost from '../../../../components/Cost.astro'
+
+Replace the address bar URL from an expression, without navigating.
+
+## Syntax
+
+```html
+data-replace-url="`/products?page=${$page}`"
+```
+
+| part | |
+|---|---|
+| key | forbidden |
+| value | required |
+
+## Example
+
+<Live html={`
+<div data-signals="{ p: 1 }" data-replace-url="\`?p=\${$p}\`" class="row"><button data-on:click="$p++">page <span data-text="$p"></span></button></div>
+`} />
+
+## Notes
+
+Uses `history.replaceState`; relative and absolute URLs are accepted.
+
+## Register
+
+```ts
+import { replaceUrl } from 'sigmx/plugins'
+```
+
+<Cost name="replaceUrl" />

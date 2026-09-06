@@ -1,0 +1,34 @@
+---
+title: "@peek"
+description: "Read signals without subscribing the surrounding effect to them."
+sidebar: {"order": 2}
+---
+import Live from '../../../../components/Live.astro'
+import Cost from '../../../../components/Cost.astro'
+
+Read signals without subscribing the surrounding effect to them.
+
+## Syntax
+
+```js
+@peek(() => $count)
+```
+
+Inside `data-effect`, `data-text` and other reactive directives, every signal you read becomes a dependency. Wrap a read in `@peek` to use the value without re-running when it changes.
+
+## Example
+
+<Live html={`
+<div data-signals="{ a: 0, b: 0 }">
+  <div class="row"><button data-on:click="$a++">a++</button><button data-on:click="$b++">b++</button></div>
+  <p data-text="'a=' + $a + ', b (peeked)=' + @peek(() => $b)"></p>
+</div>
+`} />
+
+## Register
+
+```ts
+import { peek } from 'sigmx/plugins'
+```
+
+<Cost name="peek" />

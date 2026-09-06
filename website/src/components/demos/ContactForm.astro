@@ -1,0 +1,5 @@
+<form data-signals="{ sent: false }" data-on:submit="@post('/api/form', { contentType: 'form' })" data-show="!$sent">
+  <div class="row"><input name="email" type="email" placeholder="you@example.com"><input name="message" placeholder="message"><button>Send</button></div>
+  <div id="form-status"></div>
+</form>
+<p data-show="$sent" style="display:none">Sent! <button data-on:click="$sent = false">again</button></p>

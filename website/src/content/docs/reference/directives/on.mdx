@@ -1,0 +1,58 @@
+---
+title: "data-on"
+description: "Listen for an event and run an expression."
+sidebar: {"order": 12, "label": "on"}
+---
+import Live from '../../../../components/Live.astro'
+import Cost from '../../../../components/Cost.astro'
+
+Listen for an event and run an expression.
+
+## Syntax
+
+```html
+data-on:click="$count++"
+data-on:keydown__window="evt.key === 'Escape' && ($open = false)"
+data-on:input__debounce.300ms="@get('/search')"
+data-on:submit__prevent="@post('/save')"
+```
+
+| part | |
+|---|---|
+| key | required (the event name) |
+| value | required |
+
+## Modifiers
+
+| modifier | effect |
+|---|---|
+| `__window / __document` | listen on `window` or `document` instead of the element |
+| `__outside` | run only for events whose target is outside the element (listens on `document`) |
+| `__prevent / __stop` | `preventDefault()` / `stopPropagation()` |
+| `__capture / __passive / __once` | listener options |
+| `__delay.ms` | wait before running |
+| `__debounce.ms[.leading][.notrailing]` | run after a quiet period |
+| `__throttle.ms[.noleading][.trailing]` | run at most once per window |
+| `__viewtransition` | wrap in a view transition |
+| `__case.camel` | recase the event name, e.g. for `myEvent` |
+
+## Example
+
+<Live html={`
+<div data-signals="{ keys: '', hits: 0 }">
+  <div class="row"><input placeholder="type, then click outside" data-on:keydown="$keys = evt.key" data-on:click__outside="$hits++"></div>
+  <p>last key: <b data-text="$keys"></b>, outside clicks: <b data-text="$hits"></b></p>
+</div>
+`} />
+
+## Notes
+
+`evt` is in scope. `submit` on a form calls `preventDefault()` automatically. Event names starting with `sigmx-` listen on `document`, so `data-on:sigmx-fetch="…"` sees request lifecycle events.
+
+## Register
+
+```ts
+import { on } from 'sigmx/plugins'
+```
+
+<Cost name="on" />

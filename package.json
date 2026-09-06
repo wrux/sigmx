@@ -1,0 +1,50 @@
+{
+  "name": "sigmx",
+  "version": "0.0.0",
+  "description": "sigmx: a modular TypeScript hypermedia library with a minimal core, opt-in plugins, signals, and zero runtime dependencies.",
+  "type": "module",
+  "license": "MIT",
+  "sideEffects": [
+    "./dist/standalone.js"
+  ],
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/kernel/index.d.ts",
+      "import": "./dist/kernel/index.js"
+    },
+    "./csp": {
+      "types": "./dist/kernel/strict-csp.d.ts",
+      "import": "./dist/kernel/strict-csp.js"
+    },
+    "./plugins": {
+      "types": "./dist/plugins/index.d.ts",
+      "import": "./dist/plugins/index.js"
+    },
+    "./plugins/*": {
+      "types": "./dist/plugins/*.d.ts",
+      "import": "./dist/plugins/*.js"
+    },
+    "./presets/*": {
+      "types": "./dist/presets/*.d.ts",
+      "import": "./dist/presets/*.js"
+    },
+    "./standalone": {
+      "types": "./dist/standalone.d.ts",
+      "import": "./dist/standalone.js"
+    }
+  },
+  "scripts": {
+    "check": "tsc --noEmit",
+    "build": "node scripts/build.mjs",
+    "size": "node scripts/size.mjs",
+    "test": "node scripts/build.mjs && node --test tests/*.test.mjs",
+    "dev": "node scripts/dev.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2",
+    "typescript": "^5.9.0"
+  }
+}

@@ -1,0 +1,11 @@
+---
+import Towns from '../partials/Towns.astro'
+import { towns } from '../../data/towns'
+---
+<div data-signals="{ q: '', results: 30 }">
+  <div class="row">
+    <input type="search" placeholder="Filter towns…" data-bind:q data-on:input__debounce.250ms="@get('/api/search')" data-indicator:searching>
+    <span class="muted" data-text="$searching ? 'searching…' : $results + ' results'"></span>
+  </div>
+  <Towns q="" towns={towns} />
+</div>

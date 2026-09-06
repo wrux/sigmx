@@ -1,0 +1,8 @@
+<div data-signals="{ progress: 0, running: false }">
+  <div class="row">
+    <button data-on:click="@get('/api/stream', { openWhenHidden: true })" data-attr:disabled="$running" data-text="$running ? 'Working…' : 'Start job'">Start job</button>
+    <span data-text="$progress + '%'">0%</span>
+  </div>
+  <progress max="100" data-attr:value="$progress"></progress>
+  <ul id="job-log"></ul>
+</div>

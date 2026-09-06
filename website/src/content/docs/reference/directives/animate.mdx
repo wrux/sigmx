@@ -1,0 +1,50 @@
+---
+title: "data-animate"
+description: "Tween a numeric CSS property or attribute towards an expression's value."
+sidebar: {"order": 27, "label": "animate"}
+---
+import Live from '../../../../components/Live.astro'
+import Cost from '../../../../components/Cost.astro'
+
+Tween a numeric CSS property or attribute towards an expression's value.
+
+## Syntax
+
+```html
+data-animate:opacity="$open ? 1 : 0"
+data-animate:width__duration.500ms__easing.ease-in-out="$w + 'px'"
+data-animate:r="$radius"   <!-- SVG attribute -->
+```
+
+| part | |
+|---|---|
+| key | required (a CSS property or attribute) |
+| value | required |
+
+## Modifiers
+
+| modifier | effect |
+|---|---|
+| `__duration.ms|s` | tween length, default 300ms |
+| `__easing.linear|ease-in|ease-out|ease-in-out` | curve, default ease-out |
+
+## Example
+
+<Live html={`
+<div data-signals="{ w: 20 }">
+  <div class="row"><button data-on:click="$w = 20">small</button><button data-on:click="$w = 90">large</button></div>
+  <div class="box" data-animate:width__duration.600ms__easing.ease-in-out="$w + '%'" style="height:1rem"></div>
+</div>
+`} />
+
+## Notes
+
+Values with the same unit tween; anything else applies immediately. A tween retargets mid-flight when the expression changes again. `prefers-reduced-motion: reduce` makes every change instant.
+
+## Register
+
+```ts
+import { animate } from 'sigmx/plugins'
+```
+
+<Cost name="animate" />

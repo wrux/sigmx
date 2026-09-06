@@ -1,0 +1,54 @@
+---
+title: "Your first app"
+description: "A counter, a form and a server round trip, explained line by line."
+sidebar: { order: 3 }
+---
+
+import Live from '../../../components/Live.astro'
+import Demo from '../../../components/Demo.astro'
+import Search from '../../../components/demos/Search.astro'
+import searchSrc from '../../../components/demos/Search.astro?raw'
+
+## Declare state, read it, change it
+
+<Live html={`
+<div data-signals="{ clicks: 0, name: '' }">
+  <button data-on:click="$clicks++">Click me</button>
+  <p>You clicked <b data-text="$clicks"></b> times.</p>
+  <input data-bind:name placeholder="Your name">
+  <p data-show="$name">Hello, <span data-text="$name"></span>!</p>
+</div>
+`} />
+
+- `data-signals` creates signals from a JavaScript object literal. Signals are the only client state.
+- `data-on:click` runs an expression when the event fires. `$clicks++` reads and writes the signal.
+- `data-text` keeps the element's text equal to the expression. It re-runs only when a signal it read changes.
+- `data-bind` is two-way: typing writes the signal, and setting the signal updates the input.
+- `data-show` toggles `display: none`.
+
+Expressions are plain JavaScript. `$name` resolves to the `name` signal; everything else (`el`, `evt`, globals) resolves as usual. See [Expressions](/guides/expressions/).
+
+## Talk to the server
+
+Add `@get` and an endpoint. The endpoint reads the signals the browser sent, renders HTML, and returns it. Because the returned element has the same `id` as the one on the page, sigmx morphs it in place: the input keeps focus, and only the list changes.
+
+<Demo source={searchSrc}><Search /></Demo>
+
+The endpoint, written with the Astro SDK:
+
+```ts
+// src/pages/api/search.ts
+import { patchElements, patchSignals, readSignals, sse } from 'sigmx-astro/server'
+import { experimental_AstroContainer as AstroContainer } from 'astro/container'
+import Towns from '../../components/partials/Towns.astro'
+
+export const GET = async ({ request }) => {
+  const { q = '' } = await readSignals(request)
+  const matches = towns.filter((t) => t.toLowerCase().includes(q.toLowerCase()))
+  const container = await AstroContainer.create()
+  const list = await container.renderToString(Towns, { props: { q, towns: matches } })
+  return sse(patchElements(list), patchSignals({ results: matches.length }))
+}
+```
+
+Three things happen in that one response: the `<ul id="towns">` is morphed, the `results` signal is updated, and the `data-indicator:searching` signal flips back to `false` when the request finishes. Every other page on this site is built the same way; read on for the details.

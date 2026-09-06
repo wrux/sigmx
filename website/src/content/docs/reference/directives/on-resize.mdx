@@ -1,0 +1,45 @@
+---
+title: "data-on-resize"
+description: "Run an expression when the element's size changes."
+sidebar: {"order": 18, "label": "on-resize"}
+---
+import Live from '../../../../components/Live.astro'
+import Cost from '../../../../components/Cost.astro'
+
+Run an expression when the element's size changes.
+
+## Syntax
+
+```html
+data-on-resize="$w = el.offsetWidth"
+data-on-resize__debounce.100ms="…"
+```
+
+| part | |
+|---|---|
+| key | forbidden |
+| value | required |
+
+## Modifiers
+
+| modifier | effect |
+|---|---|
+| `__delay / __debounce / __throttle` | timing |
+
+## Example
+
+<Live html={`
+<textarea data-signals="{ w: 0 }" data-on-resize="$w = el.offsetWidth" style="width:12rem">drag my corner</textarea> <span data-text="$w + 'px'"></span>
+`} />
+
+## Notes
+
+Backed by `ResizeObserver`; it also fires once when observation starts.
+
+## Register
+
+```ts
+import { onResize } from 'sigmx/plugins'
+```
+
+<Cost name="onResize" />

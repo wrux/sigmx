@@ -1,0 +1,8 @@
+---
+interface Props { q: string; towns: string[] }
+const { q, towns } = Astro.props
+---
+<ul id="towns">
+  {towns.length === 0 && <li class="muted">No towns match “{q}”.</li>}
+  {towns.map((t) => <li>{t}</li>)}
+</ul>

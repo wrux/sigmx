@@ -1,0 +1,28 @@
+---
+title: "Bundle sizes"
+description: "What each configuration and each plugin costs, minified, gzipped and brotli-compressed."
+sidebar: { order: 11 }
+---
+
+import Sizes from '../../../components/Sizes.astro'
+
+sigmx has no runtime dependencies, so the numbers below are the whole cost. They come from building the real source with esbuild and are regenerated with `npm run sizes`.
+
+## Configurations
+
+<Sizes />
+
+For comparison, Datastar v1.0.3's bundle with only its free plugins is 33.5 KB minified, 13.4 KB gzipped and 12.1 KB brotli. sigmx's "everything" build includes the equivalents of its paid features and is still smaller.
+
+## Per plugin
+
+Each row is the increase over the core-only build when that plugin alone is registered. Plugins that share helpers cost less together than the sum of these rows.
+
+<Sizes plugins />
+
+## Reading the table
+
+- **Core** is `createSigmx` with no plugins: the signal graph, store, expression compiler and mutation observer.
+- The **request functions** share one client, so registering all five costs about the same as one.
+- **patch-elements** carries the DOM morph. Register it only if the server sends HTML.
+- Import from `sigmx/plugins` freely: the barrel is side-effect free and tree-shakes to what you name.

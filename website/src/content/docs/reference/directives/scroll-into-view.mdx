@@ -1,0 +1,51 @@
+---
+title: "data-scroll-into-view"
+description: "Scroll the element into view when it mounts."
+sidebar: {"order": 21, "label": "scroll-into-view"}
+---
+import Live from '../../../../components/Live.astro'
+import Cost from '../../../../components/Cost.astro'
+
+Scroll the element into view when it mounts.
+
+## Syntax
+
+```html
+data-scroll-into-view
+data-scroll-into-view__smooth__vcenter__focus
+```
+
+| part | |
+|---|---|
+| key | forbidden |
+| value | forbidden |
+
+## Modifiers
+
+| modifier | effect |
+|---|---|
+| `__smooth / __instant / __auto` | scroll behaviour |
+| `__vstart / __vcenter / __vend / __vnearest` | vertical alignment |
+| `__hstart / __hcenter / __hend / __hnearest` | horizontal alignment |
+| `__focus` | focus the element afterwards |
+
+## Example
+
+<Live html={`
+<div data-signals="{ show: false }">
+  <button data-on:click="$show = true">Reveal and scroll</button>
+  <div data-show="$show" style="display:none"><div style="height:8rem"></div><p data-scroll-into-view__smooth__vnearest>Scrolled to me.</p></div>
+</div>
+`} />
+
+## Notes
+
+Put it on content the server appends, for example the newest chat message.
+
+## Register
+
+```ts
+import { scrollIntoView } from 'sigmx/plugins'
+```
+
+<Cost name="scrollIntoView" />

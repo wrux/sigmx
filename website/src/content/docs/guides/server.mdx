@@ -1,0 +1,98 @@
+---
+title: "Talking to the server"
+description: "Requests, response types, the event-stream protocol, and streaming several patches from one request."
+sidebar: { order: 5 }
+---
+
+import Demo from '../../../components/Demo.astro'
+import Stream from '../../../components/demos/Stream.astro'
+import streamSrc from '../../../components/demos/Stream.astro?raw'
+import Poll from '../../../components/demos/Poll.astro'
+import pollSrc from '../../../components/demos/Poll.astro?raw'
+import Legacy from '../../../components/demos/Legacy.astro'
+import legacySrc from '../../../components/demos/Legacy.astro?raw'
+
+The functions `@get`, `@post`, `@put`, `@patch` and `@delete` send a request and apply the response. They need the `httpGet` … `httpDelete` plugins, plus `applyState` and `applyElements` to handle what comes back.
+
+```html
+<button data-on:click="@post('/cart/add', { payload: { sku: 42 } })">Add</button>
+```
+
+## What is sent
+
+- **Signals** as JSON: in the body for POST, PUT and PATCH; in the `sigmx` query parameter for GET and DELETE. Paths starting with `_` are left out. Change the set with `filter: { include, exclude }` or send something else with `payload`.
+- **Headers** `Accept: text/event-stream, text/html, application/json` and `Sigmx-Request: true`, plus any you pass in `headers`.
+- With `contentType: 'form'`, the closest form's fields instead of signals.
+
+## What comes back
+
+The response's content type decides what happens.
+
+| content type | handling |
+|---|---|
+| `text/event-stream` | each event is routed by name to a server-event handler; see below |
+| `text/html` | patched as elements: morphed by `id`, or targeted by the `sigmx-selector` and `sigmx-mode` response headers |
+| `application/json` | merged as signals (`sigmx-only-if-missing: true` keeps existing values) |
+| `text/javascript` | executed |
+| `204`, `304` | nothing |
+| `4xx`, `5xx` | a `sigmx-fetch` event with `type: 'error'`; no retry unless `retry.onStatusError` |
+
+<Demo title="Polling with a plain HTML response" source={pollSrc}><Poll /></Demo>
+
+## The event stream
+
+An event stream lets one request apply many patches over time. Each event has a name and `key value` data lines:
+
+```
+event: sigmx-patch-signals
+data: signals {"progress": 40}
+
+event: sigmx-patch-elements
+data: selector #job-log
+data: mode append
+data: elements <li>Validating…</li>
+
+```
+
+Two handlers ship with sigmx:
+
+- **`patch-signals`**: `signals {json}`, optional `onlyIfMissing true`.
+- **`patch-elements`**: `elements <html>` (repeat the line for multiline HTML), optional `selector`, `mode` (`outer` default, `inner`, `replace`, `prepend`, `append`, `before`, `after`, `remove`) and `useViewTransition true`.
+
+`id:` lines are remembered and sent back as `Last-Event-ID` on reconnect; `retry:` sets the reconnect delay. Every event also dispatches `sigmx-server-event` on `document`, so you can listen for custom events with `data-on:sigmx-server-event__document`.
+
+<Demo title="Streaming progress" source={streamSrc}><Stream /></Demo>
+
+GET streams pause while the tab is hidden and reconnect when it is visible again (sending `Last-Event-ID`). This job restarts from scratch on reconnect, so the demo passes `openWhenHidden: true` to keep the connection open instead.
+
+## Options
+
+```ts
+@post('/save', {
+  headers: { 'X-Token': t },
+  contentType: 'json' | 'form',
+  selector: '#other-form',
+  filter: { include: /^form\./ },
+  payload: { anything: true },
+  abort: 'replace' | 'none' | controller,   // 'replace' cancels an earlier request with the same method and URL
+  openWhenHidden: false,                    // pause while the tab is hidden; default true except GET streams
+  reconnect: true,                          // reconnect after a stream closes normally
+  retry: { attempts: 5, interval: 1000, factor: 2, max: 30000, onStatusError: false },
+})
+```
+
+Requests are aborted when the element that started them is removed.
+
+## Lifecycle events
+
+`sigmx-fetch` fires on `document` with `detail.type` of `started`, `finished`, `error` or `retrying`, plus `el`, `method`, `url` and `status` or `attempt` where relevant. `data-indicator` is a convenience over it.
+
+## Accepting another library's event names
+
+Backends written for Datastar emit `datastar-patch-*` events. Accept them during a migration:
+
+```ts
+createSigmx({ plugins, eventPrefix: ['sigmx-', 'datastar-'] })
+```
+
+<Demo source={legacySrc}><Legacy /></Demo>

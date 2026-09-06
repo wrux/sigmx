@@ -1,0 +1,41 @@
+---
+title: "data-show"
+description: "Show or hide the element with `display: none`."
+sidebar: {"order": 6, "label": "show"}
+---
+import Live from '../../../../components/Live.astro'
+import Cost from '../../../../components/Cost.astro'
+
+Show or hide the element with `display: none`.
+
+## Syntax
+
+```html
+data-show="$open"
+```
+
+| part | |
+|---|---|
+| key | forbidden |
+| value | required |
+
+## Example
+
+<Live html={`
+<div data-signals="{ open: false }">
+  <button data-on:click="$open = !$open">Toggle</button>
+  <p data-show="$open">Now you see me.</p>
+</div>
+`} />
+
+## Notes
+
+The element's own inline `display` value is remembered and restored, so `style="display:flex"` survives a hide/show cycle. To avoid a flash before sigmx mounts, add `style="display:none"` for content that starts hidden.
+
+## Register
+
+```ts
+import { show } from 'sigmx/plugins'
+```
+
+<Cost name="show" />

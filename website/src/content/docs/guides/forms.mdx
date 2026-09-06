@@ -1,0 +1,77 @@
+---
+title: "Forms and binding"
+description: "Two-way binding for every input type, validation, and posting forms to the server."
+sidebar: { order: 4 }
+---
+
+import Live from '../../../components/Live.astro'
+import Demo from '../../../components/Demo.astro'
+import ContactForm from '../../../components/demos/ContactForm.astro'
+import contactSrc from '../../../components/demos/ContactForm.astro?raw'
+
+`data-bind` connects an element's value to a signal in both directions and creates the signal from the element if it does not exist yet.
+
+<Live html={`
+<div data-signals="{ f: { name: '', age: 30, agree: false, colour: 'teal', picks: [], size: 'm' } }">
+  <div class="row"><input data-bind:f.name placeholder="name"> <input type="number" data-bind:f.age> <input type="range" min="0" max="100" data-bind:f.age></div>
+  <div class="row">
+    <label><input type="checkbox" data-bind:f.agree> agree</label>
+    <label><input type="checkbox" value="red" data-bind:f.picks> red</label>
+    <label><input type="checkbox" value="blue" data-bind:f.picks> blue</label>
+    <label><input type="radio" value="s" data-bind:f.size> S</label>
+    <label><input type="radio" value="m" data-bind:f.size> M</label>
+    <select data-bind:f.colour><option>teal</option><option>amber</option></select>
+  </div>
+  <pre data-text="JSON.stringify($f, null, 1)"></pre>
+</div>
+`} />
+
+## What each element binds to
+
+| element | signal value | events |
+|---|---|---|
+| text, email, url, … | string | `input` |
+| `number`, `range` | number (`''` when empty) | `input` |
+| checkbox without `value` | boolean | `input` |
+| checkbox with `value` | the value or `''`; when the signal is an **array**, membership in it | `input` |
+| radio | the checked value; the group gets `name` from the signal path | `input` |
+| `select` | string; `select multiple` gives an array | `change` |
+| `file` | array of `{ name, type, size, contents }` with base64 contents | `change` |
+| `textarea`, custom elements with a `value` property | string | `input`, `change` |
+
+Numbers stay numbers: if the signal currently holds a number, the bound string is converted back.
+
+Modifiers: `__prop.checked` binds a property instead of the value, `__event.blur` picks the events to listen for, `__case.kebab` changes the signal name casing.
+
+## Validation
+
+`data-custom-validity` sets the field's validity message from an expression; an empty string means valid. The browser then blocks submission and shows the message.
+
+<Live html={`
+<form data-signals="{ p1: '', p2: '' }" data-on:submit="alert('valid!')">
+  <div class="row">
+    <input type="password" placeholder="password" data-bind:p1 required>
+    <input type="password" placeholder="repeat" data-bind:p2 data-custom-validity="$p1 === $p2 ? '' : 'Passwords differ.'">
+    <button>Submit</button>
+  </div>
+</form>
+`} />
+
+## Posting a form
+
+With `contentType: 'form'` the request serialises the closest form (or the one matched by `selector`) instead of the signals: URL-encoded, or multipart when the form says so. Native validation runs first. The server validates again and answers with patches.
+
+<Demo source={contactSrc}><ContactForm /></Demo>
+
+```ts
+// src/pages/api/form.ts
+export const POST = async ({ request }) => {
+  try {
+    const { email } = await readSignals(request, schema)   // any Standard Schema validator
+    return sse(patchElements(`<p id="form-status">Thanks, ${email}.</p>`), patchSignals({ sent: true }))
+  } catch (e) {
+    const items = e.issues.map((i) => `<li>${i.message}</li>`).join('')
+    return sse(patchElements(`<div id="form-status" class="error"><ul>${items}</ul></div>`))
+  }
+}
+```

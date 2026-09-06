@@ -1,0 +1,35 @@
+---
+title: "@clipboard"
+description: "Copy text to the clipboard."
+sidebar: {"order": 6}
+---
+import Live from '../../../../components/Live.astro'
+import Cost from '../../../../components/Cost.astro'
+
+Copy text to the clipboard.
+
+## Syntax
+
+```js
+@clipboard('plain text')
+@clipboard('SGVsbG8=', true)   // base64, decoded first
+```
+
+Base64 lets you embed text with quotes or markup safely inside an attribute. Returns the promise from `navigator.clipboard.writeText`.
+
+## Example
+
+<Live html={`
+<div data-signals="{ copied: false }" class="row">
+  <button data-on:click="@clipboard('Copied from the sigmx docs').then(() => $copied = true)">Copy a sentence</button>
+  <span data-show="$copied">copied!</span>
+</div>
+`} />
+
+## Register
+
+```ts
+import { clipboard } from 'sigmx/plugins'
+```
+
+<Cost name="clipboard" />

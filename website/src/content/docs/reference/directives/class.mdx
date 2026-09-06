@@ -1,0 +1,47 @@
+---
+title: "data-class"
+description: "Add or remove classes based on expressions."
+sidebar: {"order": 7, "label": "class"}
+---
+import Live from '../../../../components/Live.astro'
+import Cost from '../../../../components/Cost.astro'
+
+Add or remove classes based on expressions.
+
+## Syntax
+
+```html
+data-class:active="$page === 2"
+data-class="{ active: $on, 'text-red text-bold': $error }"
+```
+
+| part | |
+|---|---|
+| key | optional (a class name) or an object value |
+| value | required |
+
+## Modifiers
+
+| modifier | effect |
+|---|---|
+| `__case.*` | key casing; classes default to kebab-case |
+
+## Example
+
+<Live html={`
+<div data-signals="{ warm: false }">
+  <button data-on:click="$warm = !$warm" data-class:hot="$warm">I turn warm</button>
+</div>
+`} />
+
+## Notes
+
+Object keys may contain several space-separated classes. Classes the directive added are removed when it unmounts.
+
+## Register
+
+```ts
+import { className } from 'sigmx/plugins'
+```
+
+<Cost name="className" />

@@ -1,0 +1,33 @@
+---
+title: "@fit"
+description: "Map a number from one range onto another."
+sidebar: {"order": 5}
+---
+import Live from '../../../../components/Live.astro'
+import Cost from '../../../../components/Cost.astro'
+
+Map a number from one range onto another.
+
+## Syntax
+
+```js
+@fit(value, inMin, inMax, outMin, outMax, clamp = false, round = false)
+```
+
+Linear interpolation: `@fit(50, 0, 100, 0, 255)` is `127.5`. Pass `true` as the sixth argument to clamp to the output range and `true` as the seventh to round.
+
+## Example
+
+<Live html={`
+<div data-signals="{ c: 20 }" class="row">
+  <input type="number" data-bind:c> °C = <b data-text="@fit($c, 0, 100, 32, 212).toFixed(1)"></b> °F, slider <input type="range" min="0" max="100" data-bind:c> → <b data-text="@fit($c, 0, 100, 0, 255, true, true)"></b>/255
+</div>
+`} />
+
+## Register
+
+```ts
+import { fit } from 'sigmx/plugins'
+```
+
+<Cost name="fit" />

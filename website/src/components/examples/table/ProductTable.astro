@@ -1,0 +1,29 @@
+---
+import type { Product } from '../../../data/products'
+interface Props { rows: Product[]; sort: string; dir: string }
+const { rows, sort, dir } = Astro.props
+const cols: [keyof Product, string, string][] = [['name', 'Product', ''], ['category', 'Category', ''], ['price', 'Price', 'num'], ['stock', 'Stock', 'num']]
+---
+<table id="products">
+  <colgroup><col style="width:34%"><col style="width:24%"><col style="width:20%"><col style="width:22%"></colgroup>
+  <thead>
+    <tr>
+      {cols.map(([key, label, cls]) => (
+        <th class={`${cls} ${sort === key ? `sorted ${dir}` : ''}`}>
+          <button type="button" data-on:click={`$sort === '${key}' ? ($dir = $dir === 'asc' ? 'desc' : 'asc') : ($sort = '${key}', $dir = 'asc'); $page = 1; @get('/api/products')`}>{label}<i aria-hidden="true"></i></button>
+        </th>
+      ))}
+    </tr>
+  </thead>
+  <tbody>
+    {rows.length === 0 && <tr><td colspan="4" class="empty">No products match.</td></tr>}
+    {rows.map((p) => (
+      <tr id={`p-${p.id}`}>
+        <td><b>{p.name}</b></td>
+        <td><span class={`tag ${p.category}`}>{p.category}</span></td>
+        <td class="num" data-text={`@intl('number', ${p.price}, { style: 'currency', currency: 'EUR' })`}>{p.price}</td>
+        <td class="num"><span class={`stock ${p.stock < 5 ? 'low' : p.stock < 15 ? 'mid' : ''}`}><i style={`width:${Math.min(100, p.stock * 2)}%`}></i><span>{p.stock}</span></span></td>
+      </tr>
+    ))}
+  </tbody>
+</table>

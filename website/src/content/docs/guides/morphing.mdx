@@ -1,0 +1,47 @@
+---
+title: "Morphing the DOM"
+description: "How patched HTML is merged into the page without losing focus, input state or scroll position."
+sidebar: { order: 6 }
+---
+
+import Demo from '../../../components/Demo.astro'
+import Todos from '../../../components/demos/Todos.astro'
+import todosSrc from '../../../components/demos/Todos.astro?raw'
+
+When HTML arrives with mode `outer` (the default) or `inner`, sigmx does not replace the target: it **morphs** it. The existing element is walked alongside the new one, attributes are synced, text is updated, and children are matched up so that as few nodes as possible are created or destroyed.
+
+## Identity by id
+
+An element whose `id` appears in both the old and the new tree is kept, wherever it ends up. It may be reordered or even moved out of a removed ancestor, and it keeps everything the browser attached to it: focus, selection, typed input values, scroll position, playing media, third-party widgets.
+
+Elements without an id are matched positionally by tag name.
+
+<Demo title="Type in a note, then add or remove todos" source={todosSrc}><Todos /></Demo>
+
+Each `<li>` has an id, so the notes you type survive every patch even though the server re-renders the whole list.
+
+## Form state
+
+Typed values are only overwritten when the server's `value`, `checked` or `selected` **attribute** changed between the old and new markup. A re-render with the same default leaves the user's edits alone; a genuine change from the server wins.
+
+## Opting out
+
+- `data-ignore-morph` on both the old and the new element leaves that subtree untouched.
+- `data-preserve-attr="class style"` lists attributes the old element keeps.
+
+## Scripts
+
+`<script>` elements inserted by a patch are executed; those already on the page are not run twice.
+
+## Full documents
+
+A response containing `<html>`, `<head>` or `<body>` is parsed as a document and morphed into the current one, head included.
+
+## Using the morph directly
+
+```ts
+import { morph, morphInner } from 'sigmx/plugins'
+
+morph(document.getElementById('list'), newListElement)
+morphInner(container, fragment)
+```

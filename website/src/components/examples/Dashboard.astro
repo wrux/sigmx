@@ -1,0 +1,54 @@
+<div class="ex dash" data-signals="{ metrics: { cpu: 0, mem: 0, rps: 0, errors: 0 }, tick: 0, updatedAt: 0, history: [] }"
+     data-init="@get('/api/metrics', { openWhenHidden: true, reconnect: true })"
+     data-on-signal-patch:metrics.cpu="$history.push($metrics.cpu); if ($history.length > 30) $history.shift()">
+  <header class="bar">
+    <div><b>edge-cluster-01</b><small class="muted"><span class="pulse"></span> live · tick <span class="num" data-text="$tick"></span> · <span data-text="$updatedAt ? @intl('datetime', new Date($updatedAt), { timeStyle: 'medium' }) : '–'"></span></small></div>
+    <span class="chip" data-class="{ good: $metrics.errors <= 2, warn: $metrics.errors > 2 && $metrics.errors <= 5, bad: $metrics.errors > 5 }" data-text="$metrics.errors > 5 ? 'degraded' : $metrics.errors > 2 ? 'watch' : 'healthy'"></span>
+    <button class="btn ghost" type="button" data-on:click="@get('/api/metrics', { openWhenHidden: true, reconnect: true })">Reconnect</button>
+  </header>
+  <div class="tiles">
+    <div class="tile card" data-class="{ warn: $metrics.cpu > 60, bad: $metrics.cpu > 85 }">
+      <span class="label">CPU</span><b class="num" data-text="$metrics.cpu + '%'"></b>
+      <div class="track"><i data-animate:width__duration.700ms="$metrics.cpu + '%'"></i></div>
+    </div>
+    <div class="tile card" data-class:warn="$metrics.mem > 80">
+      <span class="label">Memory</span><b class="num" data-text="$metrics.mem + '%'"></b>
+      <div class="track"><i data-animate:width__duration.700ms="$metrics.mem + '%'"></i></div>
+    </div>
+    <div class="tile card">
+      <span class="label">Requests / s</span><b class="num" data-text="@intl('number', $metrics.rps)"></b>
+      <div class="track"><i data-animate:width__duration.700ms="@fit($metrics.rps, 0, 900, 0, 100, true) + '%'"></i></div>
+    </div>
+    <div class="tile card" data-class="{ warn: $metrics.errors > 2, bad: $metrics.errors > 5 }">
+      <span class="label">Error rate</span><b class="num" data-text="@intl('number', $metrics.errors / 100, { style: 'percent', maximumFractionDigits: 1 })"></b>
+      <div class="track"><i data-animate:width__duration.700ms="@fit($metrics.errors, 0, 8, 0, 100, true) + '%'"></i></div>
+    </div>
+  </div>
+  <div class="card spark">
+    <div class="spark-head"><span class="label">CPU, last 30 ticks</span><span class="muted num" data-text="$history.length ? 'min ' + Math.min(...$history) + '% · max ' + Math.max(...$history) + '%' : 'collecting…'"></span></div>
+    <svg viewBox="0 0 300 60" preserveAspectRatio="none" aria-hidden="true">
+      <defs><linearGradient id="spark-fill" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="var(--ex-accent)" stop-opacity=".45"/><stop offset="1" stop-color="var(--ex-accent)" stop-opacity="0"/></linearGradient></defs>
+      <polygon fill="url(#spark-fill)" data-attr:points="'0,60 ' + $history.map((v, i) => (i * 300 / 29).toFixed(1) + ',' + (60 - v * .58).toFixed(1)).join(' ') + ' ' + ((($history.length - 1) * 300 / 29) || 0).toFixed(1) + ',60'"></polygon>
+      <polyline fill="none" stroke="var(--ex-accent)" stroke-width="2" stroke-linejoin="round" data-attr:points="$history.map((v, i) => (i * 300 / 29).toFixed(1) + ',' + (60 - v * .58).toFixed(1)).join(' ')"></polyline>
+    </svg>
+  </div>
+</div>
+<style is:global>
+  .dash { padding: 1rem; display: grid; gap: .8rem; }
+  .dash .bar { display: flex; align-items: center; gap: .8rem; }
+  .dash .bar b { display: block; font-family: var(--sl-font-mono); }
+  .dash .bar small { display: flex; align-items: center; gap: .4rem; font-size: .75rem; }
+  .dash .bar .btn { margin-left: auto; }
+  .dash .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr)); gap: .8rem; }
+  .dash .tile { padding: .8rem .9rem; display: grid; gap: .3rem; }
+  .dash .label { font-size: .7rem; letter-spacing: .08em; text-transform: uppercase; color: var(--ex-muted); }
+  .dash .tile b { font-size: 1.7rem; line-height: 1.1; letter-spacing: -.02em; }
+  .dash .track { height: .45rem; border-radius: 999px; background: var(--ex-surface-2); overflow: hidden; }
+  .dash .track i { display: block; height: 100%; width: 0; border-radius: 999px; background: linear-gradient(90deg, var(--ex-accent), #7c5cff); }
+  .dash .tile.warn .track i { background: linear-gradient(90deg, var(--ex-warm), #ff8a3d); }
+  .dash .tile.bad .track i { background: linear-gradient(90deg, var(--ex-bad), #ff6b8b); }
+  .dash .tile.bad b { color: var(--ex-bad); }
+  .dash .spark { padding: .7rem .9rem .4rem; }
+  .dash .spark-head { display: flex; justify-content: space-between; font-size: .75rem; margin-bottom: .3rem; }
+  .dash svg { width: 100%; height: 3.6rem; display: block; }
+</style>

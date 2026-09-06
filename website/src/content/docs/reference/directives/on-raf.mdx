@@ -1,0 +1,45 @@
+---
+title: "data-on-raf"
+description: "Run an expression on every animation frame."
+sidebar: {"order": 19, "label": "on-raf"}
+---
+import Live from '../../../../components/Live.astro'
+import Cost from '../../../../components/Cost.astro'
+
+Run an expression on every animation frame.
+
+## Syntax
+
+```html
+data-on-raf="$t = performance.now()"
+data-on-raf__throttle.100ms="…"
+```
+
+| part | |
+|---|---|
+| key | forbidden |
+| value | required |
+
+## Modifiers
+
+| modifier | effect |
+|---|---|
+| `__throttle.ms` | skip frames |
+
+## Example
+
+<Live html={`
+<div data-signals="{ frames: 0 }" data-on-raf__throttle.50ms="$frames++">frames (throttled): <b data-text="$frames"></b></div>
+`} />
+
+## Notes
+
+Browsers pause animation frames in background tabs.
+
+## Register
+
+```ts
+import { onRaf } from 'sigmx/plugins'
+```
+
+<Cost name="onRaf" />

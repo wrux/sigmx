@@ -1,0 +1,49 @@
+---
+title: "data-signals"
+description: "Declare signals from an object literal or one path at a time."
+sidebar: {"order": 1, "label": "signals"}
+---
+import Live from '../../../../components/Live.astro'
+import Cost from '../../../../components/Cost.astro'
+
+Declare signals from an object literal or one path at a time.
+
+## Syntax
+
+```html
+data-signals="{ count: 0, user: { name: 'Ada' } }"
+data-signals:count="0"
+data-signals:user.name__ifmissing="'anon'"
+```
+
+| part | |
+|---|---|
+| key | optional (a signal path) |
+| value | required |
+
+## Modifiers
+
+| modifier | effect |
+|---|---|
+| `__ifmissing` | only write paths that do not exist yet; use it for defaults next to `persist` or `query-string` |
+| `__case.kebab|snake|pascal` | casing of the key when it is a signal path |
+
+## Example
+
+<Live html={`
+<div data-signals="{ n: 1 }" data-signals:label="'clicks'">
+  <button data-on:click="$n++"><span data-text="$n"></span> <span data-text="$label"></span></button>
+</div>
+`} />
+
+## Notes
+
+Values merge into the store like a JSON merge-patch: existing sibling paths are kept, `null` removes a path, and plain objects become nested paths. Declaring the same signal twice is fine; the last declaration wins unless it has `__ifmissing`.
+
+## Register
+
+```ts
+import { signals } from 'sigmx/plugins'
+```
+
+<Cost name="signals" />

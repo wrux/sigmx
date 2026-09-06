@@ -1,0 +1,48 @@
+---
+title: "data-ref"
+description: "Store the element itself in a signal."
+sidebar: {"order": 4, "label": "ref"}
+---
+import Live from '../../../../components/Live.astro'
+import Cost from '../../../../components/Cost.astro'
+
+Store the element itself in a signal.
+
+## Syntax
+
+```html
+data-ref:dialog
+data-ref="dialog"
+```
+
+| part | |
+|---|---|
+| key | or value: the signal path |
+| value | or key |
+
+## Modifiers
+
+| modifier | effect |
+|---|---|
+| `__case.*` | key casing |
+
+## Example
+
+<Live html={`
+<div>
+  <input data-ref:field placeholder="I get focus">
+  <button data-on:click="$field.focus()">Focus the input</button>
+</div>
+`} />
+
+## Notes
+
+The signal is removed when the element leaves the document.
+
+## Register
+
+```ts
+import { ref } from 'sigmx/plugins'
+```
+
+<Cost name="ref" />

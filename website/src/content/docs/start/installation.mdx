@@ -1,0 +1,84 @@
+---
+title: "Installation"
+description: "Add sigmx with npm and a bundler, with a script tag, or through the Astro integration."
+sidebar: { order: 2 }
+---
+
+import { Tabs, TabItem, Steps } from '@astrojs/starlight/components'
+
+## With a bundler
+
+<Steps>
+1. Install the package.
+
+   ```bash
+   npm install sigmx
+   ```
+
+2. Create an instance and register the plugins you want. Nothing registers implicitly.
+
+   ```ts
+   import { createSigmx } from 'sigmx'
+   import { signals, text, on, show, bind, httpGet, httpPost, applyElements, applyState } from 'sigmx/plugins'
+
+   createSigmx({ plugins: [signals, text, on, show, bind, httpGet, httpPost, applyElements, applyState] })
+   ```
+
+3. Or start from a preset.
+
+   ```ts
+   import { createSigmx } from 'sigmx'
+   import { all } from 'sigmx/presets/all'       // every plugin
+   import { minimal } from 'sigmx/presets/minimal' // signals, text, show, on
+
+   createSigmx({ plugins: all })
+   ```
+</Steps>
+
+The instance scans the document once the DOM is ready and keeps watching it, so markup added later (by a server patch, a template, or any other script) is picked up automatically.
+
+## Script tag
+
+The standalone build registers every plugin and starts immediately. Copy `dist/sigmx.standalone.js` from the package or serve it from your own CDN.
+
+```html
+<script type="module" src="/sigmx.standalone.js"></script>
+```
+
+It exposes the instance as `window.sigmx`.
+
+## Astro
+
+```bash
+npm install sigmx sigmx-astro
+```
+
+```js
+// astro.config.mjs
+import { defineConfig } from 'astro/config'
+import sigmx from 'sigmx-astro'
+
+export default defineConfig({ integrations: [sigmx()] })
+```
+
+The integration injects the client on every page and gives your endpoints helpers for reading signals and streaming patches. See [the Astro SDK](/sdks/astro/).
+
+## Options
+
+```ts
+createSigmx({
+  plugins: [...],                       // required for anything to happen
+  prefix: 'data-',                      // or ['data-', 'hx-', 's-'] while migrating
+  eventPrefix: 'sigmx-',                // server event names to accept, e.g. ['sigmx-', 'datastar-']
+  compile: cspCompiler(nonce),          // strict-CSP expression compiler, from 'sigmx/csp'
+  onError: (error, { plugin, el, attr }) => {},  // default: console.error
+  store: sharedStore,                   // share signals with another instance
+  autoStart: true,                      // false to call instance.apply() yourself
+})
+```
+
+The returned instance has `store`, `$` (the root store proxy, so `sigmx.$.count++` works from JavaScript), `apply(root)`, `use(...plugins)` and `destroy()`.
+
+## Browser support
+
+Modern evergreen browsers. sigmx uses `Proxy`, `MutationObserver`, `fetch` with streaming bodies, `ReadableStream`, and optional APIs it feature-detects: `moveBefore`, `startViewTransition`, `ResizeObserver`, `IntersectionObserver`.

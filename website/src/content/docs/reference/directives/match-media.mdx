@@ -1,0 +1,45 @@
+---
+title: "data-match-media"
+description: "Keep a boolean signal in sync with a media query."
+sidebar: {"order": 20, "label": "match-media"}
+---
+import Live from '../../../../components/Live.astro'
+import Cost from '../../../../components/Cost.astro'
+
+Keep a boolean signal in sync with a media query.
+
+## Syntax
+
+```html
+data-match-media:is-dark="'prefers-color-scheme: dark'"
+data-match-media:wide="'(min-width: 60rem)'"
+```
+
+| part | |
+|---|---|
+| key | required (the signal path) |
+| value | required (the query, as a string expression) |
+
+## Modifiers
+
+| modifier | effect |
+|---|---|
+| `__case.*` | key casing |
+
+## Example
+
+<Live html={`
+<div data-match-media:narrow="'max-width: 700px'" data-match-media:reduced="'prefers-reduced-motion: reduce'">narrow viewport: <b data-text="$narrow"></b>, reduced motion: <b data-text="$reduced"></b></div>
+`} />
+
+## Notes
+
+Parentheses are added when the query is a bare `feature: value` pair.
+
+## Register
+
+```ts
+import { matchMedia } from 'sigmx/plugins'
+```
+
+<Cost name="matchMedia" />

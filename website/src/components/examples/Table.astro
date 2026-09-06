@@ -1,0 +1,56 @@
+---
+import ProductTable from './table/ProductTable.astro'
+import { products } from '../../data/products'
+const rows = [...products].sort((a, b) => a.name.localeCompare(b.name)).slice(0, 8)
+---
+<div class="ex table-app"
+     data-signals__ifmissing="{ q: '', sort: 'name', dir: 'asc', page: 1, pages: 4, total: 30 }"
+     data-query-string="{ include: /^(q|sort|dir|page)$/ }"
+     data-init="($q || $sort !== 'name' || $dir !== 'asc' || $page !== 1) && @get('/api/products')"
+     data-indicator:loading>
+  <header class="bar">
+    <label class="search"><span aria-hidden="true">⌕</span><input class="field" type="search" placeholder="Filter by name or category" data-bind:q data-on:input__debounce.250ms="$page = 1; @get('/api/products')"></label>
+    <span class="chip" data-text="$total + ' products'"></span>
+    <span class="muted small" data-show="$loading">updating…</span>
+  </header>
+  <div class="scroll"><ProductTable rows={rows} sort="name" dir="asc" /></div>
+  <footer class="bar">
+    <span class="muted small">Sorted by <b data-text="$sort"></b> <span data-text="$dir === 'asc' ? '↑' : '↓'"></span> · state lives in the URL</span>
+    <nav class="pager">
+      <button class="btn ghost" type="button" data-attr:disabled="$page <= 1" data-on:click="$page--; @get('/api/products')">‹</button>
+      <span class="num">page <b data-text="$page"></b> / <b data-text="$pages"></b></span>
+      <button class="btn ghost" type="button" data-attr:disabled="$page >= $pages" data-on:click="$page++; @get('/api/products')">›</button>
+    </nav>
+  </footer>
+</div>
+<style is:global>
+  .table-app { background: var(--ex-surface); }
+  .table-app .bar { display: flex; align-items: center; gap: .8rem; padding: .7rem 1rem; }
+  .table-app header.bar { border-bottom: 1px solid var(--ex-line); }
+  .table-app footer.bar { border-top: 1px solid var(--ex-line); justify-content: space-between; }
+  .table-app .search { position: relative; flex: 1; max-width: 22rem; }
+  .table-app .search span { position: absolute; left: .7rem; top: 50%; transform: translateY(-50%); color: var(--ex-muted); }
+  .table-app .search .field { padding-left: 2rem; }
+  .table-app .small { font-size: .8rem; }
+  .table-app .scroll { overflow: auto; }
+  #products { width: 100%; table-layout: fixed; border-collapse: collapse; margin: 0; font-size: .9rem; }
+  #products td, #products th { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #products .stock { justify-content: end; }
+  #products th { position: sticky; top: 0; background: var(--ex-surface-2); text-align: left; font-size: .72rem; letter-spacing: .06em; text-transform: uppercase; color: var(--ex-muted); padding: .5rem 1rem; }
+  #products th.num, #products td.num { text-align: right; }
+  #products th button { font: inherit; background: none; border: 0; padding: 0; cursor: pointer; color: inherit; display: inline-flex; gap: .3rem; align-items: center; }
+  #products th button i::after { content: '↕'; opacity: .35; }
+  #products th.sorted button { color: var(--ex-accent); }
+  #products th.sorted.asc button i::after { content: '↑'; opacity: 1; } #products th.sorted.desc button i::after { content: '↓'; opacity: 1; }
+  #products td { padding: .55rem 1rem; border-top: 1px solid var(--ex-line); }
+  #products tbody tr:hover td { background: var(--ex-accent-low); }
+  #products td.empty { text-align: center; color: var(--ex-muted); padding: 1.5rem; }
+  #products .tag { font-size: .72rem; padding: .15rem .5rem; border-radius: 999px; background: var(--ex-surface-2); }
+  #products .tag.tools { color: #7c5cff; } #products .tag.materials { color: var(--ex-warm); } #products .tag.measuring { color: var(--ex-accent); }
+  #products .stock { display: inline-grid; grid-template-columns: 3rem auto; gap: .4rem; align-items: center; }
+  #products .stock i { display: block; height: .4rem; border-radius: 999px; background: var(--ex-good); }
+  #products .stock.mid i { background: var(--ex-warm); } #products .stock.low i { background: var(--ex-bad); }
+  #products .stock.low span { color: var(--ex-bad); font-weight: 700; }
+  .table-app .pager { display: flex; align-items: center; gap: .5rem; font-size: .85rem; }
+  .table-app .pager .btn { padding: .3rem .7rem; }
+</style>

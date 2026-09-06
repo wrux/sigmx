@@ -1,0 +1,34 @@
+---
+import FeedPage from './feed/FeedPage.astro'
+import { page } from '../../data/feed'
+---
+<div class="ex feed-app" data-signals="{ liked: [] }">
+  <header class="bar"><b>Timeline</b><span class="chip" data-text="$liked.length + ' liked'"></span></header>
+  <div class="feed-wrap">
+    <ul id="feed" class="feed">
+      <FeedPage posts={page(0)} />
+    </ul>
+    <div id="feed-sentinel" class="sentinel" data-on-intersect__once="@get('/api/feed?page=1')" data-indicator:loading>
+      <div class="skeleton" data-show="$loading"><i></i><i></i><i></i></div>
+    </div>
+  </div>
+</div>
+<style is:global>
+  .feed-app { background: var(--ex-surface); }
+  .feed-app .bar { display: flex; align-items: center; justify-content: space-between; padding: .7rem 1rem; border-bottom: 1px solid var(--ex-line); }
+  .feed-app .feed-wrap { max-height: 22rem; overflow: auto; padding: .8rem; background: var(--ex-surface-2); }
+  .feed { list-style: none; margin: 0; padding: 0; display: grid; gap: .6rem; }
+  .feed .post { display: grid; grid-template-columns: auto 1fr; gap: .7rem; padding: .7rem .9rem; animation: post-in .3s ease-out; }
+  @keyframes post-in { from { opacity: 0; transform: translateY(8px) } }
+  .feed .avatar { display: grid; place-items: center; width: 2.4rem; height: 2.4rem; border-radius: 50%; font-weight: 700; color: #fff; background: hsl(var(--h) 55% 48%); }
+  .feed header { font-size: .85rem; } .feed header .muted { font-size: .78rem; }
+  .feed p { margin: .2rem 0 .4rem; }
+  .feed footer { display: flex; justify-content: space-between; align-items: center; font-size: .8rem; }
+  .feed .like { font: inherit; border: 0; background: transparent; cursor: pointer; color: var(--ex-muted); padding: .2rem .4rem; border-radius: 8px; }
+  .feed .like:hover { background: var(--ex-surface-2); }
+  .feed .like.on { color: var(--ex-bad); font-weight: 600; }
+  .feed-app .sentinel { padding: .6rem 0; min-height: 1.5rem; text-align: center; color: var(--ex-muted); font-size: .85rem; }
+  .feed-app .skeleton { display: grid; gap: .5rem; }
+  .feed-app .skeleton i { display: block; height: 3.2rem; border-radius: 12px; background: linear-gradient(90deg, var(--ex-line), var(--ex-surface), var(--ex-line)); background-size: 200% 100%; animation: shimmer 1.2s linear infinite; }
+  @keyframes shimmer { to { background-position: -200% 0 } }
+</style>

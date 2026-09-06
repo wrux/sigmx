@@ -1,0 +1,44 @@
+---
+title: "data-attr"
+description: "Set any attribute from an expression."
+sidebar: {"order": 9, "label": "attr"}
+---
+import Live from '../../../../components/Live.astro'
+import Cost from '../../../../components/Cost.astro'
+
+Set any attribute from an expression.
+
+## Syntax
+
+```html
+data-attr:disabled="$busy"
+data-attr:aria-expanded="$open"
+data-attr="{ title: $tip, hidden: !$show }"
+```
+
+| part | |
+|---|---|
+| key | optional (an attribute name) or an object value |
+| value | required |
+
+## Example
+
+<Live html={`
+<div data-signals="{ busy: false }" class="row">
+  <button data-on:click="$busy = !$busy">toggle</button>
+  <button data-attr:disabled="$busy">I get disabled</button>
+  <a data-attr:href="'https://example.com/?t=' + Date.now()" data-attr:title="$busy ? 'busy' : 'idle'">link with reactive href</a>
+</div>
+`} />
+
+## Notes
+
+`true` sets an empty attribute, `false`, `null` and `undefined` remove it, objects are JSON-encoded, everything else is stringified.
+
+## Register
+
+```ts
+import { attr } from 'sigmx/plugins'
+```
+
+<Cost name="attr" />
