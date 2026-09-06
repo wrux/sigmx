@@ -46,7 +46,8 @@ export interface Ctx {
   effect(fn: () => void): void;
   /** addEventListener with automatic removal on cleanup. */
   listen(target: EventTarget, type: string, fn: (e: any) => void, options?: AddEventListenerOptions): void;
-  cleanup(fn: () => void): void;
+  /** Run `fn` when the attribute unmounts. Returns a function that unregisters it (for work that finished early). */
+  cleanup(fn: () => void): () => void;
   error(message: string, extra?: Record<string, unknown>): Error;
   /** Route an error that happened later (a callback, a promise) to `onError` with this attribute's info. */
   report(error: unknown): void;
@@ -62,8 +63,8 @@ export interface ActionCtx {
   error(message: string, extra?: Record<string, unknown>): Error;
   /** Route an error that happened later (a callback, a promise) to `onError` with this attribute's info. */
   report(error: unknown): void;
-  /** Run when the attribute that invoked the action is torn down. */
-  cleanup(fn: () => void): void;
+  /** Run when the attribute that invoked the action is torn down. Returns a function that unregisters it. */
+  cleanup(fn: () => void): () => void;
 }
 
 export interface AttributePlugin {

@@ -119,7 +119,7 @@ test('stream delivers patches over time and closes when the callback ends', asyn
     c.var.sigmx.stream(async (s) => {
       await s.patchSignals({ progress: 0 });
       await s.sleep(10);
-      await s.patchElements('<b id="x">done</b>', { useViewTransition: true });
+      await s.patchElements('<b id="x">done</b>');
       await s.removeSignals(['tmp.a']);
     }),
   );
@@ -129,7 +129,7 @@ test('stream delivers patches over time and closes when the callback ends', asyn
   assert.equal(
     text,
     'event: sigmx-patch-signals\ndata: signals {"progress":0}\n\n' +
-      'event: sigmx-patch-elements\ndata: useViewTransition true\ndata: elements <b id="x">done</b>\n\n' +
+      'event: sigmx-patch-elements\ndata: elements <b id="x">done</b>\n\n' +
       'event: sigmx-patch-signals\ndata: signals {"tmp":{"a":null}}\n\n',
   );
 });

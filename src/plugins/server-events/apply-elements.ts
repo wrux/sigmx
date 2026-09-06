@@ -1,8 +1,27 @@
 import { srv } from '../def.js';
 import { activateScripts, morph, morphInner } from './morph.js';
 
+/**
+ * `<head>` children are matched by equality, not position: a stylesheet or meta that is already
+ * present is left alone (no reload flash), missing ones are added, absent ones removed.
+ */
+const mergeHead = (head: HTMLHeadElement, next: HTMLHeadElement) => {
+  const wanted = [...next.children];
+  for (const old of [...head.children]) {
+    const i = wanted.findIndex((n) => n.isEqualNode(old));
+    if (i < 0) old.remove();
+    else wanted.splice(i, 1);
+  }
+  for (const n of wanted) {
+    const copy = document.importNode(n, true);
+    head.append(copy);
+    activateScripts(copy);
+  }
+};
+
 const parse = (html: string): DocumentFragment | Document => {
-  if (/<\/(html|head|body)>/i.test(html)) return new DOMParser().parseFromString(html, 'text/html');
+  if (/^\s*<(!doctype|html)[\s>]|<\/(html|head|body)>/i.test(html))
+    return new DOMParser().parseFromString(html, 'text/html');
   const t = document.createElement('template');
   t.innerHTML = html;
   return t.content;
@@ -13,7 +32,8 @@ export const applyElements = srv('patch-elements', (runtime, { elements = '', se
   const o = { ignoreAttr: runtime.attr('ignore-morph'), preserveAttr: runtime.attr('preserve-attr') };
   const parsed = parse(elements);
   if (parsed instanceof Document) {
-    if (parsed.head.childNodes.length) morphInner(document.head, parsed.head, o);
+    for (const { name, value } of parsed.documentElement.attributes) document.documentElement.setAttribute(name, value);
+    if (parsed.head.childNodes.length) mergeHead(document.head, parsed.head);
     morph(document.body, parsed.body, o);
     return;
   }

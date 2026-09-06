@@ -29,16 +29,26 @@ export const readEvents = async (
   const decoder = new TextDecoder();
   const state: StreamState = {};
   let buffer = '';
+  let scan = 0; // where the next separator search starts: no rescanning of a large partial event
+  const dispatch = (block: string) => {
+    const e = parseBlock(block, state);
+    if (e) onEvent(e);
+  };
   for (;;) {
     const { value, done } = await reader.read();
     buffer += decoder.decode(value, { stream: !done });
-    const blocks = buffer.split(/\r?\n\r?\n/);
-    buffer = done ? '' : (blocks.pop() as string);
-    for (const b of blocks) {
-      const e = parseBlock(b, state);
-      if (e) onEvent(e);
+    const sep = /\r?\n\r?\n/g;
+    sep.lastIndex = scan;
+    for (let m = sep.exec(buffer); m; m = sep.exec(buffer)) {
+      dispatch(buffer.slice(0, m.index));
+      buffer = buffer.slice(m.index + m[0].length);
+      sep.lastIndex = 0;
     }
-    if (done) break;
+    scan = Math.max(0, buffer.length - 3);
+    if (done) {
+      dispatch(buffer);
+      break;
+    }
   }
 };
 

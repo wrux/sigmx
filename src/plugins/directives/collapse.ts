@@ -9,6 +9,7 @@ export const collapse = dir('collapse', 6, ({ el, mods, evaluate, effect, cleanu
   const style = (el as HTMLElement).style;
   const ms = toMs(mods.get('duration'), 250);
   const instant = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const own = [style.height, style.overflow, style.transition];
   let timer: ReturnType<typeof setTimeout> | undefined;
   let first = true;
   let last: boolean | undefined;
@@ -34,5 +35,8 @@ export const collapse = dir('collapse', 6, ({ el, mods, evaluate, effect, cleanu
     style.height = open ? `${el.scrollHeight}px` : '0px';
     timer = setTimeout(() => settle(open), ms + 20);
   });
-  cleanup(() => clearTimeout(timer));
+  cleanup(() => {
+    clearTimeout(timer);
+    [style.height, style.overflow, style.transition] = own;
+  });
 });

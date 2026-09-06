@@ -14,7 +14,7 @@ data-<plugin>[:key][__modifier[.argument]...]="expression"
 |---|---|---|
 | plugin | `data-text` | which directive handles the attribute |
 | key | `data-on:click`, `data-class:active`, `data-signals:user.name` | a name the directive needs: an event, a class, a signal path |
-| modifiers | `__debounce.300ms`, `__prevent`, `__case.kebab` | options, each with optional dot-separated arguments |
+| modifiers | `__debounce.300ms`, `__prevent`, `__case.kebab` | options, each with optional dot-separated arguments; a decimal argument such as `__debounce.1.5s` is read as one number |
 | expression | `"$count * 2"` | JavaScript evaluated by the directive |
 
 Examples:
@@ -28,7 +28,7 @@ Examples:
 
 ## Keys and casing
 
-HTML lowercases attribute names before sigmx ever sees them, so `data-bind:newTodo` arrives as `data-bind:newtodo`. Write multi-word keys in kebab-case: keys that name signals are converted to camelCase, so `data-bind:new-todo` binds `newTodo`. Change that with `__case.kebab`. Keys that name events or CSS classes keep kebab-case.
+HTML lowercases attribute names before sigmx ever sees them, so `data-bind:newTodo` arrives as `data-bind:newtodo`. Write multi-word keys in kebab-case: keys that name signals are converted to camelCase, so `data-bind:new-todo` binds `newTodo`. Change that with `__case.kebab`, `__case.snake` or `__case.pascal`. A leading underscore is kept, so `data-bind:_draft` binds `_draft` (the convention for browser-only state that requests leave out). Keys that name events or CSS classes keep kebab-case.
 
 Dotted keys address nested paths: `data-signals:user.address.city="'Bath'"` creates `user.address.city`.
 

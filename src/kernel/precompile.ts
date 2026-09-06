@@ -92,7 +92,7 @@ export const generateTable = (items: Extracted[]): string => {
     let body: string;
     try {
       body = compileBody(src, returns);
-      Function('$', '__a', ...params, body); // syntax check at build time
+      Function('$', '__a', ...params, `"use strict";${body}`); // syntax check, strict like the emitted module
     } catch {
       continue; // leave it to the runtime fallback (or fail there)
     }
@@ -109,7 +109,17 @@ const entities: Record<string, string> = {
   '&gt;': '>',
   '&amp;': '&',
 };
-const decode = (s: string) => s.replace(/&(quot|#39|apos|lt|gt|amp);/g, (m) => entities[m]);
+const decode = (s: string) =>
+  s.replace(/&(?:quot|apos|lt|gt|amp|#\d+|#x[\da-f]+);/gi, (m) =>
+    m[1] === '#'
+      ? String.fromCodePoint(
+          Number.parseInt(
+            m[2] === 'x' || m[2] === 'X' ? m.slice(3, -1) : m.slice(2, -1),
+            m[2] === 'x' || m[2] === 'X' ? 16 : 10,
+          ),
+        )
+      : (entities[m.toLowerCase()] ?? m),
+  );
 
 export type PluginMeta = { name: string; returns?: boolean; args?: string[] };
 

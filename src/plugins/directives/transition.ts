@@ -4,12 +4,13 @@ import { dir } from '../def.js';
 /**
  * Shows and hides with a fade: `transition="$open"`. Modifier: `__duration.200ms`.
  */
-export const transition = dir('transition', 6, ({ el, mods, evaluate, effect }) => {
+export const transition = dir('transition', 6, ({ el, mods, evaluate, effect, cleanup }) => {
   const style = (el as HTMLElement).style;
   const duration = matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : toMs(mods.get('duration'), 200);
   const hidden = { opacity: 0 };
   const shown = { opacity: 1 };
-  const initial = style.display === 'none' ? '' : style.display;
+  const own = style.display;
+  const initial = own === 'none' ? '' : own;
   let anim: Animation | undefined;
   let first = true;
   let last: boolean | undefined;
@@ -29,5 +30,9 @@ export const transition = dir('transition', 6, ({ el, mods, evaluate, effect }) 
       anim?.cancel();
       if (!open) style.display = 'none';
     };
+  });
+  cleanup(() => {
+    anim?.cancel();
+    style.display = own; // the element's own inline display comes back when the directive goes
   });
 });

@@ -32,7 +32,8 @@ export const queryString = dir('query-string', 1, ({ key, value, mods, evaluate,
       const q = params();
       write(q);
       if (restoring) return;
-      const url = `${location.pathname}${q.size ? `?${q}` : ''}${location.hash}`;
+      const qs = String(q);
+      const url = `${location.pathname}${qs ? `?${qs}` : ''}${location.hash}`;
       if (url !== location.pathname + location.search + location.hash)
         window.history[history ? 'pushState' : 'replaceState'](null, '', url);
     });
@@ -53,7 +54,8 @@ export const queryString = dir('query-string', 1, ({ key, value, mods, evaluate,
     const fallback = value ? evaluate() : '';
     const read = (q: URLSearchParams) => {
       const raw = q.get(name);
-      store.set(path, raw === null ? fallback : parse(raw));
+      // The parameter takes the default's type: a string default keeps '007' a string, a number default parses.
+      store.set(path, raw === null ? fallback : typeof fallback === 'string' ? raw : parse(raw));
     };
     if (!store.has(path) || params().has(name)) read(params());
     wire(read, (q) => {

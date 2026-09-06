@@ -13,7 +13,8 @@ export const websocket = act(
   ({ el, runtime, cleanup }, url: string, o: { protocols?: string | string[] } = {}): Socket => {
     const socket = new WebSocket(new URL(url, location.href.replace(/^http/, 'ws')), o.protocols);
     socket.onmessage = (m) => {
-      for (const block of String(m.data).split(/\n\n+/)) {
+      if (typeof m.data !== 'string') return; // binary frames are not server events
+      for (const block of m.data.split(/(?:\r?\n){2,}/)) {
         const e = parseBlock(block);
         if (!e) continue;
         const data = parseFields(e.data);

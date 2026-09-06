@@ -27,10 +27,11 @@ Turn same-origin links and forms into morphed navigations (htmx's hx-boost). Cli
   <p>This box cannot navigate the documentation page you are reading, so the rules are listed instead.</p>
   <table>
     <tr><th>element</th><th>request</th></tr>
-    <tr><td><code>&lt;a href&gt;</code> to the same origin</td><td><code>@get(href)</code>, then <code>history.pushState</code></td></tr>
+    <tr><td><code>&lt;a href&gt;</code> to the same origin</td><td><code>@get(href)</code>; once the page has arrived, <code>history.pushState</code> with the final URL (redirects followed)</td></tr>
     <tr><td><code>&lt;form method="post"&gt;</code></td><td><code>@post(action, { contentType: 'form' })</code> with the form's fields</td></tr>
-    <tr><td><code>&lt;form&gt;</code> (GET)</td><td><code>@get(action, { contentType: 'form' })</code>: fields go into the query string</td></tr>
-    <tr><td>Back and Forward</td><td><code>@get(location.href)</code>, morphed again</td></tr>
+    <tr><td><code>&lt;form&gt;</code> (GET)</td><td><code>@get(action, { contentType: 'form' })</code>: fields go into the query string, and into the pushed URL</td></tr>
+    <tr><td>a submit button with <code>formaction</code> / <code>formmethod</code></td><td>the button's values win over the form's</td></tr>
+    <tr><td>Back and Forward</td><td><code>@get(location.href)</code>, morphed again; a hash-only change fetches nothing</td></tr>
   </table>
 </div>
 `} />

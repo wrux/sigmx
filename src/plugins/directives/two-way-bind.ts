@@ -31,7 +31,10 @@ export const bind = dir('bind', 0, ({ el, key, value, cased, mods, store, listen
   /** Adapter writing `el.value`. */
   const valued = (_read: () => unknown, ..._events: string[]): Adapter => ({
     _read,
-    _write: (v) => (input.value = str(v)),
+    _write: (v) => {
+      // A number field mid-entry ('-', '1e') reads as '' with badInput; do not wipe what the user is typing.
+      if (str(v) !== input.value && !input.validity?.badInput) input.value = str(v);
+    },
     _events,
   });
   let a: Adapter;
@@ -91,8 +94,5 @@ export const bind = dir('bind', 0, ({ el, key, value, cased, mods, store, listen
   }
   const sync = () => store.set(path, a._read());
   for (const t of [...(mods.get('event') ?? a._events), 'sigmx-prop-change']) listen(el, t, sync);
-  effect(() => {
-    const v = current();
-    if (v !== undefined) a._write(v);
-  });
+  effect(() => a._write(current())); // undefined (removed signal) clears the field
 });

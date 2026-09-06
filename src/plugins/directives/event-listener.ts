@@ -5,7 +5,7 @@ import { dir } from '../def.js';
  * `on:click="expr"`. Modifiers: window, document, outside, prevent, stop, capture, passive, once,
  * delay/debounce/throttle, viewtransition, case.
  */
-export const on = dir('on', 21, ({ el, mods, cased, evaluate, listen }) => {
+export const on = dir('on', 21, ({ el, mods, cased, evaluate, listen, cleanup }) => {
   const type = cased('kebab');
   const outside = mods.has('outside');
   const target: EventTarget = mods.has('window')
@@ -13,7 +13,7 @@ export const on = dir('on', 21, ({ el, mods, cased, evaluate, listen }) => {
     : mods.has('document') || outside || type.startsWith('sigmx-')
       ? document
       : el;
-  const run = withTiming((e: Event) => evaluate(e), mods);
+  const run = withTiming((e: Event) => evaluate(e), mods, cleanup);
   listen(
     target,
     type,

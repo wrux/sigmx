@@ -35,7 +35,7 @@ The context (`Ctx`):
 | `evaluate(evt?, ...args)` | compile (once) and run the expression; `args` map to the plugin's `args` names |
 | `effect(fn)` | reactive effect disposed with the attribute; errors go to `onError` |
 | `listen(target, type, fn, options?)` | event listener removed on cleanup |
-| `cleanup(fn)` | anything else to undo |
+| `cleanup(fn)` | anything else to undo; returns a function that unregisters `fn` early |
 | `store`, `runtime` | the store and instance services |
 | `error(message)` | build an error with plugin and element context |
 | `report(error)` | send an error that happened later (a callback, a promise) to `onError` with the same context |

@@ -4,7 +4,6 @@ export const EVENT_PATCH_SIGNALS = 'sigmx-patch-signals';
 export const SSE_HEADERS = {
   'content-type': 'text/event-stream',
   'cache-control': 'no-cache',
-  connection: 'keep-alive',
 } as const;
 
 /** HTML as a string, or anything that renders to one such as a JSX node or an `html` template. */
@@ -26,7 +25,6 @@ export interface EventOptions {
 export interface PatchElementsOptions extends EventOptions {
   selector?: string;
   mode?: PatchMode;
-  useViewTransition?: boolean;
 }
 export interface PatchSignalsOptions extends EventOptions {
   onlyIfMissing?: boolean;
@@ -42,8 +40,7 @@ export const patchElements = (html: Markup, o: PatchElementsOptions = {}): Serve
   const lines: string[] = [];
   if (o.selector) lines.push(`selector ${o.selector}`);
   if (o.mode && o.mode !== 'outer') lines.push(`mode ${o.mode}`);
-  if (o.useViewTransition) lines.push('useViewTransition true');
-  for (const l of String(html).trim().split('\n')) lines.push(`elements ${l}`);
+  lines.push(`elements ${String(html).trim()}`);
   return { event: EVENT_PATCH_ELEMENTS, lines, id: o.id, retry: o.retry };
 };
 
@@ -89,12 +86,22 @@ export const executeScript = (script: string, o: ExecuteScriptOptions = {}): Ser
   });
 };
 
+const oneLine = (s: string) => s.replace(/[\r\n]+/g, ' ');
+
+/**
+ * One event on the wire. A `key value` line whose value spans several lines becomes several
+ * `data: key …` lines (the client joins them again), so no value can inject an extra field or event.
+ */
 export const formatEvent = (e: ServerEvent): string =>
   `${[
-    e.id !== undefined && `id: ${e.id}`,
+    e.id !== undefined && `id: ${oneLine(e.id)}`,
     e.retry !== undefined && `retry: ${e.retry}`,
-    `event: ${e.event}`,
-    ...e.lines.map((l) => `data: ${l}`),
+    `event: ${oneLine(e.event)}`,
+    ...e.lines.flatMap((l) => {
+      const i = l.indexOf(' ');
+      const key = i < 0 ? l : l.slice(0, i);
+      return (i < 0 ? [''] : l.slice(i + 1).split(/\r?\n/)).map((v) => `data: ${key}${i < 0 ? '' : ` ${v}`}`);
+    }),
   ]
     .filter(Boolean)
     .join('\n')}\n\n`;
@@ -147,6 +154,13 @@ export class SigmxStream {
       this.controller.close();
     }
   }
+  /** End the stream with an error so the client sees a failure (and retries) rather than a clean end. */
+  error(reason: unknown): void {
+    if (this.open) {
+      this.open = false;
+      this.controller.error(reason);
+    }
+  }
 }
 
 export const sse = (...events: ServerEvent[]): Response =>
@@ -157,8 +171,13 @@ export const sseStream = (fn: (stream: SigmxStream) => Promise<void> | void, ini
   const stream = new SigmxStream(init);
   Promise.resolve()
     .then(() => fn(stream))
-    .catch((e) => console.error('sigmx sseStream:', e))
-    .finally(() => stream.close());
+    .then(
+      () => stream.close(),
+      (e) => {
+        console.error('sigmx sseStream:', e);
+        stream.error(e);
+      },
+    );
   return stream.response;
 };
 
@@ -170,7 +189,6 @@ export const html = (body: Markup, o: PatchElementsOptions & { status?: number }
       'content-type': 'text/html; charset=utf-8',
       ...(o.selector ? { 'sigmx-selector': o.selector } : {}),
       ...(o.mode ? { 'sigmx-mode': o.mode } : {}),
-      ...(o.useViewTransition ? { 'sigmx-use-view-transition': 'true' } : {}),
     },
   });
 
@@ -208,9 +226,18 @@ export class SignalsError extends Error {
   }
 }
 
+/** Form fields as an object; a repeated name becomes an array. */
+export const fieldsToObject = (entries: Iterable<[string, unknown]>): Record<string, any> => {
+  const out: Record<string, any> = {};
+  for (const [k, v] of entries) out[k] = k in out ? ([] as unknown[]).concat(out[k], v) : v;
+  return out;
+};
+
+const isObject = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
+
 /**
- * Read the signals a sigmx request carries: the `sigmx` query parameter on GET/DELETE, a JSON
- * body otherwise, or form fields for `contentType: 'form'` requests. Validates with `schema` if given.
+ * Read the signals a sigmx request carries: the `sigmx` query parameter on GET/DELETE (or the plain
+ * query parameters of a `contentType: 'form'` GET), a JSON body, or form fields. Validates with `schema` if given.
  */
 export async function readSignals(request: Request): Promise<Record<string, any>>;
 export async function readSignals<T>(request: Request, schema: StandardSchema<T>): Promise<T>;
@@ -220,27 +247,34 @@ export async function readSignals(request: Request, schema?: StandardSchema<any>
   const type = request.headers.get('content-type') ?? '';
   try {
     if (method === 'GET' || method === 'DELETE') {
-      const q = new URL(request.url).searchParams.get(SIGNALS_KEY);
-      raw = q ? JSON.parse(q) : {};
+      const params = new URL(request.url).searchParams;
+      const q = params.get(SIGNALS_KEY);
+      raw = q ? JSON.parse(q) : fieldsToObject(params);
     } else if (type.includes('application/json')) {
       const text = await request.text();
       raw = text ? JSON.parse(text) : {};
     } else if (type.includes('form')) {
-      raw = Object.fromEntries((await request.formData()).entries());
+      raw = fieldsToObject(await request.formData());
     } else {
       raw = {};
     }
   } catch (e) {
     throw new SignalsError(`could not parse signals: ${(e as Error).message}`, [], 400);
   }
+  if (!isObject(raw)) throw new SignalsError('signals must be an object', [], 400);
   return validateSignals(raw, schema);
 }
+
+const describeIssue = (i: SchemaIssue): string => {
+  const path = i.path?.map((p) => (typeof p === 'object' ? p.key : p)).join('.');
+  return path ? `${path}: ${i.message}` : i.message;
+};
 
 export async function validateSignals(raw: unknown, schema?: StandardSchema<any>): Promise<any> {
   if (!schema) return raw;
   const result = await schema['~standard'].validate(raw);
   if (result.issues)
-    throw new SignalsError(`invalid signals: ${result.issues.map((i) => i.message).join('; ')}`, result.issues);
+    throw new SignalsError(`invalid signals: ${result.issues.map(describeIssue).join('; ')}`, result.issues);
   return result.value;
 }
 

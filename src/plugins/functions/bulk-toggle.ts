@@ -5,7 +5,7 @@ import { act } from '../def.js';
 export const toggleAll = act('toggleAll', ({ store }, filter?: Filter) =>
   batch(() =>
     untracked(() => {
-      for (const p of store.paths(filter)) store.set(p, !store.get(p));
+      for (const p of store.paths(filter, { computed: false })) store.set(p, !store.get(p));
     }),
   ),
 );

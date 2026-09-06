@@ -167,7 +167,7 @@ gone('runtime', 'data-ignore__self skips one element but not its children', asyn
   const el = await h.render('<section data-ignore__self data-text="$n"><b data-text="$n"></b></section>');
   assert.equal(el.querySelector('b')?.textContent, '1', 'child still mounted');
 });
-gone('runtime', 'plugin key/value contract errors (needs a key, takes no value)', async (h) => {
+probe('runtime', 'plugin key/value contract errors (needs a key, takes no value)', async (h) => {
   h.app();
   await h.render('<div><i data-text:x="1"></i><i data-cloak="x"></i></div>');
   const m = h.errors.map((e) => e.message).join('|');
@@ -261,7 +261,7 @@ probe('expressions', '@action( is rewritten outside strings', async (h) => {
   assert.equal($.v, 50);
   assert.equal($.s, '@nope(');
 });
-gone('expressions', 'several statements: the last one is the value', async (h) => {
+probe('expressions', 'several statements: the last one is the value', async (h) => {
   const { $ } = h.app();
   $.n = 2;
   const el = await h.render('<b data-text="$n = 5; $n + 1"></b>');
@@ -287,7 +287,7 @@ probe('expressions', '__case.kebab keeps a key kebab-cased', async (h) => {
   await h.render('<input data-bind:first-name__case.kebab value="x">');
   assert.equal($['first-name'], 'x');
 });
-gone('expressions', '__case.snake / __case.pascal recasing', async (h) => {
+probe('expressions', '__case.snake / __case.pascal recasing', async (h) => {
   const { $ } = h.app();
   await h.render('<input data-bind:first-name__case.snake value="x">');
   assert.equal($.first_name, 'x');
@@ -1308,7 +1308,7 @@ probe('directives', 'boost turns same-origin links into GET requests with a hist
   el.querySelector('#l').dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
   await until(() => calls.length === 1);
   assert.equal(new URL(calls[0].req.url).pathname, '/page-two');
-  assert.equal(location.pathname, '/page-two');
+  await until(() => location.pathname === '/page-two', 500);
 });
 probe('directives', 'boost submits forms as requests', async (h) => {
   const before = location.href;

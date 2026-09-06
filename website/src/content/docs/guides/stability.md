@@ -41,6 +41,14 @@ Anything else is internal: module paths under `dist/` other than the exports abo
 
 The client needs a browser with ES2022, `Proxy`, `MutationObserver`, `fetch` with `ReadableStream`, `AbortSignal.any` and `CSS.escape`: Chrome and Edge 116+, Firefox 124+, Safari 17.4+. Optional APIs degrade quietly: without the Web Animations API `data-transition` switches display instantly, without `moveBefore` moved elements are re-inserted, without `localStorage` `data-persist` keeps state in memory. The server helpers need any runtime with the Fetch API (Node 20+, Deno, Bun, Cloudflare Workers).
 
+## Known trade-offs
+
+- A dot in an object key means nesting: `merge({ 'a.b': 1 })` creates `a` → `b`. Keys are paths.
+- Paths beginning with `_` are browser-only by convention (requests leave them out) and keep their underscore through recasing.
+- Plain objects become namespaces and arrays are leaves, so `$list` is reactive in place while `$user` is a proxy over paths.
+- Attribute names are lowercased by HTML; keyed directives convert kebab-case keys to camelCase signal names, so write `data-bind:first-name`, never `data-bind:firstName`.
+- Precompiled expression tables are keyed by source text and plugin parameters; a new plugin parameter invalidates the table, so rebuild when upgrading.
+
 ## Failure policy
 
 Expressions and plugins fail one attribute at a time: an error in one `data-text` is reported through `onError` (the console by default) with the plugin name and element, and everything else on the page keeps running. Requests announce failures as `sigmx-fetch` events with `type: 'error'` and never throw into the page. Server patches that cannot be applied, such as an unknown mode, are reported once and are not retried. Corrupted storage, blocked clipboard access and missing optional APIs are handled where they occur.

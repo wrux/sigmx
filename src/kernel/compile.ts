@@ -10,6 +10,7 @@ export type Compiler = (params: string[], body: string) => (...args: any[]) => a
 export const functionCompiler: Compiler = (params, body) => Function(...params, body) as (...args: any[]) => any;
 
 const cache = new Map<string, (...args: any[]) => any>();
+const CACHE_LIMIT = 2000; // a long-lived page streaming unique expressions must not grow without bound
 
 /**
  * Replace `@name(` with `__a.name(` outside string literals, including inside the `${…}` holes of
@@ -62,8 +63,8 @@ export const splitStatements = (src: string): string[] => {
 
 /**
  * Compile an expression to `(store, actions, ...params) => any`: the body runs inside
- * `with (store.scope)`, so `$name` resolves through the store. With `returns`, a single expression's
- * value is returned; several statements run for their effects. Compiled functions are cached by source.
+ * `with (store.scope)`, so `$name` resolves through the store. With `returns`, the value of the
+ * last statement is returned, so `$a = 1; $a * 2` works. Compiled functions are cached by source.
  */
 export const compile = (
   compiler: Compiler,
@@ -81,10 +82,13 @@ export const compile = (
         fn = make(body);
       } catch {}
     };
-    if (returns) {
-      attempt(`return(${code}\n)`);
-    }
+    attempt(`return(${code}\n)`);
+    // Several statements: return the last one, as the build-time precompiler does. Try each `;`
+    // from the end; a split inside a string or a bracket fails to compile and the next is tried.
+    for (let i = code.lastIndexOf(';'); i >= 0 && !fn; i = code.lastIndexOf(';', i - 1))
+      attempt(`${code.slice(0, i)};return(${code.slice(i + 1)}\n)`);
     fn ??= make(code);
+    if (cache.size >= CACHE_LIMIT) cache.delete(cache.keys().next().value as string);
     cache.set(key, fn);
   }
   return fn;

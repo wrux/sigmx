@@ -50,17 +50,23 @@ export const DEFAULT_EXTENSIONS = [
 ];
 
 export const walk = (dir: string, exts: string[], out: string[] = []): string[] => {
-  let entries: string[] = [];
+  // `include` entries may be files (index.html) as well as directories.
+  const self = statSync(dir, { throwIfNoEntry: false });
+  if (self?.isFile()) {
+    if (exts.some((x) => dir.endsWith(x))) out.push(dir);
+    return out;
+  }
+  let entries: import('node:fs').Dirent[] = [];
   try {
-    entries = readdirSync(dir);
+    entries = readdirSync(dir, { withFileTypes: true });
   } catch {
     return out;
   }
   for (const e of entries) {
-    if (e === 'node_modules' || e.startsWith('.')) continue;
-    const p = join(dir, e);
-    if (statSync(p).isDirectory()) walk(p, exts, out);
-    else if (exts.some((x) => p.endsWith(x))) out.push(p);
+    if (e.name === 'node_modules' || e.name.startsWith('.')) continue;
+    const p = join(dir, e.name);
+    if (e.isDirectory()) walk(p, exts, out);
+    else if (e.isFile() && exts.some((x) => p.endsWith(x))) out.push(p);
   }
   return out;
 };
@@ -68,7 +74,9 @@ export const walk = (dir: string, exts: string[], out: string[] = []): string[] 
 const files = (o: ScanOptions) => {
   const root = o.root ?? process.cwd();
   const exts = o.extensions ?? DEFAULT_EXTENSIONS;
-  return (o.include ?? ['src']).flatMap((d) => walk(join(root, d), exts));
+  const found = (o.include ?? ['src', 'index.html']).flatMap((d) => walk(join(root, d), exts));
+  if (!found.length) console.warn('[sigmx] no source files found to scan; check the `include` option');
+  return found;
 };
 
 const customMeta = (root: string, custom: Record<string, string> = {}): PluginMeta[] =>

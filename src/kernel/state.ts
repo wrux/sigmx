@@ -1,4 +1,4 @@
-import { expand, type Filter, isPlain, toPredicate } from '../lib/objects.js';
+import { expand, type Filter, isPlain, safeKey, toPredicate } from '../lib/objects.js';
 import { batch, Computed, onSettled, Signal } from './reactive.js';
 
 export type Patch = Record<string, any>;
@@ -13,7 +13,8 @@ export interface Store {
   remove(path: string): void;
   has(path: string): boolean;
   define(path: string, node: Signal<any>): void;
-  paths(filter?: Filter): string[];
+  /** Leaf paths, filtered; `computed: false` leaves out computed signals. */
+  paths(filter?: Filter, options?: { computed?: boolean }): string[];
   snapshot(filter?: Filter, options?: { at?: string; computed?: boolean }): Patch;
   /** Called after each settled batch with the nested object of changed paths (null = removed). */
   onPatch(fn: (patch: Patch) => void): () => void;
@@ -28,8 +29,10 @@ const split = (p: string): [string, string] => {
   return [i < 0 ? '' : p.slice(0, i), p.slice(i + 1)];
 };
 const join = (a: string, b: string): string => (a ? `${a}.${b}` : b);
-const under = (p: string, at: string): boolean => !at || p === at || p.startsWith(`${at}.`);
+const under = (p: string, at: string): boolean => !at || p.startsWith(`${at}.`);
 const str = (k: unknown): k is string => typeof k === 'string';
+/** Proxy → the raw array or object behind it, so a proxied value can be stored or compared. */
+const rawOf = new WeakMap<object, object>();
 
 export const createStore = (): Store => {
   const leaves = new Map<string, Signal<any>>();
@@ -38,7 +41,8 @@ export const createStore = (): Store => {
   const pending = new Map<string, any>();
   const listeners = new Set<(p: Patch) => void>();
   const nsCache = new Map<string, any>();
-  const arrCache = new WeakMap<object, any>();
+  /** Per leaf signal, per raw object: its reactive proxy. */
+  const proxies = new WeakMap<Signal<any>, WeakMap<object, any>>();
 
   /** Register `p` under its parent namespace (creating the namespace chain) and mark the shape changed. */
   const link = (p: string): void => {
@@ -70,6 +74,7 @@ export const createStore = (): Store => {
     unlink(p);
     pending.set(p, null);
     s.bump();
+    if (s instanceof Computed) s.dispose();
   };
 
   const dropNs = (p: string): void => {
@@ -95,15 +100,19 @@ export const createStore = (): Store => {
       const old = leaves.get(p);
       leaves.set(p, node);
       link(p);
-      old?.bump();
+      if (old) {
+        old.bump();
+        if (old instanceof Computed) old.dispose();
+      }
     });
 
   const set = (p: string, v: any): void =>
     batch(() => {
       if (v == null) return remove(p);
+      v = (v && rawOf.get(v)) ?? v;
       if (isPlain(v)) {
         for (const k of [...ensureNs(p)]) if (!(k in v)) remove(join(p, k));
-        for (const k in v) set(join(p, k), v[k]);
+        for (const k in v) if (safeKey(k)) set(join(p, k), v[k]);
         return;
       }
       dropNs(p);
@@ -121,17 +130,18 @@ export const createStore = (): Store => {
   const merge = (patch: Patch, { at = '', ifMissing = false } = {}): void =>
     batch(() => {
       if (!isPlain(patch)) return;
-      ensureNs(at);
-      for (const k in patch) {
+      const keys = Object.keys(patch).filter(safeKey);
+      if (keys.length) ensureNs(at);
+      for (const k of keys) {
         const p = join(at, k);
         const v = patch[k];
+        const leaf = leaves.get(p);
+        // Existing values win under ifMissing, and computed leaves are never overwritten by a patch.
+        if (leaf && (ifMissing || leaf instanceof Computed)) continue;
         if (v === null) {
           if (!ifMissing) remove(p);
-        } else if (isPlain(v)) {
-          merge(v, { at: p, ifMissing });
-        } else if (!(ifMissing && has(p)) && !(leaves.get(p) instanceof Computed)) {
-          set(p, v); // computed leaves are skipped: patches from storage or a server cannot overwrite them
-        }
+        } else if (isPlain(v)) merge(v, { at: p, ifMissing });
+        else if (!(ifMissing && kids.has(p))) set(p, v);
       }
     });
 
@@ -140,35 +150,46 @@ export const createStore = (): Store => {
   /**
    * Arrays are returned through a proxy so in-place mutation notifies the leaf: writes anywhere
    * inside (nested objects and arrays included) bump the leaf, and array methods run as one batch.
+   * Proxies are cached per leaf, so the same object under two paths notifies both.
    */
-  const wrap = (raw: object, touch: () => boolean): any => {
-    let px = arrCache.get(raw);
-    if (!px) {
-      px = new Proxy(raw, {
-        get: (t, k, r) => {
-          const v = Reflect.get(t, k, r);
-          if (typeof v === 'function' && Array.isArray(t)) return (...a: any[]) => batch(() => v.apply(r, a));
-          return v && typeof v === 'object' && (Array.isArray(v) || isPlain(v)) ? wrap(v, touch) : v;
-        },
-        set: (t, k, v) => {
-          (t as any)[k] = v;
-          return touch();
-        },
-        deleteProperty: (t, k) => {
-          delete (t as any)[k];
-          return touch();
-        },
-      });
-      arrCache.set(raw, px);
+  const wrapArray = (raw: any[], s: Signal<any>, p: string): any => {
+    let cache = proxies.get(s);
+    if (!cache) {
+      cache = new WeakMap();
+      proxies.set(s, cache);
     }
-    return px;
-  };
-  const wrapArray = (raw: any[], s: Signal<any>, p: string): any =>
-    wrap(raw, () => {
+    const touch = () => {
       pending.set(p, raw);
       s.bump();
       return true;
-    });
+    };
+    const wrap = (target: object): any => {
+      let px = cache?.get(target);
+      if (!px) {
+        px = new Proxy(target, {
+          get: (t, k, r) => {
+            const v = Reflect.get(t, k, r);
+            if (typeof v === 'function' && Array.isArray(t)) return (...a: any[]) => batch(() => v.apply(r, a));
+            if (!v || typeof v !== 'object' || !(Array.isArray(v) || isPlain(v))) return v;
+            const d = Object.getOwnPropertyDescriptor(t, k);
+            return d && !d.configurable && !d.writable ? v : wrap(v); // frozen data: the proxy invariant forbids wrapping
+          },
+          set: (t, k, v) => {
+            (t as any)[k] = (v && rawOf.get(v)) ?? v;
+            return touch();
+          },
+          deleteProperty: (t, k) => {
+            delete (t as any)[k];
+            return touch();
+          },
+        });
+        cache?.set(target, px);
+        rawOf.set(px, target);
+      }
+      return px;
+    };
+    return wrap(raw);
+  };
 
   const get = (p: string): any => {
     const s = leaves.get(p);
@@ -176,8 +197,8 @@ export const createStore = (): Store => {
       const v = s.value;
       return Array.isArray(v) ? wrapArray(v, s, p) : v;
     }
+    shape.value; // subscribe: a namespace may become a leaf, and a missing path may appear
     if (kids.has(p)) return ns(p);
-    shape.value; // subscribe, so creating this path later re-runs the reader
   };
 
   const ns = (p: string): any => {
@@ -226,18 +247,16 @@ export const createStore = (): Store => {
     },
   );
 
-  const paths = (filter?: Filter): string[] => {
+  const paths = (filter?: Filter, { computed = true } = {}): string[] => {
     shape.value;
-    return [...leaves.keys()].filter(toPredicate(filter));
+    const ok = toPredicate(filter);
+    return [...leaves].filter(([p, s]) => ok(p) && (computed || !(s instanceof Computed))).map(([p]) => p);
   };
 
   const snapshot = (filter?: Filter, { at = '', computed = true } = {}): Patch => {
-    shape.value;
-    const ok = toPredicate(filter);
     const out: Patch = {};
-    const rel = (p: string) => (at ? p.slice(at.length + 1) : p);
-    for (const [p, s] of leaves)
-      if (p !== at && under(p, at) && ok(p) && (computed || !(s instanceof Computed))) expand(out, rel(p), s.value);
+    for (const p of paths(filter, { computed }))
+      if (under(p, at)) expand(out, at ? p.slice(at.length + 1) : p, leaves.get(p)?.value);
     return out;
   };
 

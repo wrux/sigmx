@@ -6,7 +6,7 @@ sidebar: {"order": 1}
 import Live from '../../../../components/Live.astro'
 import Cost from '../../../../components/Cost.astro'
 
-Send a request carrying your signals and apply the response. Each function returns a promise that resolves when the response has been fully applied, so `.then(…)` runs after the page changed.
+Send a request carrying your signals and apply the response. Each function returns a promise that resolves when the response has been fully applied, so `.then(…)` runs after the page changed. It resolves with `{ url, status, redirected }` describing the final response (or `undefined` when an invalid form stopped the request); the `finished` fetch event carries the same fields.
 
 ## Syntax
 

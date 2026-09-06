@@ -12,7 +12,7 @@ export const style = dir('style', 4, ({ el, key, cased, evaluate, effect }) => {
   effect(() => {
     const map: Record<string, unknown> = key ? { [cased('kebab')]: evaluate() } : evaluate();
     for (const prop of original.keys()) if (!(prop in map)) put(prop, '');
-    for (const prop in map) put(kebab(prop), map[prop]);
+    for (const prop in map) put(prop.startsWith('--') ? prop : kebab(prop), map[prop]);
   });
   return () => {
     for (const [prop, v] of original) el.style.setProperty(prop, v);

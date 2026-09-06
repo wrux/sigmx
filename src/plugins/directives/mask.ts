@@ -31,7 +31,10 @@ export const mask = dir('mask', 6, ({ el, value, mods, evaluate, listen, effect 
   const format = () => {
     const next = applyMask(pattern, input.value);
     if (next !== input.value) {
+      const pos = input.selectionStart;
+      const atEnd = pos === null || pos >= input.value.length;
       input.value = next;
+      if (!atEnd) input.setSelectionRange(pos, pos);
       input.dispatchEvent(new Event('input', { bubbles: true })); // let `bind` see the formatted value
     }
   };

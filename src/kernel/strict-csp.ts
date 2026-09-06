@@ -5,10 +5,12 @@ import type { Compiler } from './compile.js';
  * inline `<script>` (and a Trusted Types policy when present) instead of `new Function`.
  * Pass as `createSigmx({ compile: cspCompiler(nonce) })`.
  */
+let policy: { createScript(s: string): any } | undefined;
+
 export const cspCompiler = (nonce: string): Compiler => {
   if (!nonce) throw new Error('cspCompiler needs the page nonce');
-  const tt = (window as any).trustedTypes;
-  const policy = tt?.createPolicy('sigmx', { createScript: (s: string) => s });
+  // One Trusted Types policy per page: creating a second one with the same name throws under a strict CSP.
+  policy ??= (window as any).trustedTypes?.createPolicy('sigmx', { createScript: (s: string) => s });
   return (params, body) => {
     const script = document.createElement('script');
     script.nonce = nonce;

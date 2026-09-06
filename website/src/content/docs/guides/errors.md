@@ -22,7 +22,7 @@ The default handler is `console.error`. Errors thrown by an expression carry the
 
 | message | cause |
 |---|---|
-| `needs a key` / `does not take a key` | the directive's key requirement was violated |
+| `needs a key` / `takes no key` / `needs a value` / `takes no value` | the directive's key or value requirement was violated |
 | `needs a value` / `does not take a value` | the directive's value requirement was violated |
 | `unknown action @name` | the function is not registered; add its plugin |
 | `"x" is a computed signal and cannot be assigned` | an expression wrote to a `data-computed` path |

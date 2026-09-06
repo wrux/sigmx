@@ -12,7 +12,7 @@ import type {
   RuntimeOptions,
   Sigmx,
 } from './contracts.js';
-import { effect } from './reactive.js';
+import { rootEffect } from './reactive.js';
 import { createStore } from './state.js';
 
 const isEl = (n: Node): n is El => n.nodeType === 1;
@@ -79,6 +79,7 @@ export const createRuntime = (options: RuntimeOptions): Sigmx => {
   const roots = new Set<El | ShadowRoot>();
   const ignoreAny = prefixes.map((p) => `[${p}ignore]`).join();
   const ignored = (el: El) => !!el.closest(ignoreAny);
+  let destroyed = false;
 
   const unmount = (els: Iterable<El>): void => {
     for (const el of els) {
@@ -100,12 +101,25 @@ export const createRuntime = (options: RuntimeOptions): Sigmx => {
     unmountAttr(el, attr);
 
     const disposers: (() => void)[] = [];
-    const cleanup = (f: () => void) => disposers.push(f);
+    const cleanup = (f: () => void) => {
+      disposers.push(f);
+      return () => {
+        const i = disposers.indexOf(f);
+        if (i >= 0) disposers.splice(i, 1);
+      };
+    };
     const info = { plugin: name, el, attr };
     const error: Ctx['error'] = (message, extra) =>
       Object.assign(new Error(`${prefixes[0]}${name}: ${message}`), { info: { ...info, ...extra } });
     const report = (e: unknown) => onError(e, info);
     let fn: Evaluator | undefined;
+    const watched = new WeakSet<Promise<unknown>>(); // promises already routed to onError
+    const watch = (r: unknown) => {
+      if (r instanceof Promise && !watched.has(r)) {
+        watched.add(r);
+        r.catch(report);
+      }
+    };
     const ctx: Ctx = {
       el,
       plugin: name,
@@ -124,15 +138,19 @@ export const createRuntime = (options: RuntimeOptions): Sigmx => {
               (_, name: string) =>
               (...args: any[]) => {
                 const r = runtime.call(name, actx, args);
-                // Async actions (requests) reject long after the expression returned; route that to onError.
-                if (r instanceof Promise) r.catch(report);
+                watch(r); // async actions (requests) reject long after the expression returned
                 return r;
               },
           },
         );
-        return fn(store, actions, el, evt, ...args);
+        const r = fn(store, actions, el, evt, ...args);
+        watch(r); // an expression's own rejected promise is reported too, once
+        return r;
       },
-      effect: (f) => cleanup(effect(f, report)),
+      // Root-owned: an attribute mounted from inside another effect must outlive that effect's re-runs.
+      effect: (f) => {
+        cleanup(rootEffect(f, report));
+      },
       listen: (target, type, f, opts) => {
         const h = (e: Event) => {
           try {
@@ -163,7 +181,7 @@ export const createRuntime = (options: RuntimeOptions): Sigmx => {
     try {
       const r: unknown = plugin.mount(ctx);
       if (typeof r === 'function') cleanup(r as () => void);
-      else if (r instanceof Promise) r.catch(report); // an async mount that rejects is reported, not lost
+      else watch(r); // an async mount that rejects is reported, not lost
     } catch (e) {
       report(e);
     }
@@ -183,7 +201,8 @@ export const createRuntime = (options: RuntimeOptions): Sigmx => {
   const observer = new MutationObserver((records) => {
     for (const { type, target, attributeName, addedNodes, removedNodes } of records) {
       if (type === 'childList') {
-        for (const n of removedNodes) unmount(tree(n));
+        // A node that is still connected was moved (teleport, morph), not removed: it keeps its state.
+        for (const n of removedNodes) if (!n.isConnected) unmount(tree(n));
         for (const n of addedNodes) mountEls(tree(n));
       } else if (attributeName && isEl(target) && !ignored(target)) {
         const raw = cut(prefixes, attributeName);
@@ -196,6 +215,7 @@ export const createRuntime = (options: RuntimeOptions): Sigmx => {
   });
 
   const apply = (root: El | ShadowRoot = document.documentElement, observe = true, only?: Set<string>) => {
+    if (destroyed) return;
     mountEls(tree(root), only);
     if (observe && !roots.has(root)) {
       observer.observe(root, { subtree: true, childList: true, attributes: true });
@@ -224,6 +244,7 @@ export const createRuntime = (options: RuntimeOptions): Sigmx => {
     apply: (root, observe) => apply(root, observe),
     use,
     destroy: () => {
+      destroyed = true;
       observer.disconnect();
       stopPatches();
       unmount([...mounted.keys()]);

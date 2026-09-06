@@ -29,7 +29,7 @@ Streams and JSON are for when you need them, not a requirement.
 
 ## What is sent
 
-- **Signals** as JSON: in the body for POST, PUT and PATCH; in the `sigmx` query parameter for GET and DELETE. Paths starting with `_` are left out. Change the set with `filter: { include, exclude }` or send something else with `payload`.
+- **Signals** as JSON: in the body for POST, PUT and PATCH; in the `sigmx` query parameter for GET and DELETE (a `contentType: 'form'` GET puts the form's fields in the query instead, and `readSignals` reads them back as signals, repeated names becoming arrays). Paths starting with `_` are left out. Change the set with `filter: { include, exclude }` or send something else with `payload`.
 - **Headers** `Accept: text/event-stream, text/html, application/json` and `Sigmx-Request: true`, plus any you pass in `headers`.
 - With `contentType: 'form'`, the closest form's fields instead of signals.
 

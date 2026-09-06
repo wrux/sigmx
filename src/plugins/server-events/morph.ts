@@ -95,6 +95,11 @@ const morphNode = (a: Node, b: Node, ctx: Ctx): void => {
     if (a.nodeValue !== b.nodeValue) a.nodeValue = b.nodeValue;
     return;
   }
+  // A changed script must run again; patching its text or src in place would not execute it.
+  if (b.localName === 'script' && !a.isEqualNode(b)) {
+    fresh(b, (n) => a.replaceWith(n));
+    return;
+  }
   if (a.hasAttribute(ctx.ignore) && b.hasAttribute(ctx.ignore)) return;
   syncAttributes(a, b, ctx);
   if (a instanceof HTMLTemplateElement) a.innerHTML = b.innerHTML;
@@ -111,7 +116,8 @@ const morphChildren = (parent: Node, next: Node, ctx: Ctx): void => {
     while (cur && cur !== stop) {
       const n = cur;
       cur = cur.nextSibling;
-      (n as ChildNode).remove();
+      // A kept element stays connected until `place` moves it, so focus, media and iframe state survive.
+      if (!(isEl(n) && ctx.keep.get(n.id) === n)) (n as ChildNode).remove();
     }
     return cur === stop;
   };
@@ -136,8 +142,8 @@ const morphChildren = (parent: Node, next: Node, ctx: Ctx): void => {
       cur = m.nextSibling;
       morphNode(m, nb, ctx);
     } else if (isEl(nb) && containsKept(nb, ctx)) {
-      // Build a shell so the wanted descendants can be pulled in rather than recreated.
-      const shell = document.createElementNS(nb.namespaceURI, nb.tagName);
+      // Build a shell (same element, attributes, no children) so the wanted descendants can be pulled in.
+      const shell = document.importNode(nb, false);
       parent.insertBefore(shell, cur);
       morphNode(shell, nb, ctx);
     } else {

@@ -5,7 +5,7 @@ import { act } from '../def.js';
 export const setAll = act('setAll', ({ store }, value: unknown, filter?: Filter) =>
   batch(() =>
     untracked(() => {
-      for (const p of store.paths(filter)) store.set(p, value);
+      for (const p of store.paths(filter, { computed: false })) store.set(p, value);
     }),
   ),
 );

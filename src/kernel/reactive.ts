@@ -43,10 +43,15 @@ export class Signal<T> {
   }
 }
 
-/** Drop `t`'s subscriptions, then run `fn` with `t` as the active tracker so its reads re-subscribe. */
-const capture = <R>(t: Tracker, fn: () => R): R => {
+/** Drop `t`'s subscriptions. */
+const release = (t: Tracker): void => {
   for (const d of t._deps.keys()) d._subs.delete(t);
   t._deps.clear();
+};
+
+/** Drop `t`'s subscriptions, then run `fn` with `t` as the active tracker so its reads re-subscribe. */
+const capture = <R>(t: Tracker, fn: () => R): R => {
+  release(t);
   const prev = active;
   active = t;
   try {
@@ -97,6 +102,11 @@ export class Computed<T> extends Signal<T> implements Tracker {
       for (const s of this._subs) s._invalidate();
     }
   }
+  /** Unsubscribe from every dependency; the computed is no longer recalculated. Public: the store calls it. */
+  dispose(): void {
+    release(this);
+    this._dirty = false;
+  }
 }
 
 class Effect implements Tracker {
@@ -118,13 +128,16 @@ class Effect implements Tracker {
   }
   _exec(): void {
     this._queued = false;
-    if (this._dead || !stale(this)) return;
-    this._drop();
+    if (this._dead) return;
     const prevOwner = owner;
     owner = this;
     depth++;
     try {
-      capture(this, this._fn);
+      // `stale` refreshes computeds, which may throw: that belongs to this effect's error handling.
+      if (stale(this)) {
+        this._drop();
+        capture(this, this._fn);
+      }
     } catch (e) {
       if (!this._onError) throw e;
       this._onError(e);
@@ -139,7 +152,8 @@ class Effect implements Tracker {
   }
   _dispose(): void {
     this._dead = true;
-    capture(this, () => {});
+    release(this);
+    if (active === this) active = undefined; // disposed from inside its own run: stop subscribing
     this._drop();
     queue.delete(this);
   }
@@ -155,9 +169,28 @@ export const computed = <T>(fn: () => T): Computed<T> => new Computed(fn);
 export const effect = (fn: () => void, onError?: (e: unknown) => void): (() => void) => {
   const e = new Effect(fn, onError);
   owner?._kids.add(e);
-  e._exec();
-  depth || flush();
+  try {
+    e._exec();
+    depth || flush();
+  } catch (err) {
+    e._dispose(); // a first run that throws (or loops) without a handler leaves nothing subscribed
+    throw err;
+  }
   return () => e._dispose();
+};
+
+/**
+ * Like `effect`, but never owned by the effect that happens to be running: for long-lived effects
+ * such as mounted attributes, which must not die when an unrelated parent effect re-runs.
+ */
+export const rootEffect = (fn: () => void, onError?: (e: unknown) => void): (() => void) => {
+  const prev = owner;
+  owner = undefined;
+  try {
+    return effect(fn, onError);
+  } finally {
+    owner = prev;
+  }
 };
 
 export const batch = <R>(fn: () => R): R => {
@@ -187,19 +220,33 @@ export const onSettled = (fn: () => void): (() => void) => {
 export const flush = (): void => {
   if (flushing || depth) return;
   flushing = true;
+  let thrown: unknown;
+  let failed = false;
   try {
     let guard = 0;
     while (queue.size) {
       if (++guard > 1e5) {
-        queue.clear(); // leave nothing behind, or every later flush would trip the same guard
+        // Leave nothing behind, or every later flush would trip the same guard; the effects stay
+        // subscribed and run again on their next change.
+        for (const e of queue) e._queued = false;
+        queue.clear();
         throw new Error('effect loop');
       }
       const e = queue.values().next().value as Effect;
       queue.delete(e);
-      e._exec();
+      try {
+        e._exec();
+      } catch (err) {
+        // One throwing effect (no onError) must not starve the others; rethrow after the flush.
+        if (!failed) {
+          failed = true;
+          thrown = err;
+        }
+      }
     }
   } finally {
     flushing = false;
   }
   for (const fn of settled) fn();
+  if (failed) throw thrown;
 };

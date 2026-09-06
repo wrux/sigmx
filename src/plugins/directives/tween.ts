@@ -29,7 +29,7 @@ export const animate = dir('animate', 5, ({ el, mods, cased, evaluate, effect, c
     cancelAnimationFrame(frame);
     const from = num(read());
     const target = num(to);
-    if (first || instant || !from || !target || from[1] !== target[1]) {
+    if (first || instant || duration <= 0 || !from || !target || from[1] !== target[1]) {
       first = false;
       return write(to);
     }
