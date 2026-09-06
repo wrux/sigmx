@@ -12,6 +12,7 @@ fn meta(name: &str, kind: Kind) -> PluginMeta {
         name: name.into(),
         kind,
         from: "sigmx/plugins".into(),
+        module: None,
         literal: false,
         args: vec![],
     }
@@ -150,7 +151,7 @@ fn scans_a_project_and_generates_modules() {
     assert_eq!(sel.files.len(), 1);
 
     let module = plugins_module(&sel);
-    assert!(module.starts_with("import { bind } from \"./vendor/sigmx/plugins/index.js\"\nimport { shout } from \"../assets/js/shout.js\"\nexport const plugins = [bind, shout]\n"));
+    assert!(module.starts_with("import { bind } from \"./vendor/sigmx/plugins/directives/two-way-bind.js\"\nimport { shout } from \"../assets/js/shout.js\"\nexport const plugins = [bind, shout]\n"));
     assert!(module.contains("\"shout\": \"used\""));
 
     let entry = Entry::selection(sel, o.from.clone()).module();
@@ -269,4 +270,64 @@ fn custom_plugins_can_be_declared_forced_and_added_to_any_entry() {
         3,
         "an extra already selected is not duplicated:\n{module}"
     );
+}
+
+#[test]
+fn dir_entries_import_each_builtin_from_its_own_module() {
+    let known = scan::builtin_plugins(&Source::Dir("./vendor/sigmx".into()));
+    let src = "<form data-on:submit=\"@post('/x')\"><input data-bind:q data-on:input=\"@get('/y')\"></form>".to_owned();
+    let sel = scan::select_plugins(std::slice::from_ref(&src), known, &prefixes(), &[], &[]);
+    let entry = Entry::selection(sel.clone(), Source::Dir("./vendor/sigmx".into())).module();
+    assert!(!entry.contains("plugins/index.js"), "{entry}");
+    // Two functions from one module share an import line, and every line names a real module.
+    assert!(
+        entry.contains(
+            "import { httpGet, httpPost } from \"./vendor/sigmx/plugins/functions/request.js\";\n"
+        ),
+        "{entry}"
+    );
+    assert!(entry.contains("import { applyElements } from \"./vendor/sigmx/plugins/server-events/apply-elements.js\";\n"), "{entry}");
+    assert!(
+        entry.contains(
+            "import { bind } from \"./vendor/sigmx/plugins/directives/two-way-bind.js\";\n"
+        ),
+        "{entry}"
+    );
+    for line in entry
+        .lines()
+        .filter(|l| l.starts_with("import {") && l.contains("./vendor/sigmx/plugins/"))
+    {
+        let path = line
+            .split('"')
+            .nth(1)
+            .unwrap()
+            .trim_start_matches("./vendor/sigmx/");
+        assert!(
+            sigmx::client::file(path).is_some(),
+            "{path} is not in the embedded tree"
+        );
+    }
+    // Only the selected modules are imported: one line per distinct module, no more.
+    let modules: std::collections::BTreeSet<&str> = sel
+        .plugins
+        .iter()
+        .filter_map(|p| p.module.as_deref())
+        .collect();
+    let import_lines = entry
+        .lines()
+        .filter(|l| l.contains("./vendor/sigmx/plugins/"))
+        .count();
+    assert_eq!(import_lines, modules.len());
+    assert_eq!(
+        scan::plugins_module(&sel)
+            .matches("./vendor/sigmx/plugins/")
+            .count(),
+        modules.len()
+    );
+
+    // A package entry keeps the tree-shakeable index.
+    let known = scan::builtin_plugins(&Source::Package("sigmx".into()));
+    let sel = scan::select_plugins(&[src], known, &prefixes(), &[], &[]);
+    let entry = Entry::selection(sel, Source::Package("sigmx".into())).module();
+    assert!(entry.contains("import { applyElements, applyState, bind, httpGet, httpPost, on } from \"sigmx/plugins\";\n"), "{entry}");
 }
