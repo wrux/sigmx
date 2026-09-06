@@ -1,13 +1,21 @@
 # Changelog
 
-## Unreleased
+## 0.2.0 (2026-09-06)
+
+Breaking changes, all pre-1.0 and listed here so an upgrade from 0.1.x is a checklist:
+
+- `data-match-media` takes its query unquoted (`"prefers-color-scheme: dark"`, not `"'…'"`); `mask`, `teleport` and `remove-me` are literals too, with `__dynamic` for expressions.
+- `data-trap` and `data-view-transition` are gone; the options and modifiers under "Removed options and modifiers" below are gone.
+- Plugin authors: `AttributePlugin.returns` is replaced by `literal`; `Store#scope`, `rewriteActions`, `splitStatements` and `rewriteSignals` are removed in favour of `transform()`/`compileBody()`; expressions run in strict mode.
+- `@intl` takes the `Intl` constructor name. `@sigmx/astro` and `@sigmx/hono` 0.2.0 require `sigmx` ^0.2.0.
+
 
 **A smaller "everything" build, then a hardening pass.** The script-tag bundle with all 50 plugins is 11,801 bytes brotli (was 12,410 with 52; it reached 10,190 before the hardening below added about 1.2 KB of guards and teardown and the strict expression tokenizer another 0.4 KB), the core 4.5 KB and the essentials 9.0 KB (was 8.8 KB). With precompiled expressions the core is 3.8 KB, smaller than before. About a third of that came from rewrites with unchanged behaviour; the rest came from dropping two plugins and a list of options and modifiers, recorded below so the release can be judged as a whole.
 
 Rewrites with unchanged behaviour:
 
 - Runtime, store, reactive graph, request client, morph, `bind`, `patch-elements`, `query-string`, `animate`, `boost`, `@ws` and `scroll-into-view` restructured for size. The bundler settings were already at their floor.
-- `@action(` rewriting uses a regex that skips string literals; `@ws` parses blocks with the same code as event streams (`parseBlock`).
+- `@action(` and `$signal` rewriting is one tokenizer pass (see the settled decisions below); `@ws` parses blocks with the same code as event streams (`parseBlock`).
 - The morph no longer parks kept elements in a fragment; it holds them by id and moves them where the new tree wants them.
 - `match-media` wraps bare `property: value` queries with a simpler heuristic.
 - Built-in plugins are declared with compact internal constructors (`src/plugins/def.ts`); `attribute()`, `action()` and `handler()` are unchanged for plugin authors.
@@ -16,7 +24,7 @@ Removed plugins: `data-trap` (use a native `<dialog>` with `showModal()`, which 
 
 Removed options and modifiers (each was measured at 10–150 bytes brotli; revert the matching hunk to bring one back):
 
-- Runtime: attribute key/value contract errors (`needs a key`, `takes no value`), the `sigmx-ready` event, `ignore__self`, the parsed-attribute cache, the `__viewtransition` modifier and `withViewTransition`, the `__delay` modifier (`delay()` stays exported), `recase` styles `snake` and `pascal` (the functions stay exported), string-form `include`/`exclude` filters (pass a RegExp), empty namespaces in `snapshot()`, `delete $.list[i]` notifications (assign instead), the multi-statement "return the last statement" fallback at runtime (the build-time precompiler keeps it), and `Computed.peek()` refreshing.
+- Runtime: the `sigmx-ready` event, `ignore__self`, the parsed-attribute cache, the `__viewtransition` modifier and `withViewTransition`, the `__delay` modifier (`delay()` stays exported), `recase` styles `snake` and `pascal` (the functions stay exported), string-form `include`/`exclude` filters (pass a RegExp), empty namespaces in `snapshot()`, `delete $.list[i]` notifications (assign instead), the multi-statement "return the last statement" fallback at runtime (the build-time precompiler keeps it), and `Computed.peek()` refreshing.
 - Requests: `openWhenHidden` (requests stay open while the tab is hidden), passing an `AbortController` as `abort`, executing `javascript` responses, the `retrying` fetch event, and the `Sigmx-Use-View-Transition` response header / `useViewTransition` field of `patch-elements`. Form requests respect a caller-supplied `Content-Type`. `patch-elements` no longer validates `mode` or warns about missing targets.
 - `bind`: `__prop`. `query-string`: the bare filter form and its `__filter` (the keyed form, including `__history`, stays). `computed`: the object form (use the keyed form). `attr`: objects are no longer serialised as JSON.
 - Modifiers: `on` `__capture`/`__passive`; `on-intersect` `__full`/`__half` (`__threshold.N` stays); `on-interval` `.leading`; `transition` `__scale`/`__origin` (fade only); `collapse__min`; `animate` `__easing` (eases out) and px→% conversion, CSS properties only; `scroll-into-view` `h*` inline options; `teleport__prepend`; `json-signals__terse`; `persist__session`; `boost__replace`.

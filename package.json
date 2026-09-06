@@ -1,6 +1,6 @@
 {
   "name": "sigmx",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "htmx on steroids in a runtime smaller than htmx: server-driven HTML, streaming patches, signals and a state-preserving morph from a 4 KB core. Zero dependencies.",
   "keywords": [
     "hypermedia",
