@@ -24,8 +24,6 @@ export { teleport } from './directives/teleport.js';
 export { text } from './directives/text-content.js';
 export { onInterval } from './directives/timer.js';
 export { transition } from './directives/transition.js';
-export { viewTransition } from './directives/transition-name.js';
-export { trap } from './directives/trap.js';
 export { animate } from './directives/tween.js';
 export { bind } from './directives/two-way-bind.js';
 export { queryString } from './directives/url-params.js';

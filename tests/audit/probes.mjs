@@ -466,13 +466,13 @@ probe('morph', 'typed input values survive a morph', async (h) => {
   h.build.morph.morph(a, el('<form><input id="a" value="v"></form>'));
   assert.equal(a.querySelector('#a').value, 'typed');
 });
-gone('morph', 'a changed default value attribute overwrites the live value', async (h) => {
+probe('morph', 'a changed default value attribute overwrites the live value', async (h) => {
   const a = await h.render('<form><input id="b" value="v"></form>');
   a.querySelector('#b').value = 'typed';
   h.build.morph.morph(a, el('<form><input id="b" value="new"></form>'));
   assert.equal(a.querySelector('#b').value, 'new');
 });
-gone('morph', 'sigmx-prop-change is dispatched when a default changes', async (h) => {
+probe('morph', 'sigmx-prop-change is dispatched when a default changes', async (h) => {
   const a = await h.render('<div><input id="i" value="1"></div>');
   let seen = 0;
   a.addEventListener('sigmx-prop-change', () => seen++);
@@ -662,7 +662,7 @@ probe('requests', 'status errors emit a sigmx-fetch error and do not throw', asy
   assert.ok(fetches.some((f) => f.type === 'error' && f.status === 500));
   assert.equal(h.errors.length, 0);
 });
-gone('requests', 'retry.onStatusError retries failing statuses with backoff', async (h) => {
+probe('requests', 'retry.onStatusError retries failing statuses with backoff', async (h) => {
   let n = 0;
   const calls = h.mockFetch(() => (++n < 3 ? new h.native.Response('', { status: 503 }) : h.json({ ok: n })));
   const { $ } = h.app();
@@ -870,7 +870,7 @@ gone('bind', '__prop binds an element property', async (h) => {
   const el = await h.render('<p data-bind:hide__prop.hidden></p>');
   assert.equal(el.hidden, true);
 });
-gone('bind', 'file inputs bind an array of file descriptors', async (h) => {
+probe('bind', 'file inputs bind an array of file descriptors', async (h) => {
   const { store } = h.app();
   const el = await h.render('<input type="file" data-bind:files>');
   el.dispatchEvent(new Event('change', { bubbles: true }));
@@ -943,7 +943,7 @@ probe('directives', 'style: keyed and object forms; zero is kept', async (h) => 
   assert.equal(el.style.color, 'red');
   assert.equal(el.style.opacity, '0');
 });
-gone('directives', 'style: a falsy value restores the original inline value', async (h) => {
+probe('directives', 'style: a falsy value restores the original inline value', async (h) => {
   const { $ } = h.app();
   $.c = 'red';
   const el = await h.render('<div style="color: blue" data-style:color="$c"></div>');
@@ -1088,7 +1088,7 @@ probe('directives', 'on-signal-patch receives every patch', async (h) => {
   await tick();
   assert.ok([...$.all].includes('other'));
 });
-gone('directives', 'on-signal-patch:key fires only for patches touching the key', async (h) => {
+probe('directives', 'on-signal-patch:key fires only for patches touching the key', async (h) => {
   const { $ } = h.app();
   $.user = { name: 'a' };
   await h.render('<div data-on-signal-patch:user.name="$hits = ($hits ?? 0) + 1"></div>');
@@ -1223,11 +1223,6 @@ probe('directives', 'cloak is removed on mount', async (h) => {
   const el = await h.render('<div data-cloak></div>');
   assert.equal(el.hasAttribute('data-cloak'), false);
 });
-probe('directives', 'view-transition sets view-transition-name', async (h) => {
-  h.app();
-  const el = await h.render('<div data-view-transition="\'hero\'"></div>');
-  assert.equal(el.style.getPropertyValue('view-transition-name'), 'hero');
-});
 probe('directives', 'mask formats as the user types; __dynamic follows a signal', async (h) => {
   const { $ } = h.app();
   $.pattern = '99-99';
@@ -1238,34 +1233,6 @@ probe('directives', 'mask formats as the user types; __dynamic follows a signal'
   assert.equal(el.querySelector('#m').value, '(123) 4');
   input(el.querySelector('#d'), '1234');
   assert.equal(el.querySelector('#d').value, '12-34');
-});
-probe('directives', 'trap cycles Tab inside and restores focus', async (h) => {
-  h.stub(HTMLElement.prototype, 'offsetParent', undefined);
-  Object.defineProperty(HTMLElement.prototype, 'offsetParent', { get: () => document.body, configurable: true });
-  const { $ } = h.app();
-  $.open = false;
-  const el = await h.render(
-    '<div><button id="out"></button><div data-trap="$open"><button id="a"></button><button id="b"></button></div></div>',
-  );
-  el.querySelector('#out').focus();
-  $.open = true;
-  await tick();
-  assert.equal(document.activeElement.id, 'a');
-  el.querySelector('#b').focus();
-  const e = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true });
-  document.dispatchEvent(e);
-  assert.equal(document.activeElement.id, 'a');
-  $.open = false;
-  assert.equal(document.activeElement.id, 'out');
-});
-gone('directives', 'trap __inert makes the rest of the page inert', async (h) => {
-  h.stub(HTMLElement.prototype, 'offsetParent', undefined);
-  Object.defineProperty(HTMLElement.prototype, 'offsetParent', { get: () => document.body, configurable: true });
-  const { $ } = h.app();
-  $.open = true;
-  const el = await h.render('<div><p id="sib"></p><div data-trap__inert="$open"><button></button></div></div>');
-  await tick();
-  assert.equal(el.querySelector('#sib').hasAttribute('inert'), true);
 });
 const fakeAnimate = (h) => {
   const calls = [];

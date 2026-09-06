@@ -18,7 +18,7 @@ export type RequestOptions = {
   openWhenHidden?: boolean;
   /** Reconnect after a stream closes normally (long-lived event streams). */
   reconnect?: boolean;
-  retry?: { attempts?: number; interval?: number; factor?: number; max?: number };
+  retry?: { attempts?: number; interval?: number; factor?: number; max?: number; onStatusError?: boolean };
 };
 
 const inflight = new Map<string, AbortController>();
@@ -103,7 +103,12 @@ const send = async (method: string, ctx: ActionCtx, url: string, o: RequestOptio
       try {
         const res = await fetch(req[0], { ...req[1], signal: ac.signal });
         const ct = res.headers.get('content-type') ?? '';
-        if (!res.ok) return emit('error', { status: res.status });
+        if (!res.ok) {
+          emit('error', { status: res.status });
+          if (!retry.onStatusError) return;
+          await backoff();
+          continue;
+        }
         if (!res.body) return;
         if (ct.includes('text/event-stream')) {
           attempt = 0;

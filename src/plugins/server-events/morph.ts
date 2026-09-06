@@ -52,9 +52,38 @@ const compatible = (old: Node, next: Node): boolean =>
 
 const syncAttributes = (a: Element, b: Element, ctx: Ctx): void => {
   const keep = new Set((b.getAttribute(ctx.preserve) ?? a.getAttribute(ctx.preserve) ?? '').split(/\s+/));
+  const differs = (name: string) => !keep.has(name) && a.getAttribute(name) !== b.getAttribute(name);
+  let changed = false;
+  // Live form state (what the user typed or ticked) is only overwritten when the server's
+  // default actually changed, i.e. the *attribute* differs between old and new markup.
+  const live =
+    a instanceof HTMLInputElement && a.type !== 'file'
+      ? ['value', 'checked']
+      : a instanceof HTMLOptionElement
+        ? ['selected']
+        : [];
+  for (const name of live) {
+    if (differs(name)) {
+      (a as any)[name] = name === 'value' ? (b.getAttribute(name) ?? '') : b.hasAttribute(name);
+      changed = true;
+    }
+  }
+  if (
+    a instanceof HTMLTextAreaElement &&
+    !keep.has('value') &&
+    a.defaultValue !== (b as HTMLTextAreaElement).defaultValue
+  ) {
+    a.value = (b as HTMLTextAreaElement).defaultValue;
+    changed = true;
+  }
   for (const { name, value } of b.attributes)
     if (!keep.has(name) && a.getAttribute(name) !== value) a.setAttribute(name, value);
   for (const { name } of [...a.attributes]) if (!keep.has(name) && !b.hasAttribute(name)) a.removeAttribute(name);
+
+  if (changed)
+    (a instanceof HTMLOptionElement ? a.closest('select') : a)?.dispatchEvent(
+      new Event('sigmx-prop-change', { bubbles: true }),
+    );
 };
 
 const morphNode = (a: Node, b: Node, ctx: Ctx): void => {

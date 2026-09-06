@@ -14,7 +14,7 @@ Most of what the Alpine and htmx ecosystems add as plugins or extensions exists 
 | `x-collapse` | [`data-collapse`](/reference/directives/collapse/) | standalone, no `x-show` needed; `__duration` |
 | `x-transition` | [`data-transition`](/reference/directives/transition/) | fade with optional scale; class-based transitions are not provided |
 | `x-mask` | [`data-mask`](/reference/directives/mask/) | `__dynamic` for `x-mask:dynamic` |
-| `x-trap` | [`data-trap`](/reference/directives/trap/) |  |
+| `x-trap` | use a native `<dialog>` and `showModal()`; it traps focus and makes the rest of the page inert | |
 | `x-teleport` | [`data-teleport`](/reference/directives/teleport/) | selector value |
 | `x-html` | [`data-html`](/reference/directives/html/) | |
 | `x-intersect` | [`data-on-intersect`](/reference/directives/on-intersect/) | |

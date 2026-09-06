@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { app, tick } from '../helpers.mjs';
 
-test('style: keyed and object forms, falsy removes the property, zero is kept', async (t) => {
+test('style: keyed and object forms, falsy restores the original inline value, zero is kept', async (t) => {
   const { $, render } = app(t);
   $.c = 'red';
   $.o = 0;
@@ -15,9 +15,8 @@ test('style: keyed and object forms, falsy removes the property, zero is kept', 
   $.z = 3;
   assert.equal(el.style.zIndex, '3');
   $.c = '';
-  assert.equal(el.style.color, '', 'falsy removes the property');
-  $.c = 'green';
+  assert.equal(el.style.color, 'blue', 'original inline value restored');
   el.removeAttribute('data-style:color');
   await tick();
-  assert.equal(el.style.color, '', 'unmount removes what the directive set');
+  assert.equal(el.style.color, 'blue');
 });

@@ -131,7 +131,7 @@ test('a live stream applies patches as they arrive; the indicator tracks it', as
   await until(() => $.busy === false);
 });
 
-test('status errors emit a sigmx-fetch error and do not throw', async (t) => {
+test('status errors emit a sigmx-fetch error and do not throw; onStatusError retries with backoff', async (t) => {
   let n = 0;
   mockFetch(t, () =>
     new native.Response('nope', {
@@ -140,12 +140,18 @@ test('status errors emit a sigmx-fetch error and do not throw', async (t) => {
     }).clone(),
   );
   const fetches = lastEvent(t, 'sigmx-fetch');
-  const { render, errors } = app(t);
-  const el = await render('<div><button id="a" data-on:click="@get(\'/api/fail\')"></button></div>');
+  const { $, render, errors } = app(t);
+  const el = await render(
+    '<div><button id="a" data-on:click="@get(\'/api/fail\')"></button><button id="b" data-on:click="@get(\'/api/retry\', { retry: { onStatusError: true, interval: 1, attempts: 5 } })"></button></div>',
+  );
   await click(el.querySelector('#a'));
   await until(() => fetches.some((f) => f.type === 'finished'));
   assert.ok(fetches.some((f) => f.type === 'error' && f.status === 500));
   assert.equal(errors.length, 0);
+  n = 0;
+  mockFetch(t, () => (++n < 3 ? new native.Response('', { status: 503 }) : jsonResponse({ ok: n })));
+  await click(el.querySelector('#b'));
+  await until(() => $.ok === 3);
 });
 
 test('a second request to the same URL aborts the first unless abort is none; unmount aborts too', async (t) => {

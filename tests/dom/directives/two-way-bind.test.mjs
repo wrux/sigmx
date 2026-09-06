@@ -104,3 +104,11 @@ test('textarea and __event adapters', async (t) => {
   late.dispatchEvent(new Event('change', { bubbles: true }));
   assert.equal($.late, 'typing');
 });
+
+test('bind resyncs when the morph changes a default value', async (t) => {
+  const { $, render } = app(t);
+  const el = await render('<input data-bind:v value="one">');
+  el.value = 'server';
+  el.dispatchEvent(new Event('sigmx-prop-change', { bubbles: true }));
+  assert.equal($.v, 'server');
+});

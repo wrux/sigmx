@@ -41,7 +41,7 @@ test('syncs attributes, text nodes and nested structure in place', (t) => {
   assert.equal(a.children[1].tagName, 'EM');
 });
 
-test('live form state survives a morph; preserve-attr protects attributes', (t) => {
+test('live form state survives unless the server default changed; preserve-attr protects attributes', (t) => {
   const a = mount(
     t,
     '<form><input id="a" value="v"><input id="b" value="v"><input id="c" type="checkbox"><textarea id="t">d</textarea><p id="p" class="keep" data-preserve-attr="class">a</p></form>',
@@ -55,11 +55,28 @@ test('live form state survives a morph; preserve-attr protects attributes', (t) 
       '<form><input id="a" value="v"><input id="b" value="new"><input id="c" type="checkbox"><textarea id="t">e</textarea><p id="p" class="new" data-preserve-attr="class">b</p></form>',
     ),
   );
-  assert.equal(a.querySelector('#a').value, 'typed', 'user input kept');
-  assert.equal(a.querySelector('#b').getAttribute('value'), 'new', 'default attribute updated');
-  assert.equal(a.querySelector('#c').checked, true, 'checked state kept');
+  assert.equal(a.querySelector('#a').value, 'typed', 'same default: user input kept');
+  assert.equal(a.querySelector('#b').value, 'new', 'changed default: overwritten');
+  assert.equal(a.querySelector('#c').checked, true, 'checked attribute unchanged: state kept');
+  assert.equal(a.querySelector('#t').value, 'e');
   assert.equal(a.querySelector('#p').className, 'keep');
   assert.equal(a.querySelector('#p').textContent, 'b');
+});
+
+test('a changed default dispatches sigmx-prop-change so bind can resync', (t) => {
+  const a = mount(
+    t,
+    '<div><input id="i" value="1"><select id="s"><option>a</option><option selected>b</option></select></div>',
+  );
+  const seen = [];
+  a.addEventListener('sigmx-prop-change', (e) => seen.push(e.target.id));
+  morph(
+    a,
+    el('<div><input id="i" value="2"><select id="s"><option selected>a</option><option>b</option></select></div>'),
+  );
+  assert.equal(a.querySelector('#i').value, '2');
+  assert.equal(a.querySelector('#s').value, 'a');
+  assert.deepEqual([...new Set(seen)], ['i', 's'], 'one event per changed field (a select fires per changed option)');
 });
 
 test('ignore-morph subtrees are left alone when marked on both sides', (t) => {

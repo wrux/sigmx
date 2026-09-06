@@ -49,8 +49,6 @@ import {
   text,
   toggleAll,
   transition,
-  trap,
-  viewTransition,
   websocket,
 } from '../plugins/index.js';
 
@@ -80,7 +78,6 @@ export const all: Plugin[] = [
   signals,
   style,
   text,
-  viewTransition,
   clipboard,
   fit,
   intl,
@@ -103,7 +100,6 @@ export const all: Plugin[] = [
   removeMe,
   teleport,
   transition,
-  trap,
   confirm,
   dispatch,
   websocket,

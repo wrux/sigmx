@@ -2,23 +2,24 @@
 
 ## Unreleased
 
-**A 9.9 KB "everything" build.** The script-tag bundle with all 52 plugins is 10,119 bytes brotli (was 12,410), the core 3.5 KB (was 4.1 KB) and the essentials 7.4 KB (was 8.8 KB). About a third of that came from rewrites with unchanged behaviour; the rest came from removing options and modifiers, listed below so the release can be judged as a whole. Every plugin still exists.
+**A 10 KB "everything" build.** The script-tag bundle with all 50 plugins is 10,190 bytes brotli (was 12,410 with 52), the core 3.5 KB (was 4.1 KB) and the essentials 7.6 KB (was 8.8 KB). About a third of that came from rewrites with unchanged behaviour; the rest came from dropping two plugins and a list of options and modifiers, recorded below so the release can be judged as a whole.
 
 Rewrites with unchanged behaviour:
 
-- Runtime, store, reactive graph, request client, morph, `bind`, `patch-elements`, `query-string`, `animate`, `trap`, `boost`, `@ws` and `scroll-into-view` restructured for size. The bundler settings were already at their floor.
+- Runtime, store, reactive graph, request client, morph, `bind`, `patch-elements`, `query-string`, `animate`, `boost`, `@ws` and `scroll-into-view` restructured for size. The bundler settings were already at their floor.
 - `@action(` rewriting uses a regex that skips string literals; `@ws` parses blocks with the same code as event streams (`parseBlock`).
 - The morph no longer parks kept elements in a fragment; it holds them by id and moves them where the new tree wants them.
-- `trap` finds focusable elements with a short selector plus a JS filter; `match-media` wraps bare `property: value` queries.
+- `match-media` wraps bare `property: value` queries with a simpler heuristic.
 - Built-in plugins are declared with compact internal constructors (`src/plugins/def.ts`); `attribute()`, `action()` and `handler()` are unchanged for plugin authors.
 
-Removed (each was measured at 20–150 bytes brotli; revert the matching hunk to bring one back):
+Removed plugins: `data-trap` (use a native `<dialog>` with `showModal()`, which traps focus and makes the rest of the page inert) and `data-view-transition` (set `view-transition-name` with `data-style`). 50 plugins remain.
+
+Removed options and modifiers (each was measured at 10–150 bytes brotli; revert the matching hunk to bring one back):
 
 - Runtime: attribute key/value contract errors (`needs a key`, `takes no value`), the `sigmx-ready` event, `ignore__self`, the parsed-attribute cache, the `__viewtransition` modifier and `withViewTransition`, the `__delay` modifier (`delay()` stays exported), `recase` styles `snake` and `pascal` (the functions stay exported), string-form `include`/`exclude` filters (pass a RegExp), empty namespaces in `snapshot()`, `delete $.list[i]` notifications (assign instead), the multi-statement "return the last statement" fallback at runtime (the build-time precompiler keeps it), and `Computed.peek()` refreshing.
-- Requests: `openWhenHidden` (requests stay open while the tab is hidden), `retry.onStatusError` (status errors are reported, never retried), passing an `AbortController` as `abort`, executing `javascript` responses, the `retrying` fetch event, and the `Sigmx-Use-View-Transition` response header / `useViewTransition` field of `patch-elements`. Form requests respect a caller-supplied `Content-Type`. `patch-elements` no longer validates `mode` or warns about missing targets.
-- Morph: live form state is no longer re-synced when a default attribute changes, and `sigmx-prop-change` is gone (typed values survive a morph as before; `data-preserve-attr` and `data-ignore-morph` stay).
-- `bind`: `type=file` (base64 file reads), `__prop`. `query-string`: the bare filter form and its `__filter` (the keyed form, including `__history`, stays). `computed`: the object form (use the keyed form). `attr`: objects are no longer serialised as JSON. `style`: falsy values remove the property instead of restoring the original inline value.
-- Modifiers: `on` `__capture`/`__passive`; `on-intersect` `__full`/`__half` (`__threshold.N` stays); `on-signal-patch:key` filtering; `on-interval` `.leading`; `trap__inert`; `transition` `__scale`/`__origin` (fade only); `collapse__min`; `animate` `__easing` (eases out) and px→% conversion, CSS properties only; `scroll-into-view` `h*` inline options; `teleport__prepend`; `json-signals__terse`; `persist__session`; `boost__replace`.
+- Requests: `openWhenHidden` (requests stay open while the tab is hidden), passing an `AbortController` as `abort`, executing `javascript` responses, the `retrying` fetch event, and the `Sigmx-Use-View-Transition` response header / `useViewTransition` field of `patch-elements`. Form requests respect a caller-supplied `Content-Type`. `patch-elements` no longer validates `mode` or warns about missing targets.
+- `bind`: `__prop`. `query-string`: the bare filter form and its `__filter` (the keyed form, including `__history`, stays). `computed`: the object form (use the keyed form). `attr`: objects are no longer serialised as JSON.
+- Modifiers: `on` `__capture`/`__passive`; `on-intersect` `__full`/`__half` (`__threshold.N` stays); `on-interval` `.leading`; `transition` `__scale`/`__origin` (fade only); `collapse__min`; `animate` `__easing` (eases out) and px→% conversion, CSS properties only; `scroll-into-view` `h*` inline options; `teleport__prepend`; `json-signals__terse`; `persist__session`; `boost__replace`.
 - Test suite: `tests/audit/` probes 151 behaviours against any build; `npm run audit` prints a before/after matrix against `main` (or `--ref`), and `tests/audit/features.test.mjs` pins which probes must pass and which are removed.
 - `@intl` takes the `Intl` constructor name: `@intl('NumberFormat', …)` instead of `'number'`. `@ws` ignores blocks without `data` lines.
 

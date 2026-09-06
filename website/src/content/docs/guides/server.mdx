@@ -44,7 +44,7 @@ The response's content type decides what happens.
 | `text/event-stream` | each event is routed by name to a server-event handler; see below |
 | `text/javascript` | executed |
 | `204`, `304` | nothing |
-| `4xx`, `5xx` | a `sigmx-fetch` event with `type: 'error'`; not retried |
+| `4xx`, `5xx` | a `sigmx-fetch` event with `type: 'error'`; no retry unless `retry.onStatusError` |
 
 <Demo app title="Polling with a plain HTML response" source={pollSrc}><Poll /></Demo>
 
@@ -100,7 +100,7 @@ Use it directly wherever handlers take a `Request` and return a `Response` (Hono
   payload: { anything: true },
   abort: 'replace' | 'none' | controller,   // 'replace' cancels an earlier request with the same method and URL
   reconnect: true,                          // reconnect after a stream closes normally
-  retry: { attempts: 5, interval: 1000, factor: 2, max: 30000 },
+  retry: { attempts: 5, interval: 1000, factor: 2, max: 30000, onStatusError: false },
 })
 ```
 

@@ -4,6 +4,19 @@ type Adapter = { _read(): unknown; _write(v: unknown): void; _events: string[] }
 
 const str = (v: unknown) => String(v ?? '');
 
+const readFiles = (input: HTMLInputElement) =>
+  Promise.all(
+    [...(input.files ?? [])].map(
+      (f) =>
+        new Promise<{ name: string; type: string; size: number; contents: string }>((resolve) => {
+          const r = new FileReader();
+          r.onloadend = () =>
+            resolve({ name: f.name, type: f.type, size: f.size, contents: String(r.result).split(',')[1] ?? '' });
+          r.readAsDataURL(f);
+        }),
+    ),
+  );
+
 /**
  * Two-way binding: `bind:name` or `bind="name"`. Creates the signal from the element when missing.
  * Checkbox groups bind to arrays, radios to the checked value, `select multiple` to arrays.
@@ -47,6 +60,9 @@ export const bind = dir('bind', 0, ({ el, key, value, cased, mods, store, listen
       _write: (v) => (input.checked = String(v) === input.value),
       _events: ['input'],
     };
+  } else if (type === 'file') {
+    listen(el, 'change', () => readFiles(input).then((files) => store.set(path, files)));
+    return;
   } else if (type) {
     const numeric = type === 'number' || type === 'range';
     a = valued(() => (numeric && input.value !== '' ? +input.value : input.value), 'input');
@@ -74,7 +90,7 @@ export const bind = dir('bind', 0, ({ el, key, value, cased, mods, store, listen
     if (initial !== undefined && initial !== '') store.set(path, initial);
   }
   const sync = () => store.set(path, a._read());
-  for (const t of mods.get('event') ?? a._events) listen(el, t, sync);
+  for (const t of [...(mods.get('event') ?? a._events), 'sigmx-prop-change']) listen(el, t, sync);
   effect(() => {
     const v = current();
     if (v !== undefined) a._write(v);
