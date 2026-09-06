@@ -172,3 +172,32 @@ test('markup helpers accept anything that renders to a string, such as html temp
   assert.equal(await res.text(), '<p id="g">Hello &lt;Ada&gt;</p>');
   assert.equal(res.headers.get('sigmx-mode'), 'inner');
 });
+
+test('stream stops when the client disconnects', async () => {
+  let observedClosed = false;
+  let writes = 0;
+  const a = app().get('/forever', (c) =>
+    c.var.sigmx.stream(async (s) => {
+      while (!s.closed) {
+        await s.patchSignals({ tick: ++writes });
+        await s.sleep(5);
+      }
+      observedClosed = true;
+    }),
+  );
+  const res = await a.request('/forever');
+  const reader = res.body.getReader();
+  await reader.read();
+  await reader.cancel(); // what a browser does when the user navigates away
+  await new Promise((r) => setTimeout(r, 50));
+  assert.equal(observedClosed, true);
+  assert.ok(writes < 20, `stopped early (${writes} writes)`);
+});
+
+test('isRequest lets one route answer a page or a partial', async () => {
+  const a = app().get('/page', (c) =>
+    c.var.sigmx.isRequest ? c.html('<p id="x">partial</p>') : c.html('<html><body><p id="x">page</p></body></html>'),
+  );
+  assert.equal(await (await a.request('/page')).text(), '<html><body><p id="x">page</p></body></html>');
+  assert.equal(await (await a.request('/page', { headers: sigmxHeaders })).text(), '<p id="x">partial</p>');
+});

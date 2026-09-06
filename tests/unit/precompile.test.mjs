@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { compileBody, extractExpressions, generateTable, rewriteSignals } from '../dist/kernel/precompile.js';
-import { expressionKey, precompiled } from '../dist/kernel/precompiled.js';
-import { createStore } from '../dist/kernel/state.js';
+import { compileBody, extractExpressions, generateTable, rewriteSignals } from '../../dist/kernel/precompile.js';
+import { expressionKey, precompiled } from '../../dist/kernel/precompiled.js';
+import { createStore } from '../../dist/kernel/state.js';
 
 test('rewriteSignals turns $name into $.name and leaves strings, $ and obj.$x alone', () => {
   assert.equal(rewriteSignals('$count++'), '$.count++');

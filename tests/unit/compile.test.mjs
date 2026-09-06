@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { compile, functionCompiler, rewriteActions, splitStatements } from '../dist/kernel/compile.js';
-import { createStore } from '../dist/kernel/state.js';
+import { compile, functionCompiler, rewriteActions, splitStatements } from '../../dist/kernel/compile.js';
+import { createStore } from '../../dist/kernel/state.js';
 
 test('rewriteActions only touches @name( outside strings', () => {
   assert.equal(rewriteActions("@post('/x', {a: '@nope('})"), "__a.post('/x', {a: '@nope('})");

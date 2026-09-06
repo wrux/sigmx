@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { computed, effect } from '../dist/kernel/reactive.js';
-import { createStore } from '../dist/kernel/state.js';
+import { computed, effect } from '../../dist/kernel/reactive.js';
+import { createStore } from '../../dist/kernel/state.js';
 
 test('set/get/merge with nested paths and JSON merge-patch semantics', () => {
   const s = createStore();

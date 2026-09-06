@@ -9,3 +9,5 @@ examples/*/node_modules
 examples/*/dist
 examples/*/.astro
 .DS_Store
+test-results
+playwright-report

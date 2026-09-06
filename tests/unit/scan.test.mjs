@@ -6,7 +6,7 @@ import {
   generatePluginsModule,
   mentions,
   selectPlugins,
-} from '../dist/kernel/scan.js';
+} from '../../dist/kernel/scan.js';
 
 test('builtin metadata covers every plugin with export and registered names', () => {
   const all = builtinPlugins();

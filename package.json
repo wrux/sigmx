@@ -1,6 +1,6 @@
 {
   "name": "sigmx",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "htmx on steroids in a runtime smaller than htmx: server-driven HTML, streaming patches, signals and a state-preserving morph from a 4 KB core. Zero dependencies.",
   "keywords": [
     "hypermedia",
@@ -103,7 +103,13 @@
     "format": "biome format --write .",
     "build": "node scripts/build.mjs",
     "size": "node scripts/size.mjs",
-    "test": "node scripts/build.mjs && node --test tests/*.test.mjs",
+    "test": "node scripts/build.mjs && node --test tests/unit/*.test.mjs tests/dom/*.test.mjs tests/dom/*/*.test.mjs",
+    "test:unit": "node --test tests/unit/*.test.mjs",
+    "test:dom": "node --test tests/dom/*.test.mjs tests/dom/*/*.test.mjs",
+    "test:browser": "playwright test",
+    "test:coverage": "node --test --experimental-test-coverage tests/unit/*.test.mjs tests/dom/*.test.mjs tests/dom/*/*.test.mjs",
+    "test:sdks": "npm --prefix sdks/astro test && npm --prefix sdks/hono test",
+    "test:all": "npm test && npm run test:browser && npm run test:sdks",
     "dev": "node scripts/dev.mjs",
     "compare": "node scripts/compare.mjs website/src/data/compare.json",
     "prepublishOnly": "npm run check && npm test",
@@ -111,8 +117,11 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.12",
+    "@happy-dom/global-registrator": "^20.14.0",
+    "@playwright/test": "^1.63.0",
     "@types/node": "^22.20.1",
     "esbuild": "^0.28.2",
+    "happy-dom": "^20.14.0",
     "terser": "^5.51.2",
     "typescript": "^5.9.0"
   }

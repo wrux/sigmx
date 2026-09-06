@@ -1,6 +1,6 @@
 {
   "name": "@sigmx/hono",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Hono middleware for sigmx: read signals from the request, answer with HTML, JSON or a stream of patches, serve the client.",
   "keywords": [
     "hono",
@@ -57,6 +57,6 @@
   },
   "peerDependencies": {
     "hono": ">=4.6.0",
-    "sigmx": "^0.1.0"
+    "sigmx": "^0.1.1"
   }
 }

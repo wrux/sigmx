@@ -53,8 +53,8 @@
       }
     },
     {
-      // These files hold source text as data, so `${` inside plain strings is deliberate.
-      "includes": ["scripts/explore-size.mjs", "tests/precompile.test.mjs"],
+      // Tests hold expression source as data, so `${` inside plain strings is deliberate.
+      "includes": ["tests/**"],
       "linter": { "rules": { "suspicious": { "noTemplateCurlyInString": "off" } } }
     }
   ]

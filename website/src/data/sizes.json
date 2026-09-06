@@ -3,423 +3,423 @@
   "bundles": [
     {
       "name": "core only",
-      "raw": 9809,
-      "gzip": 4500,
-      "brotli": 4136
+      "raw": 9841,
+      "gzip": 4524,
+      "brotli": 4160
     },
     {
       "name": "core, precompiled expressions (no runtime compiler)",
-      "raw": 8901,
-      "gzip": 4055,
-      "brotli": 3723
+      "raw": 8933,
+      "gzip": 4082,
+      "brotli": 3740
     },
     {
       "name": "core + text",
-      "raw": 9988,
-      "gzip": 4584,
-      "brotli": 4210
+      "raw": 10020,
+      "gzip": 4605,
+      "brotli": 4225
     },
     {
       "name": "minimal preset (signals, text, show, on)",
-      "raw": 11648,
-      "gzip": 5242,
-      "brotli": 4807
+      "raw": 11676,
+      "gzip": 5271,
+      "brotli": 4808
     },
     {
       "name": "essentials preset (state, rendering, forms, requests, morph)",
-      "raw": 23759,
-      "gzip": 9905,
-      "brotli": 9075
+      "raw": 23809,
+      "gzip": 9926,
+      "brotli": 9061
     },
     {
       "name": "minimal + CSP compiler",
-      "raw": 12098,
-      "gzip": 5445,
-      "brotli": 4958
+      "raw": 12126,
+      "gzip": 5471,
+      "brotli": 5004
     },
     {
       "name": "minimal + fetch + server handlers (morph)",
-      "raw": 20962,
-      "gzip": 8933,
-      "brotli": 8142
+      "raw": 21012,
+      "gzip": 8962,
+      "brotli": 8167
     },
     {
       "name": "everything (standalone build)",
-      "raw": 36558,
-      "gzip": 14382,
-      "brotli": 13054
+      "raw": 36614,
+      "gzip": 14396,
+      "brotli": 13083
     },
     {
       "name": "everything, shipped dist/sigmx.standalone.js (esbuild + terser)",
-      "raw": 35903,
-      "gzip": 13636,
-      "brotli": 12394
+      "raw": 35999,
+      "gzip": 13681,
+      "brotli": 12410
     }
   ],
   "perPlugin": [
     {
       "export": "signals",
       "name": "signals",
-      "raw": 209,
+      "raw": 207,
       "gzip": 101,
-      "brotli": 94
+      "brotli": 111
     },
     {
       "export": "computed",
       "name": "computed",
-      "raw": 312,
-      "gzip": 137,
-      "brotli": 120
+      "raw": 309,
+      "gzip": 143,
+      "brotli": 140
     },
     {
       "export": "effect",
       "name": "effect",
       "raw": 153,
-      "gzip": 70,
-      "brotli": 61
+      "gzip": 69,
+      "brotli": 51
     },
     {
       "export": "ref",
       "name": "ref",
       "raw": 170,
-      "gzip": 85,
-      "brotli": 71
+      "gzip": 83,
+      "brotli": 86
     },
     {
       "export": "text",
       "name": "text",
       "raw": 179,
-      "gzip": 84,
-      "brotli": 74
+      "gzip": 81,
+      "brotli": 65
     },
     {
       "export": "show",
       "name": "show",
       "raw": 258,
       "gzip": 105,
-      "brotli": 91
+      "brotli": 82
     },
     {
       "export": "className",
       "name": "class",
       "raw": 342,
-      "gzip": 156,
-      "brotli": 144
+      "gzip": 157,
+      "brotli": 154
     },
     {
       "export": "style",
       "name": "style",
-      "raw": 446,
-      "gzip": 199,
-      "brotli": 170
+      "raw": 450,
+      "gzip": 205,
+      "brotli": 195
     },
     {
       "export": "attr",
       "name": "attr",
       "raw": 343,
-      "gzip": 159,
-      "brotli": 145
+      "gzip": 158,
+      "brotli": 138
     },
     {
       "export": "bind",
       "name": "bind",
-      "raw": 1839,
-      "gzip": 763,
-      "brotli": 686
+      "raw": 1836,
+      "gzip": 762,
+      "brotli": 711
     },
     {
       "export": "init",
       "name": "init",
-      "raw": 943,
-      "gzip": 411,
-      "brotli": 371
+      "raw": 942,
+      "gzip": 410,
+      "brotli": 388
     },
     {
       "export": "on",
       "name": "on",
-      "raw": 1312,
-      "gzip": 580,
-      "brotli": 507
+      "raw": 1311,
+      "gzip": 583,
+      "brotli": 493
     },
     {
       "export": "onInterval",
       "name": "on-interval",
       "raw": 526,
-      "gzip": 257,
-      "brotli": 227
+      "gzip": 255,
+      "brotli": 270
     },
     {
       "export": "onIntersect",
       "name": "on-intersect",
-      "raw": 1229,
-      "gzip": 533,
-      "brotli": 482
+      "raw": 1228,
+      "gzip": 535,
+      "brotli": 498
     },
     {
       "export": "onSignalPatch",
       "name": "on-signal-patch",
-      "raw": 1094,
-      "gzip": 476,
-      "brotli": 424
+      "raw": 1093,
+      "gzip": 468,
+      "brotli": 413
     },
     {
       "export": "jsonSignals",
       "name": "json-signals",
       "raw": 249,
-      "gzip": 123,
-      "brotli": 114
+      "gzip": 120,
+      "brotli": 126
     },
     {
       "export": "indicator",
       "name": "indicator",
       "raw": 374,
-      "gzip": 184,
-      "brotli": 154
+      "gzip": 182,
+      "brotli": 182
     },
     {
       "export": "onResize",
       "name": "on-resize",
-      "raw": 898,
+      "raw": 897,
       "gzip": 385,
-      "brotli": 351
+      "brotli": 334
     },
     {
       "export": "onRaf",
       "name": "on-raf",
-      "raw": 925,
-      "gzip": 399,
-      "brotli": 361
+      "raw": 924,
+      "gzip": 397,
+      "brotli": 342
     },
     {
       "export": "matchMedia",
       "name": "match-media",
       "raw": 374,
-      "gzip": 193,
-      "brotli": 166
+      "gzip": 195,
+      "brotli": 152
     },
     {
       "export": "scrollIntoView",
       "name": "scroll-into-view",
       "raw": 415,
       "gzip": 198,
-      "brotli": 163
+      "brotli": 161
     },
     {
       "export": "customValidity",
       "name": "custom-validity",
       "raw": 269,
       "gzip": 131,
-      "brotli": 109
+      "brotli": 100
     },
     {
       "export": "persist",
       "name": "persist",
       "raw": 317,
-      "gzip": 159,
-      "brotli": 134
+      "gzip": 160,
+      "brotli": 153
     },
     {
       "export": "queryString",
       "name": "query-string",
-      "raw": 1353,
-      "gzip": 553,
-      "brotli": 488
+      "raw": 1351,
+      "gzip": 556,
+      "brotli": 479
     },
     {
       "export": "replaceUrl",
       "name": "replace-url",
       "raw": 223,
-      "gzip": 108,
-      "brotli": 86
+      "gzip": 106,
+      "brotli": 79
     },
     {
       "export": "viewTransition",
       "name": "view-transition",
       "raw": 214,
       "gzip": 98,
-      "brotli": 81
+      "brotli": 82
     },
     {
       "export": "animate",
       "name": "animate",
-      "raw": 1359,
-      "gzip": 701,
-      "brotli": 617
+      "raw": 1357,
+      "gzip": 702,
+      "brotli": 640
     },
     {
       "export": "peek",
       "name": "@peek",
-      "raw": 140,
-      "gzip": 60,
-      "brotli": 62
+      "raw": 139,
+      "gzip": 61,
+      "brotli": 43
     },
     {
       "export": "setAll",
       "name": "@setAll",
-      "raw": 198,
-      "gzip": 87,
-      "brotli": 77
+      "raw": 197,
+      "gzip": 86,
+      "brotli": 67
     },
     {
       "export": "toggleAll",
       "name": "@toggleAll",
-      "raw": 207,
-      "gzip": 90,
-      "brotli": 79
+      "raw": 206,
+      "gzip": 89,
+      "brotli": 74
     },
     {
       "export": "fit",
       "name": "@fit",
       "raw": 195,
-      "gzip": 111,
-      "brotli": 99
+      "gzip": 107,
+      "brotli": 91
     },
     {
       "export": "clipboard",
       "name": "@clipboard",
       "raw": 199,
-      "gzip": 120,
+      "gzip": 119,
       "brotli": 98
     },
     {
       "export": "intl",
       "name": "@intl",
       "raw": 524,
-      "gzip": 209,
-      "brotli": 193
+      "gzip": 208,
+      "brotli": 208
     },
     {
       "export": "httpGet",
       "name": "@get",
-      "raw": 4226,
-      "gzip": 1913,
-      "brotli": 1715
+      "raw": 4241,
+      "gzip": 1928,
+      "brotli": 1717
     },
     {
       "export": "httpPost",
       "name": "@post",
-      "raw": 4226,
-      "gzip": 1914,
-      "brotli": 1716
+      "raw": 4241,
+      "gzip": 1929,
+      "brotli": 1718
     },
     {
       "export": "httpPut",
       "name": "@put",
-      "raw": 4226,
-      "gzip": 1914,
-      "brotli": 1715
+      "raw": 4241,
+      "gzip": 1928,
+      "brotli": 1717
     },
     {
       "export": "httpPatch",
       "name": "@patch",
-      "raw": 4226,
-      "gzip": 1914,
-      "brotli": 1714
+      "raw": 4241,
+      "gzip": 1928,
+      "brotli": 1718
     },
     {
       "export": "httpDelete",
       "name": "@delete",
-      "raw": 4226,
-      "gzip": 1913,
-      "brotli": 1714
+      "raw": 4241,
+      "gzip": 1930,
+      "brotli": 1716
     },
     {
       "export": "applyElements",
       "name": "patch-elements (morph)",
-      "raw": 4603,
-      "gzip": 1687,
-      "brotli": 1528
+      "raw": 4600,
+      "gzip": 1683,
+      "brotli": 1530
     },
     {
       "export": "applyState",
       "name": "patch-signals",
       "raw": 241,
-      "gzip": 122,
-      "brotli": 100
+      "gzip": 115,
+      "brotli": 93
     },
     {
       "export": "boost",
       "name": "boost",
-      "raw": 1035,
-      "gzip": 454,
-      "brotli": 395
+      "raw": 1033,
+      "gzip": 452,
+      "brotli": 379
     },
     {
       "export": "cloak",
       "name": "cloak",
       "raw": 150,
-      "gzip": 68,
-      "brotli": 62
+      "gzip": 67,
+      "brotli": 54
     },
     {
       "export": "collapse",
       "name": "collapse",
-      "raw": 793,
+      "raw": 791,
       "gzip": 393,
-      "brotli": 353
+      "brotli": 369
     },
     {
       "export": "html",
       "name": "html",
       "raw": 177,
       "gzip": 87,
-      "brotli": 76
+      "brotli": 65
     },
     {
       "export": "mask",
       "name": "mask",
       "raw": 567,
-      "gzip": 272,
-      "brotli": 246
+      "gzip": 275,
+      "brotli": 233
     },
     {
       "export": "removeMe",
       "name": "remove-me",
       "raw": 315,
-      "gzip": 160,
-      "brotli": 143
+      "gzip": 161,
+      "brotli": 166
     },
     {
       "export": "teleport",
       "name": "teleport",
       "raw": 347,
-      "gzip": 162,
-      "brotli": 147
+      "gzip": 161,
+      "brotli": 161
     },
     {
       "export": "transition",
       "name": "transition",
-      "raw": 829,
-      "gzip": 436,
-      "brotli": 386
+      "raw": 827,
+      "gzip": 433,
+      "brotli": 369
     },
     {
       "export": "trap",
       "name": "trap",
-      "raw": 1105,
+      "raw": 1103,
       "gzip": 488,
-      "brotli": 428
+      "brotli": 427
     },
     {
       "export": "confirm",
       "name": "@confirm",
       "raw": 105,
       "gzip": 52,
-      "brotli": 44
+      "brotli": 38
     },
     {
       "export": "dispatch",
       "name": "@dispatch",
       "raw": 165,
-      "gzip": 67,
-      "brotli": 60
+      "gzip": 68,
+      "brotli": 56
     },
     {
       "export": "websocket",
       "name": "@ws",
-      "raw": 687,
-      "gzip": 333,
-      "brotli": 295
+      "raw": 685,
+      "gzip": 334,
+      "brotli": 293
     }
   ]
 }

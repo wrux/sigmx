@@ -46,7 +46,7 @@ The kernel is close to its floor for what it does; build targets from `es2021` t
 | morph without the pantry | – | 150 | elements with ids cannot move across ancestors; they are recreated |
 | patch-elements without full-document responses | – | 95 | responses containing `<html>`, `<head>` or `<body>` |
 
-Two levers change nothing for people who do not use the feature and are the natural next step: making form encoding a plugin the request client looks up (`formEncoding`, about 190 bytes only when registered), and splitting the retry policy the same way. The rest trade documented behaviour for a few dozen bytes, which is not worth it by default; the numbers are here so the trade is explicit if you ever need it. Regenerate the table with `node scripts/explore-size.mjs`.
+Two levers change nothing for people who do not use the feature and are the natural next step: making form encoding a plugin the request client looks up (`formEncoding`, about 190 bytes only when registered), and splitting the retry policy the same way. The rest trade documented behaviour for a few dozen bytes, which is not worth it by default; the numbers are here so the trade is explicit if you ever need it. The table was measured with a throwaway script at the time; the sizes it quotes are from that build.
 
 ## Exotic options, measured
 

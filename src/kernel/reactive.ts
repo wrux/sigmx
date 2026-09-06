@@ -194,7 +194,10 @@ export const flush = (): void => {
   try {
     let guard = 0;
     while (queue.size) {
-      if (++guard > 1e5) throw new Error('effect loop');
+      if (++guard > 1e5) {
+        queue.clear(); // leave nothing behind, or every later flush would trip the same guard
+        throw new Error('effect loop');
+      }
       const e = queue.values().next().value as Effect;
       queue.delete(e);
       e._exec();

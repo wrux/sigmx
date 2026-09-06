@@ -1,0 +1,146 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  core:
+    name: core (node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [20, 22]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run check
+      - run: npm test
+      - run: npm run size
+
+  sdks:
+    name: sdks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            sdks/*/package-lock.json
+      - run: npm ci
+      - run: npm run build
+      - name: astro
+        working-directory: sdks/astro
+        run: |
+          npm ci
+          npm test
+      - name: hono
+        working-directory: sdks/hono
+        run: |
+          npm ci
+          npm test
+
+  browser:
+    name: browser
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:browser
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report
+          retention-days: 7
+
+  website:
+    name: docs site
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            sdks/astro/package-lock.json
+            website/package-lock.json
+      - run: npm ci
+      - run: npm run build
+      - name: build @sigmx/astro
+        working-directory: sdks/astro
+        run: |
+          npm ci
+          npm run build
+      - name: build the site
+        working-directory: website
+        run: |
+          npm ci
+          npm run build
+
+  examples:
+    name: examples
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            sdks/hono/package-lock.json
+            examples/*/package-lock.json
+      - run: npm ci
+      - run: npm run build
+      - name: build @sigmx/hono
+        working-directory: sdks/hono
+        run: |
+          npm ci
+          npm run build
+      - name: vite
+        working-directory: examples/vite
+        run: |
+          npm ci
+          npm run build
+      - name: astro
+        working-directory: examples/astro
+        run: |
+          npm ci
+          npm run build
+      - name: hono
+        working-directory: examples/hono
+        run: |
+          npm ci
+          npm run check
+      - name: express
+        working-directory: examples/express
+        run: |
+          npm ci
+          node --check server.js

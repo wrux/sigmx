@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { batch, computed, effect, signal, untracked } from '../dist/kernel/reactive.js';
+import { batch, computed, effect, signal, untracked } from '../../dist/kernel/reactive.js';
 
 test('effect re-runs only when a dependency changes', () => {
   const a = signal(1);

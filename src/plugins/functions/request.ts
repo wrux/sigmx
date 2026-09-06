@@ -93,7 +93,8 @@ const send = async (method: string, ctx: ActionCtx, url: string, o: RequestOptio
         form.reportValidity();
         return;
       }
-      const submitter = evt instanceof SubmitEvent ? evt.submitter : el instanceof HTMLButtonElement ? el : null;
+      const submitter =
+        evt instanceof SubmitEvent ? evt.submitter : el instanceof HTMLButtonElement && el.form === form ? el : null;
       const fd = new FormData(form, submitter);
       const multipart = form.enctype === 'multipart/form-data';
       if (bodyAllowed) {

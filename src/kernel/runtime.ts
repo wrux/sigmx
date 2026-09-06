@@ -15,7 +15,7 @@ import type {
 import { effect } from './reactive.js';
 import { createStore } from './state.js';
 
-const isEl = (n: Node): n is El => n instanceof HTMLElement || n instanceof SVGElement || n instanceof MathMLElement;
+const isEl = (n: Node): n is El => n.nodeType === 1;
 /** An element (or shadow root) followed by every element under it; nothing for text and comment nodes. */
 const tree = (n: Node): El[] =>
   isEl(n) ? [n, ...n.querySelectorAll<El>('*')] : n instanceof ShadowRoot ? [...n.querySelectorAll<El>('*')] : [];
@@ -101,15 +101,25 @@ export const createRuntime = (options: RuntimeOptions): Sigmx => {
     m?.delete(attr);
   };
 
-  const actionsFor = (el: El, evt: Event | undefined, error: Ctx['error'], cleanup: (fn: () => void) => void) => {
+  const actionsFor = (
+    el: El,
+    evt: Event | undefined,
+    error: Ctx['error'],
+    cleanup: (fn: () => void) => void,
+    report: (e: unknown) => void,
+  ) => {
     const ctx: ActionCtx = { el, evt, store, runtime, error, cleanup };
     return new Proxy(
       {},
       {
         get:
           (_, name: string) =>
-          (...args: any[]) =>
-            runtime.call(name, ctx, args),
+          (...args: any[]) => {
+            const r = runtime.call(name, ctx, args);
+            // Async actions (requests) reject long after the expression returned; route that to onError.
+            if (r instanceof Promise) r.catch(report);
+            return r;
+          },
       },
     );
   };
@@ -135,7 +145,7 @@ export const createRuntime = (options: RuntimeOptions): Sigmx => {
       cased: (style = 'camel') => recase(key ?? '', (mods.get('case')?.[0] as CaseStyle) || style),
       evaluate: (evt, ...args) => {
         fn ??= expressions(value, ['el', 'evt', ...(plugin.args ?? [])], plugin.returns ?? true);
-        return fn(store, actionsFor(el, evt, error, ctx.cleanup), el, evt, ...args);
+        return fn(store, actionsFor(el, evt, error, ctx.cleanup, report), el, evt, ...args);
       },
       effect: (f) => disposers.push(effect(f, report)),
       listen: (target, type, f, opts) => {
@@ -181,7 +191,8 @@ export const createRuntime = (options: RuntimeOptions): Sigmx => {
       if (ignored(el)) continue;
       for (const { name, value } of [...el.attributes]) {
         const raw = strip(name);
-        if (raw) mount(el, name, raw, value, only);
+        // Observers can report a subtree more than once (nested insertions); a mounted attribute stays as it is.
+        if (raw && !mounted.get(el)?.has(name)) mount(el, name, raw, value, only);
       }
     }
   };

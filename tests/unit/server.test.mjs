@@ -13,7 +13,7 @@ import {
   sse,
   sseStream,
   validateSignals,
-} from '../dist/server.js';
+} from '../../dist/server.js';
 
 test('event formatting', () => {
   assert.equal(
