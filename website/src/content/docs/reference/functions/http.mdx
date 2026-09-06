@@ -92,9 +92,9 @@ A long-running job streams progress: signals and elements update as each event l
 Send exactly what you choose. The demo posts to the form endpoint with an explicit payload, so no form is involved.
 
 <Live title="explicit payload" html={`
-<div data-signals="{ email: 'ada@example.com', _draft: 'never sent' }">
-  <div class="row"><input data-bind:email> <button data-on:click="@post('/api/form', { payload: { email: $email, message: 'hello from a payload' }, headers: { 'X-Demo': 'payload' } })">Post payload</button></div>
-  <p id="form-status" class="muted">Signals starting with <code>_</code> such as <code>_draft</code> are never sent by default; <code>filter</code> changes that.</p>
+<div data-signals="{ email: 'ada@example.com', _draft: 'never sent', done: '' }">
+  <div class="row"><input data-bind:email> <button data-on:click="@post('/api/form', { payload: { email: $email, message: 'hello from a payload' }, headers: { 'X-Demo': 'payload' } }).then(() => $done = 'posted; the reply patched the status line of the form demo above')">Post payload</button> <span class="muted" data-text="$done"></span></div>
+  <p class="muted">Signals starting with <code>_</code> such as <code>_draft</code> are never sent by default; <code>filter</code> changes that.</p>
 </div>
 `} />
 
