@@ -99,6 +99,16 @@ test('pulls a kept element out of a removed ancestor and into a new one', (t) =>
   assert.equal(a.querySelector('section'), null);
 });
 
+test('pulling in a kept element keeps the unkeyed siblings that follow', (t) => {
+  const a = mount(t, '<div><section><p id="k">k</p></section><input value="v"><span>tail</span></div>');
+  const input = a.querySelector('input');
+  input.value = 'typed';
+  morph(a, el('<div><p id="k">k2</p><input value="v"><span>tail</span></div>'));
+  assert.equal(a.querySelector('input'), input, 'the input without an id is reused');
+  assert.equal(input.value, 'typed');
+  assert.equal(a.textContent, 'k2tail');
+});
+
 test('an id that changes tag is recreated rather than kept', (t) => {
   const a = mount(t, '<div><span id="k">a</span></div>');
   const span = a.querySelector('#k');

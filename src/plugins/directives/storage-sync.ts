@@ -8,7 +8,13 @@ import { dir } from '../def.js';
 export const persist = dir('persist', 0, ({ key, value, evaluate, store, effect }) => {
   const name = key || 'sigmx';
   const filter = value ? evaluate() : undefined;
-  const saved = localStorage.getItem(name);
-  if (saved) store.merge(JSON.parse(saved));
-  effect(() => localStorage.setItem(name, JSON.stringify(store.snapshot(filter, { computed: false }))));
+  try {
+    const saved = localStorage.getItem(name);
+    if (saved) store.merge(JSON.parse(saved));
+  } catch {} // corrupted or blocked storage: start from the declared defaults
+  effect(() => {
+    try {
+      localStorage.setItem(name, JSON.stringify(store.snapshot(filter, { computed: false })));
+    } catch {} // quota exceeded or storage disabled: keep working in memory
+  });
 });

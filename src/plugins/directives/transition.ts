@@ -18,7 +18,7 @@ export const transition = dir('transition', 6, ({ el, mods, evaluate, effect }) 
     if (open === last) return; // a dependency changed but the outcome did not: leave the element alone
     last = open;
     anim?.cancel();
-    if (first) {
+    if (first || !el.animate) {
       first = false;
       style.display = open ? initial : 'none';
       return;

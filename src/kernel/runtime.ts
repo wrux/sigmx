@@ -116,7 +116,7 @@ export const createRuntime = (options: RuntimeOptions): Sigmx => {
       cased: (style = 'camel') => recase(key ?? '', (mods.get('case')?.[0] as CaseStyle) || style),
       evaluate: (evt, ...args) => {
         fn ??= expressions(value, ['el', 'evt', ...(plugin.args ?? [])], plugin.returns ?? true);
-        const actx: ActionCtx = { el, evt, store, runtime, error, cleanup };
+        const actx: ActionCtx = { el, evt, store, runtime, error, cleanup, report };
         const actions = new Proxy(
           {},
           {
@@ -146,6 +146,7 @@ export const createRuntime = (options: RuntimeOptions): Sigmx => {
       },
       cleanup,
       error,
+      report,
       store,
       runtime,
     };
@@ -160,8 +161,9 @@ export const createRuntime = (options: RuntimeOptions): Sigmx => {
     });
 
     try {
-      const r = plugin.mount(ctx);
-      if (typeof r === 'function') cleanup(r);
+      const r: unknown = plugin.mount(ctx);
+      if (typeof r === 'function') cleanup(r as () => void);
+      else if (r instanceof Promise) r.catch(report); // an async mount that rejects is reported, not lost
     } catch (e) {
       report(e);
     }

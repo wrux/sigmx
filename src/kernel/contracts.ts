@@ -48,6 +48,8 @@ export interface Ctx {
   listen(target: EventTarget, type: string, fn: (e: any) => void, options?: AddEventListenerOptions): void;
   cleanup(fn: () => void): void;
   error(message: string, extra?: Record<string, unknown>): Error;
+  /** Route an error that happened later (a callback, a promise) to `onError` with this attribute's info. */
+  report(error: unknown): void;
   store: Store;
   runtime: Runtime;
 }
@@ -58,6 +60,8 @@ export interface ActionCtx {
   store: Store;
   runtime: Runtime;
   error(message: string, extra?: Record<string, unknown>): Error;
+  /** Route an error that happened later (a callback, a promise) to `onError` with this attribute's info. */
+  report(error: unknown): void;
   /** Run when the attribute that invoked the action is torn down. */
   cleanup(fn: () => void): void;
 }

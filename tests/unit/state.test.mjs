@@ -37,6 +37,28 @@ test('arrays notify on in-place mutation; computeds live in the store', () => {
   assert.throws(() => s.set('count', 9));
 });
 
+test('objects nested in an array signal are reactive, and array methods notify once', () => {
+  const s = createStore();
+  s.set('todos', [{ done: false }, { done: false }]);
+  const seen = [];
+  effect(() => seen.push(s.get('todos').filter((t) => t.done).length));
+  s.get('todos')[0].done = true;
+  assert.deepEqual(seen, [0, 1], 'in-place mutation of a nested object notifies');
+  let runs = 0;
+  effect(() => {
+    s.get('todos').length;
+    runs++;
+  });
+  s.get('todos').push({ done: true });
+  s.get('todos').splice(0, 1);
+  assert.equal(runs, 3, 'push and splice each notify exactly once');
+  assert.deepEqual(
+    s.snapshot(undefined, { at: 'todos' }),
+    {},
+    'a snapshot rooted at a leaf is empty, not { "": value }',
+  );
+});
+
 test('patch events are batched and nested; removals are null', () => {
   const s = createStore();
   const patches = [];

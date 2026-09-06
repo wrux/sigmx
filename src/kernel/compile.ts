@@ -11,11 +11,19 @@ export const functionCompiler: Compiler = (params, body) => Function(...params, 
 
 const cache = new Map<string, (...args: any[]) => any>();
 
-/** Replace `@name(` with `__a.name(` outside string literals. (Inside a comment the rewrite is harmless.) */
+/**
+ * Replace `@name(` with `__a.name(` outside string literals, including inside the `${…}` holes of
+ * template literals. (Inside a comment the rewrite is harmless.)
+ */
 export const rewriteActions = (src: string): string =>
   src.replace(
-    /("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)|@([A-Za-z_$][\w$]*)\s*\(/g,
-    (_, quoted, name) => quoted ?? `__a.${name}(`,
+    /("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')|`((?:[^`\\]|\\.)*)`|@([A-Za-z_$][\w$]*)\s*\(/g,
+    (m, quoted, tpl, name) =>
+      quoted
+        ? m
+        : tpl !== undefined
+          ? `\`${tpl.replace(/\$\{((?:[^{}]|\{[^{}]*\})*)\}/g, (_: string, e: string) => `\${${rewriteActions(e)}}`)}\``
+          : `__a.${name}(`,
   );
 
 /** Split on top-level semicolons, skipping strings and comments. Used by the build-time precompiler. */

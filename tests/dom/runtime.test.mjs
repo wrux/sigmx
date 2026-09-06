@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { attribute, handler, parseAttr } from '../../dist/kernel/index.js';
 import { text } from '../../dist/plugins/index.js';
-import { app, lastEvent, tick } from './helpers.mjs';
+import { app, lastEvent, tick, until } from './helpers.mjs';
 
 test('parseAttr splits plugin, key and modifiers', () => {
   assert.deepEqual(parseAttr('on:click__debounce.300ms__prevent'), {
@@ -74,6 +74,26 @@ test('expressions see el, evt and can call actions; unknown actions are reported
   assert.equal($.type, 'click');
   el.nextElementSibling.click();
   assert.match(errors.at(-1).message, /unknown action @nope/);
+});
+
+test('plugins can report later failures; an async mount that rejects is reported too', async (t) => {
+  const later = attribute({
+    name: 'later',
+    mount: ({ report }) => {
+      setTimeout(() => report(new Error('from a callback')), 1);
+    },
+  });
+  const asyncMount = attribute({
+    name: 'async-mount',
+    mount: async () => {
+      throw new Error('async');
+    },
+  });
+  const { render, errors } = app(t, { plugins: [later, asyncMount] });
+  const el = await render('<div data-later data-async-mount></div>');
+  await until(() => errors.length === 2);
+  assert.deepEqual(errors.map((e) => e.message).sort(), ['async', 'from a callback']);
+  assert.equal(errors.find((e) => e.message === 'async').info.el, el);
 });
 
 test('use() registers plugins late and applies them to already-observed roots', async (t) => {

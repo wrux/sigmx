@@ -2,6 +2,16 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { app } from '../helpers.mjs';
 
+test('persist survives corrupted storage', async (t) => {
+  localStorage.setItem('corrupt', '{not json');
+  t.after(() => localStorage.removeItem('corrupt'));
+  const { $, render, errors } = app(t);
+  await render('<div data-persist:corrupt></div>');
+  $.x = 1;
+  assert.equal(errors.length, 0);
+  assert.deepEqual(JSON.parse(localStorage.getItem('corrupt')), { x: 1 });
+});
+
 test('persist restores from storage on mount and saves every change', async (t) => {
   localStorage.clear();
   sessionStorage.clear();

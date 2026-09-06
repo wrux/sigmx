@@ -94,6 +94,16 @@ const send = async (method: string, ctx: ActionCtx, url: string, o: RequestOptio
     wait = Math.min(wait * retry.factor, retry.max);
   };
 
+  // Exceptions thrown while applying a response are the page's problem, not the network's: no retry.
+  let applyError: unknown;
+  const apply = (fn: () => void) => {
+    try {
+      fn();
+    } catch (e) {
+      applyError = e;
+      throw e;
+    }
+  };
   emit('started');
   try {
     const req = build();
@@ -117,21 +127,26 @@ const send = async (method: string, ctx: ActionCtx, url: string, o: RequestOptio
             if (e.id !== undefined) lastId = e.id;
             if (e.retry) wait = retry.interval = e.retry;
             const data = parseFields(e.data);
-            runtime.emit('server-event', { el, event: e.event, data });
-            runtime.handle(e.event, data);
+            apply(() => {
+              runtime.emit('server-event', { el, event: e.event, data });
+              runtime.handle(e.event, data);
+            });
           });
           if (!o.reconnect) return;
           await backoff();
           continue;
         }
         const text = await res.text();
-        if (ct.includes('text/html'))
-          runtime.handle('patch-elements', headerArgs(res, ['selector', 'mode'], { elements: text }));
-        else if (ct.includes('application/json'))
-          runtime.handle('patch-signals', headerArgs(res, ['only-if-missing'], { signals: text }));
+        apply(() => {
+          if (ct.includes('text/html'))
+            runtime.handle('patch-elements', headerArgs(res, ['selector', 'mode'], { elements: text }));
+          else if (ct.includes('application/json'))
+            runtime.handle('patch-signals', headerArgs(res, ['only-if-missing'], { signals: text }));
+        });
         return;
-      } catch {
+      } catch (e) {
         if (ac.signal.aborted) return;
+        if (applyError) throw e;
         await backoff();
       }
     }

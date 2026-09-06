@@ -6,8 +6,8 @@ import { dir } from '../def.js';
  * is morphed into the current page, with history entries: `boost` on a container (or `body`).
  * Needs `httpGet`, `httpPost` and `applyElements`. `__replace` replaces the history entry instead.
  */
-export const boost = dir('boost', 10, ({ el, store, runtime, listen, error, cleanup }) => {
-  const ctx: ActionCtx = { el, store, runtime, error, cleanup };
+export const boost = dir('boost', 10, ({ el, store, runtime, listen, error, cleanup, report }) => {
+  const ctx: ActionCtx = { el, store, runtime, error, cleanup, report };
   const go = (url: string, method: string, evt: Event, form?: HTMLFormElement) => {
     evt.preventDefault();
     const p = runtime.call(method, { ...ctx, el: form ?? el, evt }, [
@@ -15,7 +15,7 @@ export const boost = dir('boost', 10, ({ el, store, runtime, listen, error, clea
       { contentType: form && 'form', openWhenHidden: true },
     ]);
     history.pushState(null, '', url);
-    Promise.resolve(p).then(() => scrollTo(0, 0));
+    Promise.resolve(p).then(() => scrollTo(0, 0), report);
   };
   listen(el, 'click', (e: MouseEvent) => {
     const a = (e.target as Element).closest('a[href]') as HTMLAnchorElement | null;

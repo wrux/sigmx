@@ -137,18 +137,25 @@ export const createStore = (): Store => {
 
   const has = (p: string): boolean => leaves.has(p) || kids.has(p);
 
-  /** Arrays are returned through a proxy so in-place mutation notifies the leaf. */
-  const wrapArray = (raw: any[], s: Signal<any>, p: string): any => {
+  /**
+   * Arrays are returned through a proxy so in-place mutation notifies the leaf: writes anywhere
+   * inside (nested objects and arrays included) bump the leaf, and array methods run as one batch.
+   */
+  const wrap = (raw: object, touch: () => boolean): any => {
     let px = arrCache.get(raw);
     if (!px) {
-      const touch = () => {
-        pending.set(p, raw);
-        s.bump();
-        return true;
-      };
       px = new Proxy(raw, {
+        get: (t, k, r) => {
+          const v = Reflect.get(t, k, r);
+          if (typeof v === 'function' && Array.isArray(t)) return (...a: any[]) => batch(() => v.apply(r, a));
+          return v && typeof v === 'object' && (Array.isArray(v) || isPlain(v)) ? wrap(v, touch) : v;
+        },
         set: (t, k, v) => {
           (t as any)[k] = v;
+          return touch();
+        },
+        deleteProperty: (t, k) => {
+          delete (t as any)[k];
           return touch();
         },
       });
@@ -156,6 +163,12 @@ export const createStore = (): Store => {
     }
     return px;
   };
+  const wrapArray = (raw: any[], s: Signal<any>, p: string): any =>
+    wrap(raw, () => {
+      pending.set(p, raw);
+      s.bump();
+      return true;
+    });
 
   const get = (p: string): any => {
     const s = leaves.get(p);
@@ -224,7 +237,7 @@ export const createStore = (): Store => {
     const out: Patch = {};
     const rel = (p: string) => (at ? p.slice(at.length + 1) : p);
     for (const [p, s] of leaves)
-      if (under(p, at) && ok(p) && (computed || !(s instanceof Computed))) expand(out, rel(p), s.value);
+      if (p !== at && under(p, at) && ok(p) && (computed || !(s instanceof Computed))) expand(out, rel(p), s.value);
     return out;
   };
 

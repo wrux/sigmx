@@ -154,6 +154,25 @@ test('status errors emit a sigmx-fetch error and do not throw; onStatusError ret
   await until(() => $.ok === 3);
 });
 
+test('an exception while applying a response is reported once and not retried', async (t) => {
+  const calls = mockFetch(
+    t,
+    () =>
+      new native.Response('<p>x</p>', {
+        headers: { 'content-type': 'text/html', 'sigmx-selector': '#t', 'sigmx-mode': 'sideways' },
+      }),
+  );
+  const { render, errors } = app(t);
+  const el = await render(
+    '<div id="t"><button data-on:click="@get(\'/api/bad-mode\', { retry: { interval: 1 } })"></button></div>',
+  );
+  await click(el.querySelector('button'));
+  await until(() => errors.length === 1);
+  await tick(30);
+  assert.equal(calls.length, 1, 'no retry for a handler error');
+  assert.match(errors[0].message, /GET \/api\/bad-mode/);
+});
+
 test('a second request to the same URL aborts the first unless abort is none; unmount aborts too', async (t) => {
   const pending = [];
   mockFetch(

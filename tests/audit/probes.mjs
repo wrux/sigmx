@@ -346,7 +346,7 @@ probe('store', 'arrays notify on push', async (h) => {
   assert.equal(seen[0], 1);
   assert.equal(seen.at(-1), 2);
 });
-gone('store', 'arrays notify on delete arr[i]', async (h) => {
+probe('store', 'arrays notify on delete arr[i]', async (h) => {
   const s = h.build.kernel.createStore();
   s.set('items', [1, 2]);
   const seen = [];

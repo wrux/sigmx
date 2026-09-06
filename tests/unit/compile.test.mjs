@@ -7,6 +7,11 @@ test('rewriteActions only touches @name( outside strings', () => {
   assert.equal(rewriteActions("@post('/x', {a: '@nope('})"), "__a.post('/x', {a: '@nope('})");
   assert.equal(rewriteActions('a@b.com'), 'a@b.com');
   assert.equal(rewriteActions('@ fit(1)'), '@ fit(1)');
+  assert.equal(
+    rewriteActions('`x=${@fit(1, 0, 1, 0, 9)} ${"@not("}`'),
+    '`x=${__a.fit(1, 0, 1, 0, 9)} ${"@not("}`',
+    'template holes are rewritten, strings inside them are not',
+  );
 });
 
 test('splitStatements respects nesting and strings', () => {

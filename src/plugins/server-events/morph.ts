@@ -118,8 +118,14 @@ const morphChildren = (parent: Node, next: Node, ctx: Ctx): void => {
   for (const nb of [...next.childNodes]) {
     const kept = isEl(nb) && ctx.keep.get(nb.id);
     if (kept) {
-      if (dropUntil(kept) && cur) cur = kept.nextSibling;
-      else place(parent, kept, cur);
+      // Ahead among the old siblings: drop what precedes it. Elsewhere (moved, or inside a removed
+      // subtree): pull it in here and leave the remaining old siblings for the next new children.
+      let m: Node | null = cur;
+      while (m && m !== kept) m = m.nextSibling;
+      if (m) {
+        dropUntil(kept);
+        cur = kept.nextSibling;
+      } else place(parent, kept, cur);
       morphNode(kept, nb, ctx);
       continue;
     }

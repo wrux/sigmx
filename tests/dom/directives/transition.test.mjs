@@ -34,6 +34,20 @@ test('transition sets display on mount and animates later flips, hiding after th
   assert.equal(el.style.display, 'none');
 });
 
+test('transition falls back to a plain display switch without the Web Animations API', async (t) => {
+  const original = Element.prototype.animate;
+  Element.prototype.animate = undefined;
+  t.after(() => (Element.prototype.animate = original));
+  const { $, render, errors } = app(t);
+  $.open = false;
+  const el = await render('<div data-transition="$open"></div>');
+  $.open = true;
+  assert.equal(el.style.display, '');
+  $.open = false;
+  assert.equal(el.style.display, 'none');
+  assert.equal(errors.length, 0);
+});
+
 test('transition ignores dependency changes that keep the same outcome', async (t) => {
   const calls = fakeAnimate(t);
   const { $, render } = app(t);
