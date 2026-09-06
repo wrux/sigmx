@@ -2,12 +2,16 @@ import cloudflare from '@astrojs/cloudflare';
 import starlight from '@astrojs/starlight';
 import sigmx from '@sigmx/astro';
 import { defineConfig } from 'astro/config';
+import { satteriWasmStub } from './vite/satteri-wasm-stub.mjs';
 
 export default defineConfig({
   site: 'https://sigmx.dev',
   // Prerendered pages are optimised with sharp at build time; the on-demand routes only stream
-  // markup, so no Images binding is needed at runtime.
-  adapter: cloudflare({ imageService: 'compile' }),
+  // markup, so no Images binding is needed at runtime. Prerendering stays in Node: the Workers
+  // sandbox forbids WebAssembly compilation, which Shiki's highlighter needs.
+  adapter: cloudflare({ imageService: 'compile', prerenderEnvironment: 'node' }),
+  // The Workers bundle would otherwise fail to resolve satteri's wasm fallback; see vite/satteri-wasm-stub.mjs.
+  vite: { plugins: [satteriWasmStub()] },
   redirects: {
     '/guides/auto-mode/': '/tooling/auto-mode/',
     '/guides/precompiled-expressions/': '/tooling/precompiled-expressions/',
