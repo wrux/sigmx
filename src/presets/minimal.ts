@@ -4,5 +4,4 @@ import { on } from '../plugins/directives/event-listener.js';
 import { text } from '../plugins/directives/text-content.js';
 import { show } from '../plugins/directives/visibility.js';
 
-/** The smallest useful set: declare, read, toggle. */
 export const minimal: Plugin[] = [signals, text, show, on];

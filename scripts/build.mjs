@@ -5,7 +5,6 @@ import * as esbuild from 'esbuild';
 // Start clean so renamed or removed modules never linger in the published package.
 rmSync('dist', { recursive: true, force: true });
 
-// Library output: one ESM file per source module (consumers' bundlers tree-shake), plus .d.ts via tsc.
 await esbuild.build({
   entryPoints: globSync('src/**/*.ts'),
   outdir: 'dist',

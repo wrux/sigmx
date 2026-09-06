@@ -72,7 +72,6 @@ export const rewriteSignals = (src: string): string => {
   return out;
 };
 
-/** The strict-mode function body for one expression: same semantics as the runtime compiler. */
 export const compileBody = (src: string, returns: boolean): string => {
   const code = rewriteSignals(rewriteActions(src.trim()));
   if (!returns) return code;
@@ -83,7 +82,6 @@ export const compileBody = (src: string, returns: boolean): string => {
 
 export type Extracted = { src: string; params: string[]; returns: boolean };
 
-/** JavaScript source for a module exporting `table`, from a list of extracted expressions. */
 export const generateTable = (items: Extracted[]): string => {
   const seen = new Set<string>();
   const lines: string[] = [];

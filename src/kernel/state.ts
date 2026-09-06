@@ -1,5 +1,3 @@
-// Path-keyed signal store with JSON merge-patch semantics. No DOM dependency.
-
 import { expand, type Filter, isPlain, toPredicate } from '../lib/objects.js';
 import { batch, Computed, onSettled, Signal } from './reactive.js';
 
@@ -14,15 +12,11 @@ export interface Store {
   merge(patch: Patch, options?: { at?: string; ifMissing?: boolean }): void;
   remove(path: string): void;
   has(path: string): boolean;
-  /** Install a computed (or any signal) as the leaf at a path. */
   define(path: string, node: Signal<any>): void;
-  /** Leaf paths, optionally filtered. */
   paths(filter?: Filter): string[];
-  /** Plain-object copy of the store or a namespace. */
   snapshot(filter?: Filter, options?: { at?: string; computed?: boolean }): Patch;
   /** Called after each settled batch with the nested object of changed paths (null = removed). */
   onPatch(fn: (patch: Patch) => void): () => void;
-  /** Root namespace proxy: `$.count`, `$.user.name = 'x'`, `JSON.stringify($)`. */
   readonly $: any;
   /** Identifier scope for compiled expressions: resolves `$count`, `$user`, and `$`. */
   readonly scope: object;

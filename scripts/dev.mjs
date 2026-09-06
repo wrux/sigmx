@@ -1,5 +1,3 @@
-// Zero-dependency dev server: static files plus test endpoints for the fetch client.
-
 import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { createServer } from 'node:http';

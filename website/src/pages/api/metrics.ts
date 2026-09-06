@@ -6,7 +6,6 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const drift = (v: number, min: number, max: number, step: number) =>
   Math.min(max, Math.max(min, v + (Math.random() - 0.5) * step));
 
-/** A long-lived stream: one patch per tick until the client disconnects (or five minutes pass). */
 export const GET: APIRoute = ({ request }) => {
   const lastId = Number(request.headers.get('last-event-id') ?? 0);
   let cpu = 35,

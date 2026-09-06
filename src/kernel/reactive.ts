@@ -1,5 +1,3 @@
-// Reactive primitives: push invalidation, pull recomputation, version-checked effects.
-// No DOM dependency, so this module is unit-testable in plain Node.
 // Members prefixed with `_` are internal and get mangled by the build.
 
 interface Tracker {
@@ -15,9 +13,9 @@ const queue = new Set<Effect>();
 const settled = new Set<() => void>();
 
 export class Signal<T> {
-  /** @internal */ _v: T;
-  /** @internal */ _ver = 0;
-  /** @internal */ _subs = new Set<Tracker>();
+  _v: T;
+  _ver = 0;
+  _subs = new Set<Tracker>();
   constructor(v: T) {
     this._v = v;
   }
@@ -34,7 +32,6 @@ export class Signal<T> {
       this.bump();
     }
   }
-  /** Read without subscribing. */
   peek(): T {
     return this._v;
   }
@@ -73,13 +70,13 @@ const capture = <R>(t: Tracker, fn: () => R): R => {
 
 export class Computed<T> extends Signal<T> implements Tracker {
   _deps = new Map<Signal<any>, number>();
-  /** @internal */ _dirty = true;
-  /** @internal */ _fn: () => T;
+  _dirty = true;
+  _fn: () => T;
   constructor(fn: () => T) {
     super(undefined as T);
     this._fn = fn;
   }
-  /** @internal */ _refresh(): void {
+  _refresh(): void {
     if (!this._dirty) return;
     this._dirty = false;
     if (this._deps.size && !stale(this)) return;
@@ -167,7 +164,6 @@ export const effect = (fn: () => void, onError?: (e: unknown) => void): (() => v
   return () => e._dispose();
 };
 
-/** Coalesce many writes into one round of effect runs. */
 export const batch = <R>(fn: () => R): R => {
   depth++;
   try {
@@ -177,7 +173,6 @@ export const batch = <R>(fn: () => R): R => {
   }
 };
 
-/** Read signals inside `fn` without subscribing the current effect to them. */
 export const untracked = <R>(fn: () => R): R => {
   const prev = active;
   active = undefined;
@@ -188,7 +183,6 @@ export const untracked = <R>(fn: () => R): R => {
   }
 };
 
-/** Called after each flush once every queued effect has run. */
 export const onSettled = (fn: () => void): (() => void) => {
   settled.add(fn);
   return () => settled.delete(fn);

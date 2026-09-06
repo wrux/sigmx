@@ -1,0 +1,103 @@
+---
+title: "Hono"
+description: "The @sigmx/hono middleware: signals from the request, HTML, JSON and streamed patches from handlers."
+sidebar: {"order": 2}
+---
+
+`@sigmx/hono` is one middleware. After `app.use(sigmx())` every handler has `c.var.sigmx`, which reads the signals a request carries and builds the responses the client knows how to apply. Because Hono runs on Node, Bun, Deno and Cloudflare Workers, so does everything here.
+
+## Install
+
+```bash
+npm install sigmx @sigmx/hono
+```
+
+```ts
+import { Hono } from 'hono'
+import { patchElements, patchSignals, sigmx } from '@sigmx/hono'
+import { serveClient } from '@sigmx/hono/node'
+
+const app = new Hono()
+app.use(sigmx())
+app.get('/sigmx.js', serveClient())   // the script-tag build from node_modules; skip it if you bundle
+```
+
+```html
+<script type="module" src="/sigmx.js"></script>
+```
+
+## Reading signals
+
+```ts
+app.get('/api/towns', async (c) => {
+  const { q = '' } = await c.var.sigmx.signals()          // { q: 'bri' }
+  ...
+})
+```
+
+GET and DELETE requests carry signals in the `sigmx` query parameter, other methods in a JSON body, and `contentType: 'form'` requests as form fields. Pass a [Standard Schema](https://standardschema.dev) validator to get a typed result:
+
+```ts
+import { z } from 'zod'
+const Search = z.object({ q: z.string().max(40), page: z.number().int().min(1).default(1) })
+
+app.get('/api/search', async (c) => {
+  const { q, page } = await c.var.sigmx.signals(Search)   // typed; invalid input never reaches this line
+  ...
+})
+```
+
+A failing payload throws a `SignalsError`, which is a Hono `HTTPException`: the default error handling answers with a JSON body and a 422 (400 when the payload could not be parsed) without logging. Customise it with `sigmx({ onError })`.
+
+`c.var.sigmx.isRequest` is true when the sigmx client made the request, which lets one route serve a whole page to a browser navigation and a partial to sigmx.
+
+## Responding
+
+```ts
+return c.html(renderedFragment)                                              // Hono's own; morphed by id
+return c.var.sigmx.html(row, { selector: '#rows', mode: 'append' })          // targeted with headers
+return c.var.sigmx.json({ count: 3 })                                        // merged as signals
+return c.var.sigmx.events(patchElements(list), patchSignals({ stale: false }))  // several patches at once
+```
+
+The first line is worth noticing: a plain `text/html` response is already what the client wants, so `c.html()` and Hono JSX work as they are. The helpers exist for targeting, signals and streams, and every one of them accepts a JSX node or an `html` template wherever it takes markup:
+
+```tsx
+const Towns = ({ q }: { q: string }) => (
+  <ul id="towns" data-class="{ 'opacity-40': $stale }">
+    {towns.filter((t) => t.includes(q)).map((t) => <li>{t}</li>)}
+  </ul>
+)
+
+app.get('/api/towns', async (c) => {
+  const { q = '' } = await c.var.sigmx.signals()
+  return c.var.sigmx.events(patchElements(<Towns q={String(q)} />), patchSignals({ stale: false }))
+})
+```
+
+JSX attribute names may contain colons but not dots, so a modifier with an argument such as `data-on:input__debounce.200ms` is spread from an object: `<input {...{ 'data-on:input__debounce.200ms': "@get('/api/towns')" }} />`. Everything else (`data-bind:q`, `data-on:submit__prevent`, `data-attr:disabled`) is written as it would be in HTML.
+
+## Streaming
+
+```ts
+app.get('/api/progress', (c) =>
+  c.var.sigmx.stream(async (s) => {
+    await s.patchSignals({ running: true, progress: 0 })
+    for (let step = 1; step <= 10 && !s.closed; step++) {
+      await s.sleep(150)
+      await s.patchSignals({ progress: step * 10 })
+    }
+    await s.patchSignals({ running: false })
+  }),
+)
+```
+
+The stream is built on Hono's `streamSSE`: every write is awaited, `closed` turns true when the client disconnects, `sleep` resolves early on disconnect, and the response ends when the callback returns. It has `patchElements`, `patchSignals`, `removeElements`, `removeSignals`, `executeScript` and `onAbort`.
+
+## Serving the client
+
+`serveClient()` reads `sigmx.standalone.js` from the installed `sigmx` package and serves it with an ETag and a one-hour `cache-control`. It lives in `@sigmx/hono/node` because it needs a filesystem; on Workers, bundle the client into your app instead. Options: `file` to serve another file from sigmx's `dist`, `maxAge` to change the cache lifetime.
+
+## Example
+
+[`examples/hono`](https://github.com/wrux/sigmx/tree/main/examples/hono) in the repository is a complete app rendered with Hono JSX: a counter, HTML from a POST, a search whose results dim while typing and are reset by the server, a form, and a streamed progress bar, all styled with Tailwind and served without a bundler.

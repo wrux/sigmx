@@ -1,4 +1,3 @@
-// Script-tag entry: registers every plugin, starts on DOM ready, and exposes the instance as `window.sigmx`.
 import { createSigmx } from './kernel/index.js';
 import { all } from './presets/all.js';
 

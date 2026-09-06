@@ -13,7 +13,6 @@ export const POST: APIRoute = async ({ request }) => {
   const { newTodo = '' } = await readSignals(request);
   const text = String(newTodo).trim();
   if (text) addTodo(text);
-  // One response, two effects: morph the list and clear the input's signal.
   return sse(patchElements(await render()), patchSignals({ newTodo: '' }));
 };
 

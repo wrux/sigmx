@@ -54,7 +54,6 @@ import {
   websocket,
 } from '../plugins/index.js';
 
-/** Every plugin. */
 export const all: Plugin[] = [
   attr,
   bind,

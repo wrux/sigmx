@@ -41,7 +41,7 @@ Or pick plugins by hand (`sigmx/plugins` is tree-shakeable), use `sigmx/presets/
 <script type="module" src="/sigmx.standalone.js"></script>
 ```
 
-Astro users: `npm install sigmx @sigmx/astro` and add `sigmx()` to the integrations; see [sdks/astro](sdks/astro).
+Astro users: `npm install sigmx @sigmx/astro` and add `sigmx()` to the integrations; see [sdks/astro](sdks/astro). Hono users: `npm install sigmx @sigmx/hono`, then `app.use(sigmx())` gives every handler `c.var.sigmx`; see [sdks/hono](sdks/hono). Everyone else: `sigmx/server` has the same event builders, responses, streams and signal reading as plain Fetch-API code.
 
 ## How it works
 
@@ -149,9 +149,11 @@ cd website && npm install && npm run dev
 
 ```
 src/kernel/        reactive graph, store, expression compiler, runtime (DOM-free core)
+src/server.ts      sigmx/server: event builders, sse/sseStream/html/json responses, readSignals
 src/plugins/       directives, functions, server-event handlers, the morph
 src/presets/       minimal, essentials, all
 sdks/astro/        @sigmx/astro: integration, server helpers, auto mode, precompilation
+sdks/hono/         @sigmx/hono: middleware with signals(), html(), events(), stream(); serveClient()
 examples/          standalone Vite, Express, Hono and Astro projects using the published packages
 website/           documentation site
 scripts/           build, size and comparison measurements, dev server

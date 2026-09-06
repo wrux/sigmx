@@ -4,7 +4,6 @@ export const isPlain = (v: unknown): v is Record<string, any> => {
   return proto === Object.prototype || proto === null;
 };
 
-/** Write `value` at a dotted path inside `out`, creating intermediate objects. */
 export const expand = (out: Record<string, any>, path: string, value: any): Record<string, any> => {
   const keys = path.split('.');
   const last = keys.pop() as string;

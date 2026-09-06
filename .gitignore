@@ -3,8 +3,9 @@ dist
 website/node_modules
 website/dist
 website/.astro
-sdks/astro/node_modules
-sdks/astro/dist
+sdks/*/node_modules
+sdks/*/dist
 examples/*/node_modules
 examples/*/dist
 examples/*/.astro
+.DS_Store

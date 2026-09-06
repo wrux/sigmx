@@ -16,7 +16,6 @@ const validate = (step: number, o: any): Record<string, string> => {
   return e;
 };
 
-/** Validates the current step; on success advances `step`, on the last step renders a receipt. */
 export const POST: APIRoute = async ({ request }) => {
   const { step = 1, order = {} } = await readSignals(request);
   const errors = validate(Number(step), order);

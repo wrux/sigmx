@@ -1,6 +1,5 @@
 export type ServerEvent = { event: string; data: string; id?: string; retry?: number };
 
-/** Read a `text/event-stream` body, calling `onEvent` for each complete event. Resolves when the stream ends. */
 export const readEvents = async (
   body: ReadableStream<Uint8Array>,
   onEvent: (e: ServerEvent) => void,

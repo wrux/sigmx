@@ -1,4 +1,3 @@
-// Vite plugins for auto mode and precompiled expressions. Node only.
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { isAbsolute, join, relative } from 'node:path';
 import { extractExpressions, generateTable } from './kernel/precompile.js';

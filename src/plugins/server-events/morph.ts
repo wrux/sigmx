@@ -26,7 +26,6 @@ export const activateScripts = (root: Node): void => {
   }
 };
 
-/** Every element with an id in and under `n`. */
 const idsIn = (n: Node): Element[] => [...(isEl(n) && n.id ? [n] : []), ...(n as ParentNode).querySelectorAll('[id]')];
 const containsKept = (n: Node, ctx: Ctx): boolean => isEl(n) && idsIn(n).some((e) => ctx.keep.has(e.id));
 
@@ -166,13 +165,11 @@ const context = (target: Node, next: Node, o: MorphOptions): Ctx => {
   };
 };
 
-/** Morph `target` into `next` (outer). */
 export const morph = (target: Element, next: Element, o: MorphOptions = {}): void => {
   const ctx = context(target, next, o);
   morphNode(target, next, ctx);
 };
 
-/** Morph the children of `target` into the children of `next` (inner). */
 export const morphInner = (target: Element, next: ParentNode, o: MorphOptions = {}): void => {
   const ctx = context(target, next, o);
   morphChildren(target, next, ctx);

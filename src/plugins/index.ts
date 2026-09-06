@@ -1,6 +1,4 @@
-// Pure re-exports: nothing registers on import, so bundlers keep only what you use.
 export { attr } from './directives/attribute-sync.js';
-// ecosystem plugins (Alpine, htmx equivalents)
 export { boost } from './directives/boost.js';
 export { indicator } from './directives/busy-flag.js';
 export { className } from './directives/class-toggle.js';

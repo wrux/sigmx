@@ -23,7 +23,6 @@ export const createSigmx = (options: SigmxOptions = {}): Sigmx =>
     expressions: options.expressions ?? runtimeExpressions(options.compile ?? functionCompiler),
   });
 
-/** Type a plugin definition. Pure: registration is `createSigmx({ plugins })` or `sigmx.use()`. */
 export const attribute = (p: Omit<AttributePlugin, 'type'>): AttributePlugin => ({ type: 'attribute', ...p });
 export const action = (p: Omit<ActionPlugin, 'type'>): ActionPlugin => ({ type: 'action', ...p });
 export const handler = (p: Omit<HandlerPlugin, 'type'>): HandlerPlugin => ({ type: 'handler', ...p });

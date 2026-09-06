@@ -1,7 +1,9 @@
 import { dirname, join } from 'node:path';
+import { Readable } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
 import { fileURLToPath } from 'node:url';
 import express from 'express';
-import { openStream, patchElements, patchSignals, sendEvents } from './lib/sse.js';
+import { formatEvent, patchElements, patchSignals, SSE_HEADERS, sseStream } from 'sigmx/server';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -14,13 +16,17 @@ app.use('/vendor/sigmx', express.static(sigmxDist));
 
 app.get('/', (_req, res) => res.sendFile(join(here, 'index.html')));
 
+// `sigmx/server` speaks Web Request/Response; these two lines bridge to Express's res.
+const events = (res, ...list) => res.set(SSE_HEADERS).send(list.map(formatEvent).join(''));
+const pipe = (res, response) =>
+  pipeline(Readable.fromWeb(response.body), res.set(Object.fromEntries(response.headers))).catch(() => {});
+
 /** GET requests carry the signals as JSON in the `sigmx` query parameter; POST/PUT carry them in the body. */
 const signals = (req) => (req.method === 'GET' ? JSON.parse(req.query.sigmx ?? '{}') : req.body);
 
 const towns = ['Bath', 'Bristol', 'Cardiff', 'Exeter', 'Oxford'];
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 
-// Plain HTML: the client morphs it over the element with the same id.
 app.post('/api/greet', (req, res) => {
   const { name = '' } = signals(req);
   res.send(
@@ -35,7 +41,7 @@ app.get('/api/towns', (req, res) => {
   const items =
     matches.map((t) => `<li class="py-1.5">${t}</li>`).join('') ||
     '<li class="py-1.5 text-zinc-500">No towns match.</li>';
-  sendEvents(
+  events(
     res,
     patchElements(
       `<ul id="towns" class="divide-y divide-zinc-200 transition-opacity duration-200 dark:divide-zinc-800" data-class="{ 'opacity-40': $stale }">${items}</ul>`,
@@ -44,7 +50,6 @@ app.get('/api/towns', (req, res) => {
   );
 });
 
-// A form posted as application/x-www-form-urlencoded; Express parses it, the reply is HTML.
 app.post('/api/subscribe', (req, res) => {
   const email = String(req.body.email ?? '').trim();
   if (!email.includes('@'))
@@ -56,17 +61,19 @@ app.post('/api/subscribe', (req, res) => {
   );
 });
 
-// A stream that keeps delivering until the work is done or the client disconnects.
-app.get('/api/progress', async (req, res) => {
-  const stream = openStream(req, res);
-  stream.send(patchSignals({ running: true, progress: 0 }));
-  for (let step = 1; step <= 10 && stream.open; step++) {
-    await new Promise((r) => setTimeout(r, 150));
-    stream.send(patchSignals({ progress: step * 10 }));
-  }
-  stream.send(patchSignals({ running: false }));
-  stream.end();
-});
+app.get('/api/progress', (_req, res) =>
+  pipe(
+    res,
+    sseStream(async (s) => {
+      s.patchSignals({ running: true, progress: 0 });
+      for (let step = 1; step <= 10 && !s.closed; step++) {
+        await new Promise((r) => setTimeout(r, 150));
+        s.patchSignals({ progress: step * 10 });
+      }
+      s.patchSignals({ running: false });
+    }),
+  ),
+);
 
 const port = Number(process.env.PORT ?? 3000);
 app.listen(port, () => console.log(`sigmx + Express on http://localhost:${port}`));

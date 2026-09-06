@@ -13,7 +13,6 @@ import { httpDelete, httpGet, httpPatch, httpPost, httpPut } from '../plugins/fu
 import { applyElements } from '../plugins/server-events/apply-elements.js';
 import { applyState } from '../plugins/server-events/apply-state.js';
 
-/** What a typical server-driven app needs: state, rendering, events, forms and the request client with morphing. */
 export const essentials: Plugin[] = [
   signals,
   computed,

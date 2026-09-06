@@ -47,7 +47,6 @@ export const debounce = (fn: Fn, ms: number, leading = false, trailing = true): 
 export const throttle = (fn: Fn, ms: number, leading = true, trailing = false): Fn =>
   limit(fn, ms, leading, trailing, false);
 
-/** Apply `__delay`, `__debounce` and `__throttle` modifiers to a callback. */
 export const withTiming = (fn: Fn, mods: Mods): Fn => {
   const d = mods.get('delay');
   if (d) fn = delay(fn, toMs(d));
@@ -58,7 +57,6 @@ export const withTiming = (fn: Fn, mods: Mods): Fn => {
   return fn;
 };
 
-/** Wrap a callback in `document.startViewTransition` when `__viewtransition` is present and supported. */
 export const withViewTransition = (fn: Fn, mods: Mods): Fn =>
   mods.has('viewtransition') && 'startViewTransition' in document
     ? (...args) => void document.startViewTransition(() => fn(...args))

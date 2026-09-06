@@ -74,6 +74,21 @@ Two handlers ship with sigmx:
 
 GET streams pause while the tab is hidden and reconnect when it is visible again (sending `Last-Event-ID`). This job restarts from scratch on reconnect, so the demo passes `openWhenHidden: true` to keep the connection open instead.
 
+## Server helpers
+
+Everything a server needs to speak the protocol ships in the core package as `sigmx/server`: plain Fetch-API code with no framework in it.
+
+```ts
+import {
+  readSignals, validateSignals, isSigmxRequest,          // request side
+  sse, sseStream, html, json,                            // responses
+  patchElements, patchSignals, removeElements, removeSignals, executeScript,  // event builders
+  SigmxStream, formatEvent, SSE_HEADERS,                 // lower level
+} from 'sigmx/server'
+```
+
+Use it directly wherever handlers take a `Request` and return a `Response` (Hono, Bun, Deno, Cloudflare Workers, SvelteKit, Next route handlers). With Node's `http` or Express, `formatEvent` and `SSE_HEADERS` cover fixed responses and `Readable.fromWeb(sseStream(...).body)` pipes a live stream. The framework packages build on the same module: [`@sigmx/astro`](/sdks/astro/) re-exports it and [`@sigmx/hono`](/sdks/hono/) wraps it in middleware.
+
 ## Options
 
 ```ts

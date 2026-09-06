@@ -10,7 +10,6 @@ export const stopped = new Set<string>();
 const esc = (s: string) =>
   s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c] ?? c);
 
-/** A tiny canned "agent": picks a reply, optionally calls a tool, and streams it word by word. */
 const think = (prompt: string): { reply: string; tool?: { name: string; result: string } } => {
   const p = prompt.toLowerCase();
   if (p.includes('time') || p.includes('clock'))

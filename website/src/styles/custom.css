@@ -135,7 +135,6 @@
   background: var(--sl-color-accent-low);
 }
 
-/* ---- example apps ---- */
 .live-body {
   --ex-surface: var(--sl-color-bg);
   --ex-surface-2: var(--sl-color-gray-6);

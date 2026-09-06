@@ -20,7 +20,6 @@ export interface Runtime {
   readonly compiler: Compiler;
   /** Dispatch a `sigmx-<type>` CustomEvent on `document`. */
   emit(type: string, detail?: unknown): void;
-  /** Call a registered action by name. */
   call(name: string, ctx: ActionCtx, args: any[]): any;
   /** Event-name prefixes accepted from servers; the first is what sigmx itself uses. */
   readonly eventPrefixes: readonly string[];
@@ -33,13 +32,10 @@ export interface Runtime {
 
 export interface Ctx {
   el: El;
-  /** Plugin name, e.g. 'on'. */
   plugin: string;
   /** Full attribute name as written, e.g. 'data-on:click__debounce.300ms'. */
   attr: string;
-  /** The `:key` part, if any. */
   key: string | undefined;
-  /** Attribute value (the expression source). */
   value: string;
   mods: Mods;
   /** The key recased per `__case.<style>`, defaulting to `style`. */
@@ -85,7 +81,6 @@ export interface ActionPlugin {
   call(ctx: ActionCtx, ...args: any[]): any;
 }
 
-/** Handles a named server event (for example a streamed patch). */
 export interface HandlerPlugin {
   type: 'handler';
   name: string;
@@ -104,7 +99,6 @@ export interface RuntimeOptions {
   prefix?: string | string[];
   /** Server event-name prefixes to accept, add a second prefix while migrating from another library. Default 'sigmx-'. */
   eventPrefix?: string | string[];
-  /** Share a store between instances. */
   store?: Store;
   /** Called for any plugin or expression error. Default: console.error. */
   onError?: (error: unknown, info: { plugin?: string; el?: Element; attr?: string }) => void;
@@ -122,7 +116,6 @@ export interface Sigmx {
   store: Store;
   /** Root namespace proxy for use from JavaScript: `sigmx.$.count++`. */
   $: any;
-  /** Mount plugins under `root` and observe it for changes. */
   apply(root?: El | ShadowRoot, observe?: boolean): void;
   /** Register more plugins; attribute plugins are applied to observed roots immediately. */
   use(...plugins: Plugin[]): void;

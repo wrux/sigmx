@@ -3,12 +3,19 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node --watch server.js",
-    "start": "node server.js"
+    "dev": "tsx watch server.tsx",
+    "start": "tsx server.tsx",
+    "check": "tsc --noEmit"
   },
   "dependencies": {
     "@hono/node-server": "^2.1.0",
+    "@sigmx/hono": "file:../../sdks/hono",
     "hono": "^4.13.0",
     "sigmx": "^0.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.1",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.0"
   }
 }

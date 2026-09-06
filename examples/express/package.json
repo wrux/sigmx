@@ -8,6 +8,6 @@
   },
   "dependencies": {
     "express": "^5.1.0",
-    "sigmx": "^0.1.0"
+    "sigmx": "file:../.."
   }
 }

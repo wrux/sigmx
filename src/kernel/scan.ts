@@ -1,15 +1,11 @@
-// Auto mode: work out which plugins a codebase uses by scanning its source, the way a CSS
-// framework scans templates for class names. Node only; never bundled for the browser.
+// Node only; never bundled for the browser.
 import * as builtins from '../plugins/index.js';
 import type { Plugin } from './contracts.js';
 
 export type PluginMeta = {
-  /** Export name, e.g. `httpGet`; what the generated module imports. */
   export: string;
-  /** Registered name, e.g. `get`; what markup refers to. */
   name: string;
   type: Plugin['type'];
-  /** Module to import from; built-ins come from `sigmx/plugins`. */
   from: string;
   returns?: boolean;
   args?: string[];
@@ -17,13 +13,11 @@ export type PluginMeta = {
 
 const NETWORK = ['httpGet', 'httpPost', 'httpPut', 'httpPatch', 'httpDelete', 'websocket', 'boost'];
 
-/** Plugins that only make sense together. */
 export const implied: Record<string, string[]> = {
   ...Object.fromEntries(NETWORK.map((n) => [n, ['applyElements', 'applyState']])),
   boost: ['httpGet', 'httpPost', 'applyElements', 'applyState'],
 };
 
-/** Metadata for every built-in plugin. */
 export const builtinPlugins = (): PluginMeta[] =>
   Object.entries(builtins)
     .filter(([, v]) => v && typeof v === 'object' && 'type' in (v as object))
@@ -80,11 +74,8 @@ export const mentions = (source: string, p: PluginMeta, prefixes: string[]): boo
 };
 
 export type Selection = {
-  /** Selected plugins in a stable order. */
   plugins: PluginMeta[];
-  /** Why each one is in: 'used', 'always', or the plugin that implied it. */
   reasons: Record<string, string>;
-  /** Known plugins that were left out. */
   unused: string[];
 };
 
@@ -117,7 +108,6 @@ export const selectPlugins = (
   return { plugins, reasons, unused: known.filter((p) => !reasons[p.export]).map((p) => p.export) };
 };
 
-/** JavaScript source for a module exporting `plugins` (and the selection report). */
 export const generatePluginsModule = (sel: Selection): string => {
   const groups = new Map<string, string[]>();
   for (const p of sel.plugins) groups.set(p.from, [...(groups.get(p.from) ?? []), p.export]);

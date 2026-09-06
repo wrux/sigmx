@@ -1,6 +1,5 @@
 export type CaseStyle = 'camel' | 'kebab' | 'snake' | 'pascal';
 
-/** Split an identifier in any common casing into lowercase words. */
 const words = (s: string): string[] =>
   s
     .replace(/([a-z0-9])([A-Z])|([A-Z]+)([A-Z][a-z])/g, '$1$3 $2$4')
