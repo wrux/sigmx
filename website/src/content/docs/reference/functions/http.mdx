@@ -27,9 +27,8 @@ Each function returns a promise that resolves when the response has been fully a
 | `filter` | exclude paths starting with `_` | `{ include, exclude }` regular expressions over signal paths |
 | `payload` | | send this instead of signals |
 | `abort` | `'replace'` | `'replace'` cancels an earlier request with the same method and URL; `'none'` lets them overlap; or your own `AbortController` |
-| `openWhenHidden` | `true`, `false` for GET | keep streaming while the tab is hidden |
 | `reconnect` | `false` | reconnect after a stream ends normally |
-| `retry` | `{ attempts: 5, interval: 1000, factor: 2, max: 30000, onStatusError: false }` | backoff policy |
+| `retry` | `{ attempts: 5, interval: 1000, factor: 2, max: 30000 }` | backoff policy |
 
 `@get` and `@delete` put the signals in the `sigmx` query parameter; the others send a JSON body. Requests are aborted when the element that started them leaves the document.
 

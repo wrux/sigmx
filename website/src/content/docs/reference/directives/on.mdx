@@ -29,11 +29,9 @@ data-on:submit__prevent="@post('/save')"
 | `__window / __document` | listen on `window` or `document` instead of the element |
 | `__outside` | run only for events whose target is outside the element (listens on `document`) |
 | `__prevent / __stop` | `preventDefault()` / `stopPropagation()` |
-| `__capture / __passive / __once` | listener options |
-| `__delay.ms` | wait before running |
+| `__once` | listener options |
 | `__debounce.ms[.leading][.notrailing]` | run after a quiet period |
 | `__throttle.ms[.noleading][.trailing]` | run at most once per window |
-| `__viewtransition` | wrap in a view transition |
 | `__case.camel` | recase the event name, e.g. for `myEvent` |
 
 ## Example

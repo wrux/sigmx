@@ -35,14 +35,3 @@ test('trap moves focus inside, wraps Tab in both directions, and restores focus 
   assert.equal(document.activeElement.id, 'outside');
   assert.equal(tab(), false, 'inactive: keys pass through');
 });
-
-test('trap__inert makes the rest of the page inert while active', async (t) => {
-  visible(t);
-  const { $, render } = app(t);
-  $.open = true;
-  const el = await render('<div><p id="sibling"></p><div data-trap__inert="$open"><button></button></div></div>');
-  await tick();
-  assert.equal(el.querySelector('#sibling').hasAttribute('inert'), true);
-  $.open = false;
-  assert.equal(el.querySelector('#sibling').hasAttribute('inert'), false);
-});

@@ -13,13 +13,13 @@ test('splitStatements respects nesting and strings', () => {
   assert.deepEqual(splitStatements("$a = 1; $b = {x: ';'}; f(1;2)"), ['$a = 1', " $b = {x: ';'}", ' f(1;2)']);
 });
 
-test('compile returns the last statement value and exposes el/evt/args', () => {
+test('compile returns an expression value and exposes el/evt/args', () => {
   const s = createStore();
   s.set('n', 2);
   const one = compile(functionCompiler, '$n * 2', ['el', 'evt'], true);
   assert.equal(one(s, {}, null, null), 4);
-  const many = compile(functionCompiler, '$n = 5; $n + 1', ['el', 'evt'], true);
-  assert.equal(many(s, {}, null, null), 6);
+  compile(functionCompiler, '$n = 5; $n + 1', ['el', 'evt'], true)(s, {}, null, null);
+  assert.equal(s.get('n'), 5, 'statements run for their effects');
   const withArgs = compile(functionCompiler, 'patch.n + el', ['el', 'evt', 'patch'], true);
   assert.equal(withArgs(s, {}, 1, null, { n: 2 }), 3);
   const actions = { post: (...a) => a };

@@ -18,6 +18,6 @@ test('persist restores from storage on mount and saves every change', async (t) 
   const b = app(t);
   b.$.a = 1;
   b.$.b = 2;
-  await b.render('<div data-persist:only-a__session="{ include: /^a$/ }" data-computed:c="$a + $b"></div>');
-  assert.deepEqual(JSON.parse(sessionStorage.getItem('only-a')), { a: 1 }, 'filtered and without computeds');
+  await b.render('<div data-persist:only-a="{ include: /^a$/ }" data-computed:c="$a + $b"></div>');
+  assert.deepEqual(JSON.parse(localStorage.getItem('only-a')), { a: 1 }, 'filtered and without computeds');
 });

@@ -17,11 +17,11 @@ test('collapse settles closed and open, animating height in between', async (t) 
   await until(() => el.style.transition === '' && el.style.height === '0px', 1000);
 });
 
-test('collapse honours __min and ignores changes that do not flip the outcome', async (t) => {
+test('collapse ignores changes that do not flip the outcome', async (t) => {
   const { $, render } = app(t);
   $.n = 0;
-  const el = await render('<div data-collapse__min.24px="$n > 2"></div>');
-  assert.equal(el.style.height, '24px');
+  const el = await render('<div data-collapse="$n > 2"></div>');
+  assert.equal(el.style.height, '0px');
   $.n = 1;
   assert.equal(el.style.transition, '', 'still closed: nothing animated');
   $.n = 3;

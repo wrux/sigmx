@@ -39,14 +39,3 @@ test('animate applies non-numeric values and unit changes at once, and skips unc
   $.w = '2em';
   assert.equal(el.style.width, '2em');
 });
-
-test('animate on an SVG attribute writes the attribute instead of a style', async (t) => {
-  supportsCss(t);
-  const { $, render } = app(t);
-  $.r = 5;
-  const el = await render('<svg><circle data-animate:r__duration.30ms="$r"></circle></svg>');
-  const c = el.querySelector('circle');
-  assert.equal(c.getAttribute('r'), '5');
-  $.r = 20;
-  await until(() => c.getAttribute('r') === '20', 1000);
-});

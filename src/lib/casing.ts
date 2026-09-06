@@ -1,4 +1,4 @@
-export type CaseStyle = 'camel' | 'kebab' | 'snake' | 'pascal';
+export type CaseStyle = 'camel' | 'kebab';
 
 const words = (s: string): string[] =>
   s
@@ -17,7 +17,7 @@ export const camel = (s: string): string =>
     .join('');
 export const pascal = (s: string): string => words(s).map(cap).join('');
 
-const styles = { camel, kebab, snake, pascal };
+const styles = { camel, kebab };
 
 /** Recase a dotted path segment by segment so `user.first-name` becomes `user.firstName`. */
 export const recase = (path: string, style: CaseStyle): string => path.split('.').map(styles[style]).join('.');

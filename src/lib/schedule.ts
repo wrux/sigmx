@@ -48,16 +48,9 @@ export const throttle = (fn: Fn, ms: number, leading = true, trailing = false): 
   limit(fn, ms, leading, trailing, false);
 
 export const withTiming = (fn: Fn, mods: Mods): Fn => {
-  const d = mods.get('delay');
-  if (d) fn = delay(fn, toMs(d));
   const db = mods.get('debounce');
-  if (db) fn = debounce(fn, toMs(db, 300), db.includes('leading'), !db.includes('notrailing'));
+  if (db) fn = limit(fn, toMs(db, 300), db.includes('leading'), !db.includes('notrailing'), true);
   const th = mods.get('throttle');
-  if (th) fn = throttle(fn, toMs(th, 300), !th.includes('noleading'), th.includes('trailing'));
+  if (th) fn = limit(fn, toMs(th, 300), !th.includes('noleading'), th.includes('trailing'), false);
   return fn;
 };
-
-export const withViewTransition = (fn: Fn, mods: Mods): Fn =>
-  mods.has('viewtransition') && 'startViewTransition' in document
-    ? (...args) => void document.startViewTransition(() => fn(...args))
-    : fn;

@@ -28,7 +28,7 @@ Examples:
 
 ## Keys and casing
 
-HTML lowercases attribute names before sigmx ever sees them, so `data-bind:newTodo` arrives as `data-bind:newtodo`. Write multi-word keys in kebab-case: keys that name signals are converted to camelCase, so `data-bind:new-todo` binds `newTodo`. Change that with `__case.kebab`, `__case.snake` or `__case.pascal`. Keys that name events or CSS classes keep kebab-case.
+HTML lowercases attribute names before sigmx ever sees them, so `data-bind:newTodo` arrives as `data-bind:newtodo`. Write multi-word keys in kebab-case: keys that name signals are converted to camelCase, so `data-bind:new-todo` binds `newTodo`. Change that with `__case.kebab`. Keys that name events or CSS classes keep kebab-case.
 
 Dotted keys address nested paths: `data-signals:user.address.city="'Bath'"` creates `user.address.city`.
 
@@ -41,7 +41,7 @@ Attributes mount in document order, and within one element in attribute order. T
 
 ## Opting out
 
-`data-ignore` on an element skips it and its whole subtree. `data-ignore__self` skips only the element. Both are honoured for every configured prefix.
+`data-ignore` on an element skips it and its whole subtree, for every configured prefix.
 
 ## Prefixes
 

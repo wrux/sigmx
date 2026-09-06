@@ -22,12 +22,12 @@ data-view-transition="'card-' + $id"
 ## Example
 
 <Live html={`
-<div data-signals="{ big: false }"><div class="box" data-view-transition="'demo-box'" data-style:width="$big ? '8rem' : '3rem'" data-on:click__viewtransition="$big = !$big"></div><p class="muted">click the box</p></div>
+<div data-signals="{ big: false }"><div class="box" data-view-transition="'demo-box'" data-style:width="$big ? '8rem' : '3rem'" data-on:click="$big = !$big"></div><p class="muted">click the box</p></div>
 `} />
 
 ## Notes
 
-Pair it with `__viewtransition` on `data-on`, or with `useViewTransition` on server patches, to animate between states.
+Pair it with `document.startViewTransition` in your own handlers to animate between states.
 
 ## Register
 

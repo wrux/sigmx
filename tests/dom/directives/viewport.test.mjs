@@ -36,9 +36,9 @@ test('on-intersect runs on entry, once, on exit, with thresholds', async (t) => 
   $.once = 0;
   $.left = 0;
   const el = await render(
-    '<div><p data-on-intersect="$seen++"></p><p data-on-intersect__once="$once++"></p><p data-on-intersect__exit="$left++"></p><p data-on-intersect__half="1"></p><p data-on-intersect__threshold.25="1"></p><p data-on-intersect__full="1"></p></div>',
+    '<div><p data-on-intersect="$seen++"></p><p data-on-intersect__once="$once++"></p><p data-on-intersect__exit="$left++"></p><p data-on-intersect__threshold.25="1"></p></div>',
   );
-  const [plain, once, exit, half, quarter, full] = observers;
+  const [plain, once, exit, quarter] = observers;
   plain.enter();
   plain.leave();
   plain.enter();
@@ -51,9 +51,7 @@ test('on-intersect runs on entry, once, on exit, with thresholds', async (t) => 
   assert.equal($.left, 0);
   exit.leave();
   assert.equal($.left, 1);
-  assert.equal(half.options.threshold, 0.5);
   assert.equal(quarter.options.threshold, 0.25);
-  assert.equal(full.options.threshold, 1);
   el.remove();
   await tick();
   assert.equal(plain.disconnected, true);

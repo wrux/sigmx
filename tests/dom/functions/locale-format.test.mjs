@@ -5,7 +5,7 @@ import { app } from '../helpers.mjs';
 test('@intl formats through Intl and rejects unknown kinds', async (t) => {
   const { $, render, errors } = app(t);
   await render(
-    "<div data-signals=\"{ money: @intl('number', 1234.5, { style: 'currency', currency: 'USD' }, 'en-US'), list: @intl('list', ['a', 'b'], { type: 'conjunction' }, 'en'), plural: @intl('pluralRules', 1, undefined, 'en') }\"></div>",
+    "<div data-signals=\"{ money: @intl('NumberFormat', 1234.5, { style: 'currency', currency: 'USD' }, 'en-US'), list: @intl('ListFormat', ['a', 'b'], { type: 'conjunction' }, 'en'), plural: @intl('PluralRules', 1, undefined, 'en') }\"></div>",
   );
   assert.equal($.money, '$1,234.50');
   assert.equal($.list, 'a and b');

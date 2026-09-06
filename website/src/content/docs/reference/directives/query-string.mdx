@@ -13,8 +13,6 @@ Sync signals with the URL query string, both ways.
 ```html
 data-query-string:page="1"                  <!-- declare `page` with a default, synced with ?page= -->
 data-query-string:sort-by="'name'"          <!-- parameter ?sort-by=, signal $sortBy -->
-data-query-string__history="{ include: /^(q|page)$/ }"   <!-- sync existing signals -->
-data-query-string__filter
 ```
 
 | part | |
@@ -26,8 +24,6 @@ data-query-string__filter
 
 | modifier | effect |
 |---|---|
-| `__history` | push a history entry per change and restore on back/forward |
-| `__filter` | drop empty values from the URL |
 
 ## Example
 

@@ -1,11 +1,7 @@
-import { attribute } from '../../kernel/index.js';
+import { dir } from '../def.js';
 
-export const text = attribute({
-  name: 'text',
-  key: 'forbidden',
-  value: 'required',
-  mount: ({ el, evaluate, effect }) =>
-    effect(() => {
-      el.textContent = String(evaluate() ?? '');
-    }),
-});
+export const text = dir('text', 6, ({ el, evaluate, effect }) =>
+  effect(() => {
+    el.textContent = String(evaluate() ?? '');
+  }),
+);

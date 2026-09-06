@@ -12,7 +12,7 @@ Run an expression when the element scrolls into (or out of) view.
 
 ```html
 data-on-intersect="$seen = true"
-data-on-intersect__once__half="@get('/more')"
+data-on-intersect__once__threshold.50="@get('/more')"
 ```
 
 | part | |
@@ -26,9 +26,8 @@ data-on-intersect__once__half="@get('/more')"
 |---|---|
 | `__once` | disconnect after the first run |
 | `__exit` | run when the element leaves the viewport instead |
-| `__full / __half / __threshold.N` | how much must be visible: all, half, or N percent |
-| `__delay / __debounce / __throttle` | timing |
-| `__viewtransition` | wrap in a view transition |
+| `__threshold.N` | how much must be visible, in percent (default 0: any pixel) |
+| `__debounce / __throttle` | timing |
 
 ## Example
 

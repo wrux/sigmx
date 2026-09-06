@@ -1,4 +1,4 @@
-import { attribute, expand, toPredicate } from '../../kernel/index.js';
+import { dir } from '../def.js';
 
 const parse = (s: string): unknown => {
   try {
@@ -7,7 +7,9 @@ const parse = (s: string): unknown => {
     return s;
   }
 };
-const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+const enc = (v: unknown) => (typeof v === 'string' ? v : JSON.stringify(v));
+const same = (a: unknown, b: unknown) => enc(a) === enc(b);
+const params = () => new URLSearchParams(location.search);
 
 /**
  * Keeps signals and the URL query string in step.
@@ -21,69 +23,42 @@ const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b)
  * paths both ways. `__history` pushes an entry per change and restores on back/forward;
  * `__filter` drops empty values from the URL.
  */
-export const queryString = attribute({
-  name: 'query-string',
-  mount({ key, value, mods, evaluate, cased, store, listen, effect }) {
-    const history = mods.has('history');
-    const push = (url: string) => {
+export const queryString = dir('query-string', 1, ({ key, value, mods, evaluate, cased, store, listen, effect }) => {
+  const history = mods.has('history');
+  let restoring = false;
+  /** `read` pulls signals from the query; `write` puts them into it. Reads are wired to back/forward. */
+  const wire = (read: (q: URLSearchParams) => void, write: (q: URLSearchParams) => void) => {
+    effect(() => {
+      const q = params();
+      write(q);
+      if (restoring) return;
+      const url = `${location.pathname}${q.size ? `?${q}` : ''}${location.hash}`;
       if (url !== location.pathname + location.search + location.hash)
         window.history[history ? 'pushState' : 'replaceState'](null, '', url);
-    };
-    const urlWith = (q: URLSearchParams) => `${location.pathname}${q.size ? `?${q}` : ''}${location.hash}`;
-    let restoring = false;
-    const restore = (fn: () => void) => {
-      restoring = true;
-      try {
-        fn();
-      } finally {
-        restoring = false;
-      }
-    };
-
-    if (key) {
-      const path = cased();
-      const fallback = value ? evaluate() : '';
-      const fromUrl = () => {
-        const raw = new URLSearchParams(location.search).get(key);
-        store.set(path, raw === null ? fallback : parse(raw));
-      };
-      if (!store.has(path) || new URLSearchParams(location.search).has(key)) fromUrl();
-      effect(() => {
-        const v = store.get(path);
-        if (restoring) return;
-        const q = new URLSearchParams(location.search);
-        if (v === undefined || same(v, fallback)) q.delete(key);
-        else q.set(key, typeof v === 'string' ? v : JSON.stringify(v));
-        push(urlWith(q));
-      });
-      if (history) listen(window, 'popstate', () => restore(fromUrl));
-      return;
-    }
-
-    const filter = value ? evaluate() : undefined;
-    const ok = toPredicate(filter);
-    const fromUrl = () => {
-      const patch = {};
-      for (const [k, v] of new URLSearchParams(location.search)) if (ok(k)) expand(patch, k, parse(v));
-      store.merge(patch);
-    };
-    fromUrl();
-    effect(() => {
-      const snap = store.snapshot(filter, { computed: false });
-      if (restoring) return;
-      const q = new URLSearchParams(location.search);
-      const walk = (obj: Record<string, any>, prefix: string) => {
-        for (const k in obj) {
-          const p = prefix ? `${prefix}.${k}` : k;
-          const v = obj[k];
-          if (v && typeof v === 'object' && !Array.isArray(v)) walk(v, p);
-          else if (mods.has('filter') && (v === '' || v == null)) q.delete(p);
-          else q.set(p, typeof v === 'string' ? v : JSON.stringify(v));
-        }
-      };
-      walk(snap, '');
-      push(urlWith(q));
     });
-    if (history) listen(window, 'popstate', () => restore(fromUrl));
-  },
+    if (history)
+      listen(window, 'popstate', () => {
+        restoring = true;
+        try {
+          read(params());
+        } finally {
+          restoring = false;
+        }
+      });
+  };
+
+  {
+    const name = key as string;
+    const path = cased();
+    const fallback = value ? evaluate() : '';
+    const read = (q: URLSearchParams) => {
+      const raw = q.get(name);
+      store.set(path, raw === null ? fallback : parse(raw));
+    };
+    if (!store.has(path) || params().has(name)) read(params());
+    wire(read, (q) => {
+      const v = store.get(path);
+      v === undefined || same(v, fallback) ? q.delete(name) : q.set(name, enc(v));
+    });
+  }
 });

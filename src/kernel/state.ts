@@ -22,8 +22,11 @@ export interface Store {
   readonly scope: object;
 }
 
-const parentOf = (p: string): string => p.slice(0, Math.max(0, p.lastIndexOf('.')));
-const nameOf = (p: string): string => p.slice(p.lastIndexOf('.') + 1);
+/** 'a.b.c' → ['a.b', 'c']; 'a' → ['', 'a']. */
+const split = (p: string): [string, string] => {
+  const i = p.lastIndexOf('.');
+  return [i < 0 ? '' : p.slice(0, i), p.slice(i + 1)];
+};
 const join = (a: string, b: string): string => (a ? `${a}.${b}` : b);
 const under = (p: string, at: string): boolean => !at || p === at || p.startsWith(`${at}.`);
 const str = (k: unknown): k is string => typeof k === 'string';
@@ -37,14 +40,25 @@ export const createStore = (): Store => {
   const nsCache = new Map<string, any>();
   const arrCache = new WeakMap<object, any>();
 
+  /** Register `p` under its parent namespace (creating the namespace chain) and mark the shape changed. */
+  const link = (p: string): void => {
+    const [parent, name] = split(p);
+    ensureNs(parent).add(name);
+    shape.bump();
+  };
+  const unlink = (p: string): void => {
+    const [parent, name] = split(p);
+    kids.get(parent)?.delete(name);
+    shape.bump();
+  };
+
   const ensureNs = (p: string): Set<string> => {
     let set = kids.get(p);
     if (!set) {
       if (leaves.has(p)) dropLeaf(p);
       set = new Set();
       kids.set(p, set);
-      ensureNs(parentOf(p)).add(nameOf(p));
-      shape.bump();
+      link(p);
     }
     return set;
   };
@@ -53,10 +67,9 @@ export const createStore = (): Store => {
     const s = leaves.get(p);
     if (!s) return;
     leaves.delete(p);
-    kids.get(parentOf(p))?.delete(nameOf(p));
+    unlink(p);
     pending.set(p, null);
     s.bump();
-    shape.bump();
   };
 
   const dropNs = (p: string): void => {
@@ -65,10 +78,9 @@ export const createStore = (): Store => {
     for (const k of [...set]) remove(join(p, k));
     if (p) {
       kids.delete(p);
-      kids.get(parentOf(p))?.delete(nameOf(p));
       nsCache.delete(p);
+      unlink(p);
     }
-    shape.bump();
   };
 
   const remove = (p: string): void =>
@@ -79,26 +91,24 @@ export const createStore = (): Store => {
 
   const define = (p: string, node: Signal<any>): void =>
     batch(() => {
-      if (kids.has(p)) dropNs(p);
+      dropNs(p);
       const old = leaves.get(p);
       leaves.set(p, node);
-      ensureNs(parentOf(p)).add(nameOf(p));
+      link(p);
       old?.bump();
-      shape.bump();
     });
 
   const set = (p: string, v: any): void =>
     batch(() => {
       if (v == null) return remove(p);
       if (isPlain(v)) {
-        const names = ensureNs(p);
-        for (const k of [...names]) if (!(k in v)) remove(join(p, k));
+        for (const k of [...ensureNs(p)]) if (!(k in v)) remove(join(p, k));
         for (const k in v) set(join(p, k), v[k]);
         return;
       }
-      if (kids.has(p)) dropNs(p);
+      dropNs(p);
       const s = leaves.get(p);
-      if (s instanceof Computed) throw new Error(`"${p}" is a computed signal and cannot be assigned`);
+      if (s instanceof Computed) throw new Error(`computed "${p}" is read-only`);
       if (s) {
         if (Object.is(s.peek(), v)) return;
         s.value = v;
@@ -119,11 +129,13 @@ export const createStore = (): Store => {
           if (!ifMissing) remove(p);
         } else if (isPlain(v)) {
           merge(v, { at: p, ifMissing });
-        } else if (!(ifMissing && (leaves.has(p) || kids.has(p))) && !(leaves.get(p) instanceof Computed)) {
+        } else if (!(ifMissing && has(p)) && !(leaves.get(p) instanceof Computed)) {
           set(p, v); // computed leaves are skipped: patches from storage or a server cannot overwrite them
         }
       }
     });
+
+  const has = (p: string): boolean => leaves.has(p) || kids.has(p);
 
   /** Arrays are returned through a proxy so in-place mutation notifies the leaf. */
   const wrapArray = (raw: any[], s: Signal<any>, p: string): any => {
@@ -132,17 +144,12 @@ export const createStore = (): Store => {
       const touch = () => {
         pending.set(p, raw);
         s.bump();
+        return true;
       };
       px = new Proxy(raw, {
         set: (t, k, v) => {
           (t as any)[k] = v;
-          touch();
-          return true;
-        },
-        deleteProperty: (t, k) => {
-          delete (t as any)[k];
-          touch();
-          return true;
+          return touch();
         },
       });
       arrCache.set(raw, px);
@@ -158,15 +165,14 @@ export const createStore = (): Store => {
     }
     if (kids.has(p)) return ns(p);
     shape.value; // subscribe, so creating this path later re-runs the reader
-    return undefined;
   };
 
   const ns = (p: string): any => {
     let px = nsCache.get(p);
     if (!px) {
-      const names = () => {
+      const names = (k: unknown): k is string => {
         shape.value; // read so the effect tracks shape changes
-        return kids.get(p);
+        return str(k) && !!kids.get(p)?.has(k);
       };
       px = new Proxy(
         {},
@@ -181,12 +187,13 @@ export const createStore = (): Store => {
             if (str(k)) remove(join(p, k));
             return true;
           },
-          has: (_, k) => str(k) && !!names()?.has(k),
-          ownKeys: () => [...(names() ?? [])],
+          has: (_, k) => names(k),
+          ownKeys: () => {
+            shape.value;
+            return [...(kids.get(p) ?? [])];
+          },
           getOwnPropertyDescriptor: (_, k) =>
-            str(k) && names()?.has(k)
-              ? { enumerable: true, configurable: true, writable: true, value: get(join(p, k)) }
-              : undefined,
+            names(k) ? { enumerable: true, configurable: true, writable: true, value: get(join(p, k)) } : undefined,
         },
       );
       nsCache.set(p, px);
@@ -208,8 +215,7 @@ export const createStore = (): Store => {
 
   const paths = (filter?: Filter): string[] => {
     shape.value;
-    const ok = toPredicate(filter);
-    return [...leaves.keys()].filter(ok);
+    return [...leaves.keys()].filter(toPredicate(filter));
   };
 
   const snapshot = (filter?: Filter, { at = '', computed = true } = {}): Patch => {
@@ -217,14 +223,8 @@ export const createStore = (): Store => {
     const ok = toPredicate(filter);
     const out: Patch = {};
     const rel = (p: string) => (at ? p.slice(at.length + 1) : p);
-    for (const [p, s] of leaves) {
-      if (!under(p, at) || !ok(p) || (!computed && s instanceof Computed)) continue;
-      expand(out, rel(p), s.value);
-    }
-    // Empty namespaces still appear as `{}`.
-    for (const p of kids.keys()) {
-      if (p && p !== at && under(p, at) && ok(p) && !kids.get(p)?.size) expand(out, rel(p), {});
-    }
+    for (const [p, s] of leaves)
+      if (under(p, at) && ok(p) && (computed || !(s instanceof Computed))) expand(out, rel(p), s.value);
     return out;
   };
 
@@ -241,7 +241,7 @@ export const createStore = (): Store => {
     set,
     merge,
     remove,
-    has: (p) => leaves.has(p) || kids.has(p),
+    has,
     define,
     paths,
     snapshot,

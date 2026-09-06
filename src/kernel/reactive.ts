@@ -13,7 +13,7 @@ const queue = new Set<Effect>();
 const settled = new Set<() => void>();
 
 export class Signal<T> {
-  _v: T;
+  declare _v: T;
   _ver = 0;
   _subs = new Set<Tracker>();
   constructor(v: T) {
@@ -39,26 +39,14 @@ export class Signal<T> {
   bump(): void {
     this._ver++;
     for (const s of this._subs) s._invalidate();
-    if (!depth) flush();
+    depth || flush();
   }
 }
 
-const release = (t: Tracker): void => {
+/** Drop `t`'s subscriptions, then run `fn` with `t` as the active tracker so its reads re-subscribe. */
+const capture = <R>(t: Tracker, fn: () => R): R => {
   for (const d of t._deps.keys()) d._subs.delete(t);
   t._deps.clear();
-};
-
-/** True when any dependency's version moved since the tracker last ran. Refreshes computeds on the way. */
-const stale = (t: Tracker): boolean => {
-  for (const [d, seen] of t._deps) {
-    if (d instanceof Computed) d._refresh();
-    if (d._ver !== seen) return true;
-  }
-  return false;
-};
-
-const capture = <R>(t: Tracker, fn: () => R): R => {
-  release(t);
   const prev = active;
   active = t;
   try {
@@ -68,10 +56,20 @@ const capture = <R>(t: Tracker, fn: () => R): R => {
   }
 };
 
+/** True when `t` has never run or any dependency's version moved since. Refreshes computeds on the way. */
+const stale = (t: Tracker): boolean => {
+  if (!t._deps.size) return true;
+  for (const [d, seen] of t._deps) {
+    if (d instanceof Computed) d._refresh();
+    if (d._ver !== seen) return true;
+  }
+  return false;
+};
+
 export class Computed<T> extends Signal<T> implements Tracker {
+  declare _fn: () => T;
   _deps = new Map<Signal<any>, number>();
   _dirty = true;
-  _fn: () => T;
   constructor(fn: () => T) {
     super(undefined as T);
     this._fn = fn;
@@ -79,7 +77,7 @@ export class Computed<T> extends Signal<T> implements Tracker {
   _refresh(): void {
     if (!this._dirty) return;
     this._dirty = false;
-    if (this._deps.size && !stale(this)) return;
+    if (!stale(this)) return;
     const x = capture(this, this._fn);
     if (!Object.is(x, this._v)) {
       this._v = x;
@@ -91,11 +89,7 @@ export class Computed<T> extends Signal<T> implements Tracker {
     return super.value;
   }
   override set value(_: T) {
-    throw new Error('computed signals are read-only');
-  }
-  override peek(): T {
-    this._refresh();
-    return this._v;
+    throw new Error('computed is read-only');
   }
   _invalidate(): void {
     if (!this._dirty) {
@@ -110,8 +104,8 @@ class Effect implements Tracker {
   _queued = false;
   _dead = false;
   _kids = new Set<Effect>();
-  _fn: () => void;
-  _onError?: (e: unknown) => void;
+  declare _fn: () => void;
+  declare _onError?: (e: unknown) => void;
   constructor(fn: () => void, onError?: (e: unknown) => void) {
     this._fn = fn;
     this._onError = onError;
@@ -124,9 +118,8 @@ class Effect implements Tracker {
   }
   _exec(): void {
     this._queued = false;
-    if (this._dead || (this._deps.size && !stale(this))) return;
-    for (const c of this._kids) c._dispose();
-    this._kids.clear();
+    if (this._dead || !stale(this)) return;
+    this._drop();
     const prevOwner = owner;
     owner = this;
     depth++;
@@ -140,11 +133,14 @@ class Effect implements Tracker {
       owner = prevOwner;
     }
   }
-  _dispose(): void {
-    this._dead = true;
-    release(this);
+  _drop(): void {
     for (const c of this._kids) c._dispose();
     this._kids.clear();
+  }
+  _dispose(): void {
+    this._dead = true;
+    capture(this, () => {});
+    this._drop();
     queue.delete(this);
   }
 }
@@ -160,7 +156,7 @@ export const effect = (fn: () => void, onError?: (e: unknown) => void): (() => v
   const e = new Effect(fn, onError);
   owner?._kids.add(e);
   e._exec();
-  if (!depth) flush();
+  depth || flush();
   return () => e._dispose();
 };
 
@@ -169,7 +165,7 @@ export const batch = <R>(fn: () => R): R => {
   try {
     return fn();
   } finally {
-    if (!--depth) flush();
+    --depth || flush();
   }
 };
 

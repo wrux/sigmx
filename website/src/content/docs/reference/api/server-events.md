@@ -22,7 +22,6 @@ Merged into the store with JSON merge-patch semantics. Computed paths are skippe
 event: sigmx-patch-elements
 data: selector #list
 data: mode append
-data: useViewTransition true
 data: elements <li id="row-9">
 data: elements   <b>new</b>
 data: elements </li>
@@ -33,7 +32,6 @@ data: elements </li>
 | `elements` | | HTML; repeat the line for each line of markup |
 | `selector` | | CSS selector for the target(s); without it, top-level elements are matched by `id` |
 | `mode` | `outer` | `outer` morph, `inner` morph children, `replace`, `prepend`, `append`, `before`, `after`, `remove` |
-| `useViewTransition` | `false` | wrap in `document.startViewTransition` |
 
 A full document (`<html>`, `<head>` or `<body>` present) is morphed into the current document.
 
@@ -47,4 +45,4 @@ Any other event name is looked up among registered handlers after stripping an a
 
 ## Plain responses
 
-`text/html` and `application/json` responses are treated as a single `patch-elements` or `patch-signals` event; the response headers `sigmx-selector`, `sigmx-mode`, `sigmx-use-view-transition` and `sigmx-only-if-missing` supply the fields.
+`text/html` and `application/json` responses are treated as a single `patch-elements` or `patch-signals` event; the response headers `sigmx-selector`, `sigmx-mode` and `sigmx-only-if-missing` supply the fields.

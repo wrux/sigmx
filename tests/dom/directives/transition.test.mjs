@@ -19,16 +19,13 @@ test('transition sets display on mount and animates later flips, hiding after th
   const calls = fakeAnimate(t);
   const { $, render } = app(t);
   $.open = false;
-  const el = await render(
-    '<div style="display: flex" data-transition__duration.50ms__scale.90__origin.top="$open"></div>',
-  );
+  const el = await render('<div style="display: flex" data-transition__duration.50ms="$open"></div>');
   assert.equal(el.style.display, 'none');
-  assert.equal(el.style.transformOrigin, 'top');
   assert.equal(calls.length, 0, 'no animation on mount');
   $.open = true;
   assert.equal(el.style.display, 'flex');
   assert.equal(calls.length, 1);
-  assert.deepEqual(calls[0].keyframes[0], { opacity: 0, transform: 'scale(0.9)' });
+  assert.deepEqual(calls[0].keyframes[0], { opacity: 0 });
   assert.equal(calls[0].options.duration, 50);
   $.open = false;
   assert.equal(calls.length, 2);

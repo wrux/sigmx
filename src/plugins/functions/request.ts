@@ -1,6 +1,7 @@
-import { type ActionCtx, action, type Filter, untracked } from '../../kernel/index.js';
+import { type ActionCtx, type Filter, untracked } from '../../kernel/index.js';
 import { camel } from '../../lib/casing.js';
 import { parseFields, readEvents } from '../../lib/sse.js';
+import { act } from '../def.js';
 
 export type RequestOptions = {
   headers?: Record<string, string>;
@@ -12,33 +13,23 @@ export type RequestOptions = {
   /** Explicit body instead of signals. */
   payload?: unknown;
   /** 'replace' (default) aborts an earlier request with the same method and URL; 'none' lets them overlap. */
-  abort?: 'replace' | 'none' | AbortController;
+  abort?: 'replace' | 'none';
   /** Keep the connection open while the tab is hidden. Default: true except for GET streams. */
   openWhenHidden?: boolean;
   /** Reconnect after a stream closes normally (long-lived event streams). */
   reconnect?: boolean;
-  retry?: { attempts?: number; interval?: number; factor?: number; max?: number; onStatusError?: boolean };
+  retry?: { attempts?: number; interval?: number; factor?: number; max?: number };
 };
 
 const inflight = new Map<string, AbortController>();
 let seq = 0;
 const sleep = (ms: number, signal: AbortSignal) =>
   new Promise<void>((resolve) => {
-    const t = setTimeout(resolve, ms);
-    signal.addEventListener(
-      'abort',
-      () => {
-        clearTimeout(t);
-        resolve();
-      },
-      { once: true },
-    );
+    setTimeout(resolve, ms);
+    signal.addEventListener('abort', () => resolve(), { once: true });
   });
-const untilVisible = () =>
-  new Promise<void>((resolve) =>
-    document.addEventListener('visibilitychange', () => !document.hidden && resolve(), { once: true }),
-  );
 
+/** Response headers `sigmx-<name>` become camel-cased fields of `data`. */
 const headerArgs = (res: Response, names: string[], data: Record<string, string>) => {
   for (const n of names) {
     const v = res.headers.get(`sigmx-${n}`);
@@ -47,70 +38,51 @@ const headerArgs = (res: Response, names: string[], data: Record<string, string>
   return data;
 };
 
-const runScript = (text: string) => {
-  const s = document.createElement('script');
-  s.text = text;
-  document.head.append(s);
-  s.remove();
-};
-
 const send = async (method: string, ctx: ActionCtx, url: string, o: RequestOptions = {}): Promise<void> => {
   const { el, evt, store, runtime, error } = ctx;
   if (!url) throw error(`@${method.toLowerCase()} needs a URL`);
   const key = `${method} ${url}`;
-  const ac = o.abort instanceof AbortController ? o.abort : new AbortController();
+  const ac = new AbortController();
   if (o.abort !== 'none') {
     inflight.get(key)?.abort();
     inflight.set(key, ac);
   }
   ctx.cleanup(() => ac.abort());
   const rid = ++seq;
-  const emit = (type: string, extra: Record<string, unknown> = {}) =>
-    runtime.emit('fetch', { el, type, method, url, rid, ...extra });
-  const retry = { attempts: 5, interval: 1000, factor: 2, max: 30_000, onStatusError: false, ...o.retry };
-  const pauseWhenHidden = !(o.openWhenHidden ?? method !== 'GET');
-  const bodyAllowed = method !== 'GET' && method !== 'DELETE';
+  const emit = (type: string, extra?: object) => runtime.emit('fetch', { el, type, method, url, rid, ...extra });
+  const retry = { attempts: 5, interval: 1000, factor: 2, max: 30_000, ...o.retry };
+  const hasBody = method !== 'GET' && method !== 'DELETE';
 
-  const build = (): { url: string; init: RequestInit } | undefined => {
+  const build = (): [string, RequestInit] | undefined => {
     const u = new URL(url, location.href);
     const headers: Record<string, string> = {
       Accept: 'text/event-stream, text/html, application/json',
       'Sigmx-Request': 'true',
       ...o.headers,
     };
-    let body: BodyInit | undefined;
+    let body: BodyInit;
+    let type: string | undefined;
     if ((o.contentType ?? 'json') === 'json') {
-      const payload = o.payload ?? untracked(() => store.snapshot(o.filter ?? { exclude: /(^|\.)_/ }));
-      const json = JSON.stringify(payload);
-      if (bodyAllowed) {
-        body = json;
-        headers['Content-Type'] ??= 'application/json';
-      } else u.searchParams.set('sigmx', json);
+      body = JSON.stringify(o.payload ?? untracked(() => store.snapshot(o.filter ?? { exclude: /(^|\.)_/ })));
+      type = 'application/json';
+      if (!hasBody) u.searchParams.set('sigmx', body);
     } else {
       const form = (o.selector ? document.querySelector(o.selector) : el.closest('form')) as HTMLFormElement | null;
       if (!form) throw error('no form found', { selector: o.selector });
-      if (!form.noValidate && !form.checkValidity()) {
-        form.reportValidity();
-        return;
-      }
+      if (!form.noValidate && !form.checkValidity()) return void form.reportValidity();
       const submitter =
         evt instanceof SubmitEvent ? evt.submitter : el instanceof HTMLButtonElement && el.form === form ? el : null;
       const fd = new FormData(form, submitter);
-      const multipart = form.enctype === 'multipart/form-data';
-      if (bodyAllowed) {
-        body = multipart ? fd : new URLSearchParams(fd as unknown as Record<string, string>);
-        if (!multipart) headers['Content-Type'] = 'application/x-www-form-urlencoded';
-      } else {
-        for (const [k, v] of new URLSearchParams(fd as unknown as Record<string, string>)) u.searchParams.append(k, v);
+      const params = new URLSearchParams(fd as unknown as Record<string, string>);
+      if (form.enctype === 'multipart/form-data') body = fd;
+      else {
+        body = params;
+        type = 'application/x-www-form-urlencoded';
       }
+      if (!hasBody) for (const [k, v] of params) u.searchParams.append(k, v);
     }
-    return { url: u.toString(), init: { method, headers, body } };
-  };
-
-  const route = (event: string, data: string) => {
-    const fields = parseFields(data);
-    runtime.emit('server-event', { el, event, data: fields });
-    runtime.handle(event, fields);
+    if (hasBody && type) headers['Content-Type'] ??= type;
+    return [u.href, { method, headers, body: hasBody ? body : undefined }];
   };
 
   let attempt = 0;
@@ -118,37 +90,30 @@ const send = async (method: string, ctx: ActionCtx, url: string, o: RequestOptio
   let lastId: string | undefined;
   const backoff = async () => {
     if (attempt++ >= retry.attempts) throw new Error('retries exhausted');
-    emit('retrying', { attempt });
     await sleep(wait, ac.signal);
     wait = Math.min(wait * retry.factor, retry.max);
   };
 
   emit('started');
   try {
+    const req = build();
+    if (!req) return;
     while (!ac.signal.aborted) {
-      const req = build();
-      if (!req) return;
-      if (lastId) (req.init.headers as Record<string, string>)['Last-Event-ID'] = lastId;
-      const hide = new AbortController();
-      const onHide = () => document.hidden && hide.abort();
-      if (pauseWhenHidden) document.addEventListener('visibilitychange', onHide);
+      if (lastId) (req[1].headers as Record<string, string>)['Last-Event-ID'] = lastId;
       try {
-        const res = await fetch(req.url, { ...req.init, signal: AbortSignal.any([ac.signal, hide.signal]) });
+        const res = await fetch(req[0], { ...req[1], signal: ac.signal });
         const ct = res.headers.get('content-type') ?? '';
-        if (res.status >= 400) {
-          emit('error', { status: res.status });
-          if (!retry.onStatusError) return;
-          await backoff();
-          continue;
-        }
-        if (res.status === 204 || res.status === 304 || !res.body) return;
+        if (!res.ok) return emit('error', { status: res.status });
+        if (!res.body) return;
         if (ct.includes('text/event-stream')) {
           attempt = 0;
           wait = retry.interval;
           await readEvents(res.body, (e) => {
             if (e.id !== undefined) lastId = e.id;
             if (e.retry) wait = retry.interval = e.retry;
-            route(e.event, e.data);
+            const data = parseFields(e.data);
+            runtime.emit('server-event', { el, event: e.event, data });
+            runtime.handle(e.event, data);
           });
           if (!o.reconnect) return;
           await backoff();
@@ -156,20 +121,13 @@ const send = async (method: string, ctx: ActionCtx, url: string, o: RequestOptio
         }
         const text = await res.text();
         if (ct.includes('text/html'))
-          runtime.handle(
-            'patch-elements',
-            headerArgs(res, ['selector', 'mode', 'use-view-transition'], { elements: text }),
-          );
+          runtime.handle('patch-elements', headerArgs(res, ['selector', 'mode'], { elements: text }));
         else if (ct.includes('application/json'))
           runtime.handle('patch-signals', headerArgs(res, ['only-if-missing'], { signals: text }));
-        else if (ct.includes('javascript')) runScript(text);
         return;
       } catch {
         if (ac.signal.aborted) return;
-        if (hide.signal.aborted) await untilVisible();
-        else await backoff();
-      } finally {
-        document.removeEventListener('visibilitychange', onHide);
+        await backoff();
       }
     }
   } catch (e: any) {
@@ -182,7 +140,7 @@ const send = async (method: string, ctx: ActionCtx, url: string, o: RequestOptio
 };
 
 const make = (name: string, method: string) =>
-  action({ name, call: (ctx, url: string, o?: RequestOptions) => send(method, ctx, url, o) });
+  act(name, (ctx, url: string, o?: RequestOptions) => send(method, ctx, url, o));
 
 /** `@get(url, options)`: signals travel in the `sigmx` query parameter. */
 export const httpGet = make('get', 'GET');

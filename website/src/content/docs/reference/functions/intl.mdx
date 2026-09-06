@@ -11,12 +11,12 @@ Locale-aware formatting through the Intl APIs.
 ## Syntax
 
 ```js
-@intl('number', 1234.5, { style: 'currency', currency: 'EUR' })
-@intl('datetime', new Date(), { dateStyle: 'long' }, 'de-AT')
-@intl('relativeTime', [-3, 'day'])
-@intl('list', ['a', 'b', 'c'])
-@intl('pluralRules', 2)
-@intl('displayNames', 'fr', { type: 'language' })
+@intl('NumberFormat', 1234.5, { style: 'currency', currency: 'EUR' })
+@intl('DateTimeFormat', new Date(), { dateStyle: 'long' }, 'de-AT')
+@intl('RelativeTimeFormat', [-3, 'day'])
+@intl('ListFormat', ['a', 'b', 'c'])
+@intl('PluralRules', 2)
+@intl('DisplayNames', 'fr', { type: 'language' })
 ```
 
 The first argument picks the formatter: `number`, `datetime`, `relativeTime` (value is `[amount, unit]`), `list`, `pluralRules` or `displayNames`. The third argument is the formatter's options object and the fourth a locale or list of locales; both are optional.
@@ -26,7 +26,7 @@ The first argument picks the formatter: `number`, `datetime`, `relativeTime` (va
 <Live html={`
 <div data-signals="{ amount: 1234567.891, locale: 'en-GB' }">
   <div class="row"><input type="number" data-bind:amount> <select data-bind:locale><option>en-GB</option><option>de-AT</option><option>ja-JP</option><option>ar-EG</option></select></div>
-  <p><b data-text="@intl('number', $amount, { style: 'currency', currency: 'EUR' }, $locale)"></b> · <span data-text="@intl('datetime', new Date(), { dateStyle: 'full' }, $locale)"></span></p>
+  <p><b data-text="@intl('NumberFormat', $amount, { style: 'currency', currency: 'EUR' }, $locale)"></b> · <span data-text="@intl('DateTimeFormat', new Date(), { dateStyle: 'full' }, $locale)"></span></p>
 </div>
 `} />
 

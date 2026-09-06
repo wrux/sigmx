@@ -12,7 +12,7 @@ Run an expression on a timer.
 
 ```html
 data-on-interval="$ticks++"
-data-on-interval__duration.5s.leading="@get('/status')"
+data-on-interval__duration.5s="@get('/status')"
 ```
 
 | part | |
@@ -24,8 +24,7 @@ data-on-interval__duration.5s.leading="@get('/status')"
 
 | modifier | effect |
 |---|---|
-| `__duration.ms|s[.leading]` | interval (default 1s); `leading` also runs immediately |
-| `__viewtransition` | wrap in a view transition |
+| `__duration.ms|s` | interval (default 1s) |
 
 ## Example
 

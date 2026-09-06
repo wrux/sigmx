@@ -31,16 +31,14 @@ test('a configurable attribute prefix, or several', async (t) => {
   assert.equal(both.sigmx.runtime.attr('on'), 'data-on', 'the first prefix is primary');
 });
 
-test('ignore skips a subtree; ignore__self skips one element only', async (t) => {
+test('ignore skips a subtree', async (t) => {
   const { $, render } = app(t);
   $.n = 1;
   const el = await render(
-    '<div><section data-ignore><span data-text="$n"></span></section><section data-ignore__self data-text="$n"><b data-text="$n"></b></section></div>',
+    '<div><section data-ignore><span data-text="$n"></span></section><b data-text="$n"></b></div>',
   );
   assert.equal(el.querySelector('span').textContent, '');
-  const self = el.children[1];
-  assert.equal(self.childNodes.length, 1, 'own text directive not applied');
-  assert.equal(self.querySelector('b').textContent, '1');
+  assert.equal(el.querySelector('b').textContent, '1');
 });
 
 test('changing an attribute remounts it; removing it unmounts', async (t) => {
@@ -64,19 +62,6 @@ test('one failing expression is reported and does not stop the others', async (t
   assert.equal(errors.length, 1);
   assert.equal(errors[0].info.plugin, 'text');
   assert.equal(errors[0].info.el, el.querySelector('i'));
-});
-
-test('plugin contracts: key and value requirements produce clear errors', async (t) => {
-  const { render, errors } = app(t);
-  await render('<div><i data-text:x="1"></i><i data-on="1"></i><i data-text=""></i><i data-cloak="x"></i></div>');
-  const messages = errors.map((e) => e.message);
-  assert.ok(
-    messages.some((m) => m === 'data-text: takes no key'),
-    messages.join('|'),
-  );
-  assert.ok(messages.some((m) => m === 'data-on: needs a key'));
-  assert.ok(messages.some((m) => m === 'data-text: needs a value'));
-  assert.ok(messages.some((m) => m === 'data-cloak: takes no value'));
 });
 
 test('expressions see el, evt and can call actions; unknown actions are reported', async (t) => {
@@ -120,13 +105,9 @@ test('destroy() unmounts everything and stops observing', async (t) => {
   assert.equal(stage.firstElementChild.textContent, '');
 });
 
-test('events: ready on first document apply, signal-patch on every settled change', async (t) => {
+test('events: signal-patch on every settled change', async (t) => {
   const patches = lastEvent(t, 'sigmx-signal-patch');
-  const ready = lastEvent(t, 'sigmx-ready');
-  const { $, sigmx } = app(t);
-  assert.equal(ready.length, 0, 'a stage root is not the document');
-  sigmx.apply(document.documentElement);
-  assert.equal(ready.length, 1);
+  const { $ } = app(t);
   $.user = { name: 'Ada' };
   await tick();
   assert.deepEqual(patches.at(-1), { user: { name: 'Ada' } });

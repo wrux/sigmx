@@ -62,7 +62,7 @@ await t('@get html morphs by id; header selector/mode append', async () => {
   const el = html('<div><div id="server-box"><input id="keep-me"></div><ul id="list"></ul><button id="b1" data-on:click="@get(\'/api/html\', {openWhenHidden: true})"></button><button id="b2" data-on:click="@get(\'/api/html-append\', {openWhenHidden: true})"></button></div>')
   await tick(); const keep = el.querySelector('#keep-me'); keep.value = 'mine'
   el.querySelector('#b1').click(); await until(() => el.querySelector('#server-box b'))
-  eq(el.querySelector('#server-box b').textContent, 'from server'); eq(el.querySelector('#keep-me'), keep); eq(keep.value, 'server', 'value attr changed → synced')
+  eq(el.querySelector('#server-box b').textContent, 'from server'); eq(el.querySelector('#keep-me'), keep); eq(keep.value, 'mine', 'typed value survives the morph')
   el.querySelector('#b2').click(); el.querySelector('#b2').click() // second click replaces the first in-flight request
   await until(() => el.querySelectorAll('#list .row').length >= 1); await tick(100)
   eq(el.querySelectorAll('#list .row').length, 1, 'replaced request')

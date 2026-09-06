@@ -12,7 +12,7 @@ Show and hide with a fade and optional scale (Alpine's x-transition).
 
 ```html
 data-transition="$open"
-data-transition__duration.300ms__scale.90__origin.top="$open"
+data-transition__duration.300ms="$open"
 ```
 
 | part | |
@@ -25,15 +25,13 @@ data-transition__duration.300ms__scale.90__origin.top="$open"
 | modifier | effect |
 |---|---|
 | `__duration.ms` | default 200ms |
-| `__scale[.N]` | also scale from N percent (default 95) |
-| `__origin.top.left` | transform origin |
 
 ## Example
 
 <Live html={`
 <div data-signals="{ open: true }">
   <button data-on:click="$open = !$open">Toggle</button>
-  <div data-transition__scale="$open" class="hot" style="padding:.6rem;border-radius:.4rem;margin-top:.5rem">Fades and scales in and out.</div>
+  <div data-transition="$open" class="hot" style="padding:.6rem;border-radius:.4rem;margin-top:.5rem">Fades in and out.</div>
 </div>
 `} />
 

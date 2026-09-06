@@ -1,9 +1,3 @@
-import { attribute } from '../../kernel/index.js';
+import { dir } from '../def.js';
 
-export const effect = attribute({
-  name: 'effect',
-  key: 'forbidden',
-  value: 'required',
-  returns: false,
-  mount: (ctx) => ctx.effect(() => ctx.evaluate()),
-});
+export const effect = dir('effect', 22, (ctx) => ctx.effect(() => ctx.evaluate()));
