@@ -6,7 +6,7 @@ import sigmx from 'sigmx-astro'
 export default defineConfig({
   adapter: node({ mode: 'standalone' }),
   integrations: [
-    sigmx({ plugins: 'all', eventPrefix: ['sigmx-', 'datastar-'], precompile: true }),
+    sigmx({ plugins: 'auto', auto: { always: ['jsonSignals'] }, eventPrefix: ['sigmx-', 'datastar-'], precompile: true }),
     starlight({
       title: 'sigmx',
       description: 'A small hypermedia library: declarative attributes, signals, streaming server patches. Zero dependencies.',

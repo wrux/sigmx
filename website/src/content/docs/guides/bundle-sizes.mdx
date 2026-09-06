@@ -25,7 +25,7 @@ Each row is the increase over the core-only build when that plugin alone is regi
 - **Core** is `createSigmx` with no plugins: the signal graph, store, expression compiler and mutation observer.
 - The **request functions** share one client, so registering all five costs about the same as one.
 - **patch-elements** carries the DOM morph. Register it only if the server sends HTML.
-- Import from `sigmx/plugins` freely: the barrel is side-effect free and tree-shakes to what you name.
+- Import from `sigmx/plugins` freely: the barrel is side-effect free and tree-shakes to what you name. [Auto mode](/guides/auto-mode/) picks the list from your source for you.
 - The shipped `dist/sigmx.standalone.js` is passed through terser after esbuild, which is worth about 5% gzipped. When you bundle sigmx yourself, your minifier decides; repeated plain statements compress better than clever compaction, which is why the source is written that way.
 
 ## Going smaller

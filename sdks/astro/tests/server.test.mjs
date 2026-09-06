@@ -50,3 +50,9 @@ test('bootScript with precompile uses the table and the fallback flag', async ()
   assert.match(bootScript({ precompile: true }), /precompiled\(table, runtimeExpressions\(functionCompiler\)\)/)
   assert.match(bootScript({ precompile: { fallback: false } }), /precompiled\(table, undefined\)/)
 })
+
+test('bootScript auto mode imports the scanned plugin list', async () => {
+  const { bootScript } = await import('../dist/index.js')
+  assert.match(bootScript({ plugins: 'auto' }), /import \{ plugins \} from 'virtual:sigmx-plugins'/)
+  assert.match(bootScript({ plugins: 'auto', precompile: true }), /virtual:sigmx-expressions[\s\S]*virtual:sigmx-plugins/)
+})

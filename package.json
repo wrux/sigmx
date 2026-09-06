@@ -5,7 +5,8 @@
   "type": "module",
   "license": "MIT",
   "sideEffects": [
-    "./dist/standalone.js"
+    "./dist/standalone.js",
+    "./dist/cli.js"
   ],
   "files": [
     "dist"
@@ -38,6 +39,14 @@
     "./precompile": {
       "types": "./dist/kernel/precompile.d.ts",
       "import": "./dist/kernel/precompile.js"
+    },
+    "./scan": {
+      "types": "./dist/kernel/scan.d.ts",
+      "import": "./dist/kernel/scan.js"
+    },
+    "./vite": {
+      "types": "./dist/vite.d.ts",
+      "import": "./dist/vite.js"
     }
   },
   "scripts": {
@@ -48,8 +57,12 @@
     "dev": "node scripts/dev.mjs"
   },
   "devDependencies": {
+    "@types/node": "^22.20.1",
     "esbuild": "^0.28.2",
     "terser": "^5.51.2",
     "typescript": "^5.9.0"
+  },
+  "bin": {
+    "sigmx": "./dist/cli.js"
   }
 }

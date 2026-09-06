@@ -32,7 +32,8 @@ Endpoints that answer requests need to run on the server: add an adapter and set
 
 | option | default | |
 |---|---|---|
-| `plugins` | `'all'` | `'all'`, `'minimal'`, or a list of export names from `sigmx/plugins`, e.g. `['signals', 'text', 'on', 'httpGet', 'applyElements']` |
+| `plugins` | `'all'` | `'all'`, `'minimal'`, `'auto'` (scan the source; see [Auto mode](/guides/auto-mode/)), or a list of export names from `sigmx/plugins` |
+| `auto` | | options for auto mode: `always`, `custom`, `include`, `extensions`, `log` |
 | `prefix` | `'data-'` | attribute prefix(es) |
 | `eventPrefix` | `'sigmx-'` | accepted server event prefixes |
 | `expose` | `'sigmx'` | global name for the instance; `false` for none |
