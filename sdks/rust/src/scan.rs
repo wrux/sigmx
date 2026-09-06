@@ -47,6 +47,8 @@ pub struct BuiltinMeta {
     pub name: &'static str,
     /// Kind.
     pub kind: Kind,
+    /// The plugin's own module inside the client tree, e.g. `plugins/directives/cloak.js`.
+    pub module: &'static str,
     /// The value is a literal rather than an expression.
     pub literal: bool,
     /// Extra expression parameters.
@@ -66,6 +68,9 @@ pub struct PluginMeta {
     pub kind: Kind,
     /// Module specifier to import it from.
     pub from: String,
+    /// For a built-in, its own module inside the client tree (`plugins/directives/cloak.js`);
+    /// `None` for a custom plugin, whose `from` is its file.
+    pub module: Option<String>,
     /// The value is a literal rather than an expression.
     pub literal: bool,
     /// Extra expression parameters.
@@ -88,6 +93,17 @@ impl Source {
         match self {
             Source::Package(p) => p.clone(),
             Source::Dir(d) => format!("{}/kernel/index.js", d.trim_end_matches('/')),
+        }
+    }
+    /// Specifier a built-in plugin is imported from. A package keeps the `sigmx/plugins` index,
+    /// which the package marks side-effect free so Vite and esbuild drop what is unused; a
+    /// directory imports the plugin's own module, since a barrel would pull every plugin into a
+    /// bundler that does not tree-shake re-exports (swc_bundler) or into a browser loading the
+    /// tree unbundled.
+    pub fn builtin(&self, module: &str) -> String {
+        match self {
+            Source::Package(p) => format!("{p}/plugins"),
+            Source::Dir(d) => format!("{}/{module}", d.trim_end_matches('/')),
         }
     }
     /// Specifier of the plugin index.
@@ -236,14 +252,14 @@ impl Default for Options {
 
 /// The built-in plugins, importable from `from`.
 pub fn builtin_plugins(from: &Source) -> Vec<PluginMeta> {
-    let specifier = from.plugins();
     BUILTIN
         .iter()
         .map(|b| PluginMeta {
             export: b.export.into(),
             name: b.name.into(),
             kind: b.kind,
-            from: specifier.clone(),
+            from: from.builtin(b.module),
+            module: Some(b.module.to_owned()),
             literal: b.literal,
             args: b.args.iter().map(|a| (*a).to_owned()).collect(),
         })
@@ -413,6 +429,7 @@ pub fn custom_plugin_meta(export: &str, source: &str, from: &str) -> Option<Plug
             name: name.to_owned(),
             kind: kind.0,
             from: from.to_owned(),
+            module: None,
             literal: flag_field(body, "literal", "true"),
             args,
         });
@@ -663,6 +680,7 @@ pub fn scan(o: &Options) -> io::Result<Selection> {
                 name: name.clone(),
                 kind,
                 from,
+                module: None,
                 literal: c.literal,
                 args: c.args.clone(),
             },

@@ -116,7 +116,7 @@ let selection = sigmx::scan::scan(&o)?;
 std::fs::write("public/sigmx.js", sigmx::scan::Entry::selection(selection, o.from).module())?;
 ```
 
-The scanner applies the [auto mode](/tooling/auto-mode/) rules to `.rs`, `.html` and template files (`data-<name>` for directives, `@name(` for functions, custom plugins read from their `attribute({ name })` definition) and writes an entry that imports from the unpacked tree with relative paths. A browser loads that entry as it is; a bundler you already run (swc, esbuild, Vite) turns it into one file. Projects with an npm toolchain can keep installing `sigmx` from npm and using `sigmx/vite` instead; the crate does not mind where the client came from.
+The scanner applies the [auto mode](/tooling/auto-mode/) rules to `.rs`, `.html` and template files (`data-<name>` for directives, `@name(` for functions, custom plugins read from their `attribute({ name })` definition) and writes an entry that imports each selected plugin from its own module in the unpacked tree (`./vendor/sigmx/plugins/functions/request.js` rather than the `plugins/index.js` barrel). A browser loads that entry as it is and fetches only the selected modules; a bundler you already run (swc, esbuild, Vite) turns it into one file, and one that does not tree-shake re-exports, such as swc_bundler, still ships only the selection. Entries generated for `Source::Package` import from `sigmx/plugins`, which the npm package marks side-effect free so Vite and esbuild prune it. Projects with an npm toolchain can keep installing `sigmx` from npm and using `sigmx/vite` instead; the crate does not mind where the client came from.
 
 ## Your own plugins
 

@@ -56,6 +56,27 @@ ${files.map((f) => `    (${rs(f)}, include_str!(${rs(`esm/${f}`)})),`).join('\n'
 `,
 );
 
+// Each built-in's own module, from the barrel's re-exports, so a generated entry can import the
+// selected plugins directly instead of through plugins/index.js (which drags every plugin into
+// bundlers that do not tree-shake re-exports, and into a browser loading the tree unbundled).
+const modules = new Map();
+for (const m of readFileSync(join(dist, 'plugins/index.js'), 'utf8').matchAll(
+  /import\s*\{([^}]*)\}\s*from\s*["']\.\/([^"']+)["']/g,
+)) {
+  for (const name of m[1].split(',')) {
+    const local = name
+      .trim()
+      .split(/\s+as\s+/)
+      .pop();
+    if (local) modules.set(local, `plugins/${m[2]}`);
+  }
+}
+const moduleOf = (p) => {
+  const m = modules.get(p.export);
+  if (!m) throw new Error(`no module found for plugin export "${p.export}" in dist/plugins/index.js`);
+  return m;
+};
+
 const kind = { attribute: 'Kind::Attribute', action: 'Kind::Action', handler: 'Kind::Handler' };
 writeFileSync(
   join(out, 'plugins.rs'),
@@ -65,7 +86,7 @@ pub static BUILTIN: &[BuiltinMeta] = &[
 ${builtinPlugins()
   .map(
     (p) =>
-      `    BuiltinMeta { export: ${rs(p.export)}, name: ${rs(p.name)}, kind: ${kind[p.type]}, literal: ${!!p.literal}, args: &[${(p.args ?? []).map(rs).join(', ')}] },`,
+      `    BuiltinMeta { export: ${rs(p.export)}, name: ${rs(p.name)}, kind: ${kind[p.type]}, module: ${rs(moduleOf(p))}, literal: ${!!p.literal}, args: &[${(p.args ?? []).map(rs).join(', ')}] },`,
   )
   .join('\n')}
 ];
