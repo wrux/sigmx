@@ -11,3 +11,4 @@ examples/*/.astro
 .DS_Store
 test-results
 playwright-report
+.audit-baseline/
