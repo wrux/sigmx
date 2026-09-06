@@ -18,7 +18,7 @@ src/
     directives/    one file per attribute
     functions/     @-functions, including the request client
     server-events/ patch-signals, patch-elements, morph
-  presets/         minimal, all
+  presets/         minimal, essentials, all
   standalone.ts    script-tag entry
 ```
 
@@ -28,7 +28,7 @@ A `Signal` holds a value and a version. Reading inside a tracker records `(signa
 
 ## Store
 
-A `Map<path, Signal>` for leaves and a `Map<path, Set<name>>` for namespaces. One `shape` signal is bumped on any structural change; enumerations and unknown-path reads subscribe to it, so a reader of a not-yet-existing signal re-runs when the signal appears. Plain objects always become namespaces; arrays and other objects are leaves, and arrays are handed out through a proxy that notifies on mutation. Two proxies sit on top: the namespace proxy (`$`) for property access and enumeration, and the scope proxy used by `with`, which answers only identifiers that start with `$`.
+A `Map<path, Signal>` for leaves and a `Map<path, Set<name>>` for namespaces. One `shape` signal is bumped on any structural change; enumerations and unknown-path reads subscribe to it, so a reader of a not-yet-existing signal re-runs when the signal appears. Plain objects always become namespaces; arrays and other objects are leaves, and arrays are handed out through a proxy that notifies on mutation. The namespace proxy (`$`) sits on top for property access and enumeration; expressions reach signals through it, since `$name` compiles to `$.name`.
 
 ## Expressions
 
@@ -40,4 +40,4 @@ A `Map<path, Signal>` for leaves and a `Map<path, Set<name>>` for namespaces. On
 
 ## Morph
 
-Before walking, the morph computes the set of ids present in both trees with matching tag names. Walking children, an id in that set is looked up among the remaining siblings, in a pantry fragment of displaced nodes, or in the document, and moved into place with `moveBefore` where available. Other nodes match positionally by node type and tag. Nodes that are removed but contain kept ids go to the pantry instead of being destroyed. Form state is compared by attribute, not live value.
+Before walking, the morph computes the set of ids present in both trees with matching tag names and keeps a map from id to the existing element. Walking children, a kept id that lies ahead among the old siblings has whatever precedes it dropped; one that lives elsewhere (moved, or inside a subtree being removed) is pulled into place with `moveBefore` where available, so it never leaves the document and keeps focus, media and iframe state. Other nodes match positionally by node type and tag. A removed subtree that still contains kept ids has those elements left connected until they are moved, and a new element that wants kept descendants is created as a shell (same tag and attributes, no children) for them to be pulled into. Form state is compared by attribute, not live value.

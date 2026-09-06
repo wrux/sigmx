@@ -4,11 +4,26 @@ import sigmx from '@sigmx/astro';
 import { defineConfig } from 'astro/config';
 
 export default defineConfig({
+  site: 'https://sigmx.dev',
   adapter: node({ mode: 'standalone' }),
+  redirects: {
+    '/guides/auto-mode/': '/tooling/auto-mode/',
+    '/guides/precompiled-expressions/': '/tooling/precompiled-expressions/',
+    '/guides/bundle-sizes/': '/tooling/bundle-sizes/',
+    '/guides/csp/': '/tooling/csp/',
+    '/guides/plugins/': '/extending/',
+  },
   integrations: [
     sigmx({
       plugins: 'auto',
-      auto: { always: ['jsonSignals'] },
+      auto: {
+        always: ['jsonSignals'],
+        custom: {
+          track: 'src/plugins/plausible.ts',
+          trackFunction: 'src/plugins/plausible.ts',
+          trackHandler: 'src/plugins/plausible.ts',
+        },
+      },
       eventPrefix: ['sigmx-', 'datastar-'],
       precompile: true,
     }),
@@ -32,6 +47,8 @@ export default defineConfig({
       sidebar: [
         { label: 'Start here', items: [{ autogenerate: { directory: 'start' } }] },
         { label: 'Guides', items: [{ autogenerate: { directory: 'guides' } }] },
+        { label: 'Build tooling', items: [{ autogenerate: { directory: 'tooling' } }] },
+        { label: 'Extending', items: [{ autogenerate: { directory: 'extending' } }] },
         { label: 'Examples', items: [{ autogenerate: { directory: 'examples' } }] },
         { label: 'Directives', items: [{ autogenerate: { directory: 'reference/directives' } }] },
         { label: 'Functions', items: [{ autogenerate: { directory: 'reference/functions' } }] },

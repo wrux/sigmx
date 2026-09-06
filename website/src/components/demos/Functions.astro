@@ -1,0 +1,38 @@
+<div class="ex fns" data-signals="{ text: 'hello there', result: '' }">
+  <input class="field" data-bind:text placeholder="Some text">
+  <div class="row">
+    <button class="btn" data-on:click="$result = @shout($text)">@shout</button>
+    <button class="btn ghost" data-on:click="@share({ title: 'sigmx', text: $text, url: location.href }).then((r) => $result = r)">@share</button>
+    <span class="chip" data-show="$result" data-text="$result"></span>
+  </div>
+</div>
+<script>
+  import { action } from 'sigmx'
+  const shout = action({
+    name: 'shout',
+    call: (_, text: string) => String(text ?? '').toUpperCase(),
+  })
+  const share = action({
+    name: 'share',
+    call: async ({ error }, data: ShareData) => {
+      if (!data?.url && !data?.text) throw error('needs a url or text')
+      if (navigator.share) {
+        try {
+          await navigator.share(data)
+          return 'shared'
+        } catch (e) {
+          if ((e as Error).name === 'AbortError') return 'cancelled'
+          throw e
+        }
+      }
+      await navigator.clipboard.writeText(data.url ?? data.text ?? '')
+      return 'copied to clipboard'
+    },
+  })
+  ;(window as any).sigmx.use(shout, share)
+</script>
+<style is:global>
+  .fns { padding: 1rem; display: grid; gap: .7rem; background: var(--ex-surface); }
+  .fns .row { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; }
+  .fns .chip { text-transform: none; letter-spacing: 0; font-size: .8rem; }
+</style>

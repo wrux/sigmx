@@ -36,9 +36,11 @@ htmx moves HTML; sigmx moves HTML and signals. The nearest equivalents:
 | `hx-trigger="keyup changed delay:300ms"` | `data-on:keyup__debounce.300ms` |
 | `hx-indicator` | `data-indicator:busy` + `data-show="$busy"` |
 | `hx-vals` | `payload: {...}` or just signals |
-| `hx-boost` | not provided; sigmx is not a page router |
+| `hx-boost` | [`data-boost`](/reference/directives/boost/): same-origin links and forms fetched and morphed, with history entries |
 
 Keep the `hx-` prefix while migrating: `prefix: ['data-', 'hx-']`. Note that `hx-on:click` in sigmx means "run this expression", not htmx's inline handler syntax.
+
+An htmx extension or Alpine plugin with no equivalent here is usually a small directive of your own; see [Writing plugins](/extending/).
 
 ## From Alpine.js
 

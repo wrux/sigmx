@@ -116,11 +116,11 @@ let selection = sigmx::scan::scan(&o)?;
 std::fs::write("public/sigmx.js", sigmx::scan::Entry::selection(selection, o.from).module())?;
 ```
 
-The scanner applies the [auto mode](/guides/auto-mode/) rules to `.rs`, `.html` and template files (`data-<name>` for directives, `@name(` for functions, custom plugins read from their `attribute({ name })` definition) and writes an entry that imports from the unpacked tree with relative paths. A browser loads that entry as it is; a bundler you already run (swc, esbuild, Vite) turns it into one file. Projects with an npm toolchain can keep installing `sigmx` from npm and using `sigmx/vite` instead; the crate does not mind where the client came from.
+The scanner applies the [auto mode](/tooling/auto-mode/) rules to `.rs`, `.html` and template files (`data-<name>` for directives, `@name(` for functions, custom plugins read from their `attribute({ name })` definition) and writes an entry that imports from the unpacked tree with relative paths. A browser loads that entry as it is; a bundler you already run (swc, esbuild, Vite) turns it into one file. Projects with an npm toolchain can keep installing `sigmx` from npm and using `sigmx/vite` instead; the crate does not mind where the client came from.
 
 ## Your own plugins
 
-A plugin is a module exporting `attribute({ name, mount })`, `action({ name, call })` or `handler({ name, handle })`, with the helpers imported from the unpacked tree (`./vendor/sigmx/kernel/index.js`) or from `sigmx` on npm; see [writing a plugin](/guides/plugins/). The crate ships it three ways:
+A plugin is a module exporting `attribute({ name, mount })`, `action({ name, call })` or `handler({ name, handle })`, with the helpers imported from the unpacked tree (`./vendor/sigmx/kernel/index.js`) or from `sigmx` on npm; see [writing a plugin](/extending/). The crate ships it three ways:
 
 ```rust
 use sigmx::scan::{CustomPlugin, Entry, Kind};

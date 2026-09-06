@@ -34,7 +34,7 @@ Only the signals the expression actually read subscribe it. Below, changing `b` 
 
 <Live title="conditional dependencies" html={`
 <div data-signals="{ a: 0, b: 0, useB: false, runs: 0 }" data-effect="$useB ? $b : $a; $runs = @peek(() => $runs) + 1">
-  <div class="row"><button data-on:click="$a++">a++</button><button data-on:click="$b++">b++</button><label><input type="checkbox" data-bind:useB> read b instead</label></div>
+  <div class="row"><button data-on:click="$a++">a++</button><button data-on:click="$b++">b++</button><label><input type="checkbox" data-bind:use-b> read b instead</label></div>
   <p>effect ran <b data-text="$runs"></b> times</p>
 </div>
 `} />

@@ -1,0 +1,152 @@
+---
+title: "Recipe: Plausible analytics"
+description: "A complete plugin in one file: data-track, @track() and a sigmx-track server event, all speaking to Plausible's script API."
+sidebar: { order: 4 }
+---
+
+import { Code } from '@astrojs/starlight/components'
+import Demo from '../../../components/Demo.astro'
+import Plausible from '../../../components/demos/Plausible.astro'
+import plausibleSrc from '../../../components/demos/Plausible.astro?raw'
+import pluginSrc from '../../../plugins/plausible.ts?raw'
+
+[Plausible](https://plausible.io) is a small, cookie-free analytics service. Its script exposes one function, `window.plausible(event, { props, callback })`, and that is enough to build a plugin that covers the three ways a goal gets recorded in a hypermedia app: a user clicks something, an expression decides something, or the server confirms something. All three share a name, `track`, because directives, functions and handlers live in separate namespaces.
+
+| plugin | written as | records |
+|---|---|---|
+| directive | `data-track:signup="{ plan: $plan }"` | a DOM event on an element |
+| function | `@track('Checkout', { total: $total })` | a step inside any expression |
+| server-event handler | `event: sigmx-track` | a goal the server knows happened |
+
+<Demo app title="All three, logged by a stand-in for Plausible's script" source={plausibleSrc}><Plausible /></Demo>
+
+The demo replaces `window.plausible` with a function that appends each call to the log, so it works without an account. Everything else on the page is the real plugin, registered on this site through auto mode as described below.
+
+## The plugin
+
+One file, no dependencies beyond `sigmx`:
+
+<Code code={pluginSrc} lang="ts" title="src/plugins/plausible.ts" />
+
+Three decisions are worth pointing out.
+
+**Missing script.** `plausible()` installs the same queue stub Plausible's own snippet does when the script has not loaded. Calls are queued and replayed once it arrives, which covers a script loaded late or deferred; if the script is blocked they sit in the queue and nothing else changes. The page never throws because analytics are absent.
+
+**Resolving the promise.** `send` resolves when Plausible's `callback` fires, immediately when only the queue stub is present (there is nothing to wait for), and after one second regardless, so `@track('X').then(() => @post('/x'))` can never stall because a script was blocked.
+
+**Names from keys.** HTML lowercases attribute names, so `data-track:signup` arrives as `signup`. `cased('pascal')` turns it into `Signup` and `data-track:add-to-cart` into `AddToCart`, which matches how Plausible goals are usually named. Authors who want the key as written add `__case.kebab`.
+
+## `data-track`
+
+```html
+<button data-track:signup="{ plan: $plan }">Sign up</button>
+<form data-track:contact__event.submit data-on:submit="@post('/contact')">…</form>
+<a href="/pricing" data-track:pricing__once>Pricing</a>
+```
+
+| part | |
+|---|---|
+| key | required: the event name, recased to PascalCase |
+| value | optional: an expression evaluated when the event fires, giving the `props`; `evt` is in scope |
+| `__event.<name>` | listen for another DOM event; default `click` |
+| `__once` | send at most once |
+| `__case.<style>` | `kebab`, `snake`, `camel` or `pascal` for the event name |
+
+The listener goes through `listen`, so it is removed when the attribute or element goes.
+
+## `@track()`
+
+```html
+<button data-on:click="@track('Checkout', { total: $total }); @post('/checkout')">Pay</button>
+<button data-on:click="@track('Download').then(() => location.href = '/file.zip')">Download</button>
+```
+
+`@track(name, props?)` returns the promise from `send`. Fire and forget is the common case; chain when the next step navigates away, because a page unload can lose an event that is still being sent.
+
+## `sigmx-track` from the server
+
+The server is the one place that knows whether a purchase, a signup or an upload actually happened, so it records the goal itself, in the same stream that patches the page. On the wire:
+
+```
+event: sigmx-patch-signals
+data: signals {"ordered": true, "total": 24}
+
+event: sigmx-track
+data: name Purchase
+data: props {"total": 24, "qty": 2}
+
+```
+
+Any server can write those lines. `name` is the event, `props` an optional JSON object the handler parses. Because the event is emitted after the work, a failed request records nothing, and there is no client-side guess about what the server did.
+
+From a JavaScript runtime, `sigmx/server` writes the same thing:
+
+```ts
+import { sseStream } from 'sigmx/server'
+
+sseStream((s) => {
+  s.patchSignals({ ordered: true, total })
+  s.send({ event: 'sigmx-track', lines: ['name Purchase', `props ${JSON.stringify({ total, qty })}`] })
+})
+```
+
+The demo's endpoint on this site is an Astro route (`src/pages/api/goal.ts`) that reads the signals with `readSignals(request)` and returns exactly that stream through `@sigmx/astro/server`.
+
+## Pageviews
+
+Plausible's default script counts a pageview on load and hooks `history.pushState`, so navigations made with `data-boost` are counted without any help from the plugin.
+
+With the `manual` script variant nothing is automatic. Send the first pageview yourself and one after each boosted navigation, from the lifecycle event the request client dispatches:
+
+```html
+<body data-boost data-init="@track('pageview')"
+      data-on:sigmx-fetch="evt.detail.type === 'finished' && evt.detail.el.closest('[data-boost]') && @track('pageview')">
+```
+
+Or emit it from the server as `event: sigmx-track` / `data: name pageview` on responses that represent a new page.
+
+## Registering
+
+By hand, with the built-ins:
+
+```ts
+import { createSigmx } from 'sigmx'
+import { essentials } from 'sigmx/presets/essentials'
+import { track, trackFunction, trackHandler } from './plugins/plausible'
+
+createSigmx({ plugins: [...essentials, track, trackFunction, trackHandler] })
+```
+
+With [auto mode](/tooling/auto-mode/), tell the scanner where the exports live, through the [CLI](/tooling/cli/), the [Vite plugin](/tooling/vite/) or a framework integration, and it ships each one only when your templates use it: the directive when `data-track` appears, the function when `@track(` does, the handler when `'track'` appears as a string, which the plugin file itself satisfies. Each export is one entry, so a file with three plugins is listed three times.
+
+```bash
+npx sigmx scan src --out src/sigmx-plugins.js \
+  --custom track=src/plugins/plausible.ts,trackFunction=src/plugins/plausible.ts,trackHandler=src/plugins/plausible.ts
+```
+
+```js
+// vite.config.js
+import { sigmxAuto } from 'sigmx/vite'
+
+const custom = {
+  track: 'src/plugins/plausible.ts',
+  trackFunction: 'src/plugins/plausible.ts',
+  trackHandler: 'src/plugins/plausible.ts',
+}
+export default { plugins: [sigmxAuto({ custom })] }
+```
+
+```js
+// astro.config.mjs, which is how this site registers it
+sigmx({ plugins: 'auto', auto: { custom }, precompile: true })
+```
+
+Expressions in `data-track` values are precompiled with everything else when the scanner knows the plugin, since it reads `name` and `key` from the source without running it.
+
+## Privacy
+
+Plausible sets no cookies and stores no identifiers, and the plugin adds none. What you put in `props` is your responsibility: a plan name, a quantity or a category is fine; an email address, a user id or anything typed into a form is personal data and does not belong in an analytics event. Keep the expressions in `data-track` values to signals you would be happy to see in a public dashboard.
+
+## Size
+
+Measured the same way as the [bundle size tables](/tooling/bundle-sizes/) (esbuild, minified, brotli), the three plugins together add 292 bytes on top of the 4,659 byte core, 751 bytes minified. Registering only the directive or only the function costs less, since `send` is the bulk of it and is shared.

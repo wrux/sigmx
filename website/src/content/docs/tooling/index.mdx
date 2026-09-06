@@ -1,0 +1,75 @@
+---
+title: "Build tooling"
+description: "sigmx is small because the build decides what ships: a scanner picks the plugins your markup uses, a precompiler removes the expression compiler, and every result is measured."
+sidebar: { order: 0, label: "Overview" }
+---
+
+import sizes from '../../../data/sizes.json'
+
+export const kb = (n) => (n / 1024).toFixed(1)
+export const bundle = (prefix) => sizes.bundles.find((b) => b.name.startsWith(prefix))
+
+sigmx is small because the build decides what ships, not the runtime. The runtime has no feature flags, no lazy loader and no registry of everything it could do; it has a {kb(bundle('core only').brotli)} KB core and {sizes.perPlugin.length} plugins that are plain values. Which of those values reach the browser is settled by tooling that reads your source, the way Tailwind reads it for class names. The tooling does not care what renders the markup: PHP, Rails, Go templates, JSX, `.astro` files and Rust's maud all look the same to a scan for `data-text`.
+
+This page walks through what happens to a project. The pages after it are the references.
+
+## What happens to a project
+
+**1. You write attributes.** Templates carry `data-text="$count"`, `data-on:click="@post('/save')"` and the rest; nothing on the page says which plugins those need.
+
+**2. The scanner selects plugins.** [Auto mode](/tooling/auto-mode/) reads every source file (templates, server code, Markdown) and keeps a plugin when it finds `data-<name>` for a directive or `@name(` for a function. Two rules fill in what the text cannot show: every network function (`@get` to `@delete`, `@ws`) brings the `patch-elements` and `patch-signals` handlers that apply its responses, and `boost` brings `@get`, `@post` and both handlers. Your own plugins follow the same rules once you name their files. The result is a module exporting a `plugins` array and a `report` saying why each one is there.
+
+**3. The precompiler removes the expression compiler.** With [precompiled expressions](/tooling/precompiled-expressions/) the same scan collects every literal attribute expression, compiles each one with the runtime's own pipeline and writes them into a table keyed by source text. The browser looks expressions up instead of compiling them, so the tokenizer, the rewriter and `new Function` leave the bundle: the core goes from {kb(bundle('core only').brotli)} KB to {kb(bundle('core, precompiled').brotli)} KB brotli, and a strict Content-Security-Policy needs neither `'unsafe-eval'` nor a nonce.
+
+**4. Your bundler drops the rest.** Plugins are exported constants, `sigmx/plugins` is a barrel with no side effects, and the package marks every module side-effect free apart from the script-tag build and the CLI. Whatever the generated module does not import is never in the graph, so esbuild, Rollup and Vite tree-shake it without configuration.
+
+**5. The result is measured.** `npm run size` builds every configuration and every plugin from source and records raw, gzip and brotli bytes in `sizes.json`; the [bundle sizes](/tooling/bundle-sizes/) page and the per-plugin line on each reference page render that file, so a number in the docs is never typed by hand.
+
+## An example, end to end
+
+`examples/express` is a Node server with the page in `index.html` and the routes in `server.js`. Its client build is one Vite plugin, told which two files to read:
+
+```js
+// vite.config.js
+import { sigmxAuto } from 'sigmx/vite'
+
+export default { plugins: [sigmxAuto({ include: ['index.html', 'server.js'] })] }
+```
+
+The same selection with no bundler plugin at all is `npx sigmx scan index.html server.js --out public/sigmx-plugins.js`. Either way the scan finds fourteen plugins (`attr`, `bind`, `className`, `cloak`, `httpGet`, `httpPost`, `indicator`, `on`, `show`, `signals`, `style`, `text`, plus `applyElements` and `applyState` implied by `httpGet`) and prints:
+
+```
+[sigmx] auto: 14 plugins (applyElements, applyState, attr, bind, className, cloak, httpGet, httpPost, indicator, on, show, signals, style, text); 36 unused
+```
+
+`examples/hono` renders the same page from JSX and scans `.tsx` files instead, with the same result. `examples/vite` adds a directive of its own (`custom: { upper: 'src/plugins/upper.ts' }`) and it is selected like a built-in. `examples/astro` uses the Astro integration with precompiled expressions as well, `sigmx({ plugins: 'auto', precompile: { fallback: false } })`: thirteen plugins, and every expression on the page is a literal, so the runtime compiler goes too. Measured from each example's own `npm run build` on 2026-09-06:
+
+| what ships | plugins | brotli | gzip | minified |
+|---|---:|---:|---:|---:|
+| `examples/express` and `examples/hono`: auto mode, runtime compiler | 14 | **9.1 KB** | 9.9 KB | 23.2 KB |
+| `examples/vite`: auto mode with a custom plugin, runtime compiler | 12 | 9.2 KB | 10.1 KB | 23.6 KB |
+| `examples/astro`: auto mode and precompiled expressions | 13 | **8.2 KB** | 8.9 KB | 21.8 KB |
+| the essentials preset, hand-picked | 17 | {kb(bundle('essentials').brotli)} KB | {kb(bundle('essentials').gzip)} KB | {kb(bundle('essentials').raw)} KB |
+| everything, the shipped `sigmx.standalone.js` | {sizes.perPlugin.length} | {kb(bundle('everything, shipped').brotli)} KB | {kb(bundle('everything, shipped').gzip)} KB | {kb(bundle('everything, shipped').raw)} KB |
+
+The Express build has three fewer plugins than the essentials preset and weighs 105 bytes more: it carries `cloak` and `style`, which `essentials` does not, while the extra request functions in `essentials` share one client and cost almost nothing. The gap from there to the Astro build is almost entirely the compiler. Nobody chose those lists. Add `data-persist` to a template and the next build ships `persist`; remove the last `@get` and the request client and both handlers go.
+
+## Which tool for which setup
+
+| your setup | use | what you write |
+|---|---|---|
+| Vite, with any framework or plain HTML | [`sigmx/vite`](/tooling/vite/) | `sigmxAuto()` and `sigmxPrecompile()` in `vite.config`, then `import { plugins } from 'virtual:sigmx-plugins'` |
+| any other bundler, no bundler, or a step in CI | [`npx sigmx scan`](/tooling/cli/) | a generated `sigmx-plugins.js` you check in or build |
+| a Rust project with no Node | [the `sigmx` crate](/sdks/rust/) | `sigmx entry src --out public/sigmx.js`, or `sigmx::scan` from your own build step |
+| Astro | [`@sigmx/astro`](/sdks/astro/) | `sigmx({ plugins: 'auto', precompile: true })`; the client is injected for you |
+
+All four run the same selection rules. The Vite plugin, the CLI and the Astro integration share one implementation (`scanProject` in `sigmx/vite`); the Rust crate carries a port of the same rules, plus `.rs` and template extensions.
+
+## The pages in this group
+
+- [Auto mode](/tooling/auto-mode/): what counts as usage, implied dependencies, custom plugins, limits.
+- [Precompiled expressions](/tooling/precompiled-expressions/): the table, the fallback, what changes and what does not.
+- [CLI](/tooling/cli/): every flag of `npx sigmx scan`, the generated module, the Rust binary's equivalents.
+- [Vite plugin](/tooling/vite/): `sigmxAuto`, `sigmxPrecompile`, `scanProject` and the virtual modules.
+- [Bundle sizes](/tooling/bundle-sizes/): every configuration and every plugin, brotli first.
+- [Content Security Policy](/tooling/csp/): the nonce compiler for pages that forbid eval, and why precompiling makes it unnecessary.

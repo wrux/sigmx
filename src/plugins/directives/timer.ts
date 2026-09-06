@@ -1,7 +1,7 @@
 import { toMs } from '../../kernel/index.js';
 import { dir } from '../def.js';
 
-/** `on-interval__duration.5s.leading="expr"`. Default one second. */
+/** `on-interval__duration.5s="expr"`. Default one second. */
 export const onInterval = dir('on-interval', 22, ({ mods, evaluate }) => {
   const d = mods.get('duration');
   const run = () => evaluate();

@@ -59,13 +59,15 @@ Modifiers: `__event.blur` picks the events to listen for, `__case.kebab` changes
 
 ## Posting a form
 
-With `contentType: 'form'` the request serialises the closest form (or the one matched by `selector`) instead of the signals: URL-encoded, or multipart when the form says so. Native validation runs first. The server validates again and answers with patches.
+With `contentType: 'form'` the request serialises the closest form (or the one matched by `selector`) instead of the signals: URL-encoded, or multipart when the form says so, exactly as a browser would submit it, so any server stack reads the fields with what it already has. Native validation runs first. The server validates again and answers with patches; in JavaScript, `sigmx/server` reads the fields as signals and builds the reply.
 
 <Demo app source={contactSrc}><ContactForm /></Demo>
 
 ```ts
-// src/pages/api/form.ts
-export const POST = async ({ request }) => {
+// any handler that takes a Request and returns a Response
+import { patchElements, patchSignals, readSignals, sse } from 'sigmx/server'
+
+export const POST = async (request: Request) => {
   try {
     const { email } = await readSignals(request, schema)   // any Standard Schema validator
     return sse(patchElements(`<p id="form-status">Thanks, ${email}.</p>`), patchSignals({ sent: true }))

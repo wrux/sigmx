@@ -28,7 +28,7 @@ Every write is a JSON merge-patch (RFC 7396): objects merge, `null` removes, oth
 
 ## Arrays
 
-Arrays are leaves that notify on mutation: `push`, `splice`, index assignment and `length` changes all re-run readers. Objects inside arrays are plain; replace the array or the element to signal a deep change.
+Arrays are leaves that notify on mutation: `push`, `splice`, index assignment and `length` changes all re-run readers, and a method call notifies once. Objects and arrays nested inside an array are reactive in place too, so `$list[0].done = true` re-runs readers of `$list`.
 
 <Live html={`
 <div data-signals="{ list: [3, 1, 2] }" class="row">

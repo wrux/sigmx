@@ -39,7 +39,7 @@ data-query-string:q__history="''"           <!-- pushes a history entry per chan
 
 ## Typed values
 
-Parameters that parse as JSON come back typed: `?page=2` gives the number 2, `?tags=["a"]` an array.
+The parameter takes the default's type. With a number, boolean, array or object default the parameter is parsed as JSON, so `?page=2` gives the number 2 and `?tags=["a"]` an array; with a string default it stays text, so `?code=007` keeps its leading zeros.
 
 <Live title="numbers stay numbers" html={`
 <div data-query-string:page="1">

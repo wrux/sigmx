@@ -4,7 +4,7 @@ description: "The plugins people reach for in Alpine.js, htmx and Datastar, and 
 sidebar: { order: 15 }
 ---
 
-Most of what the Alpine and htmx ecosystems add as plugins or extensions exists here as an opt-in directive or function. Register only what you use.
+Most of what the Alpine and htmx ecosystems add as plugins or extensions exists here as an opt-in directive or function. Register only what you use. Anything marked "not provided" below is a candidate for a directive of your own; see [Writing plugins](/extending/).
 
 ## Alpine.js
 
@@ -12,7 +12,7 @@ Most of what the Alpine and htmx ecosystems add as plugins or extensions exists 
 |---|---|---|
 | `x-cloak` | [`data-cloak`](/reference/directives/cloak/) | same CSS rule, `[data-cloak] { display: none !important }` |
 | `x-collapse` | [`data-collapse`](/reference/directives/collapse/) | standalone, no `x-show` needed; `__duration` |
-| `x-transition` | [`data-transition`](/reference/directives/transition/) | fade with optional scale; class-based transitions are not provided |
+| `x-transition` | [`data-transition`](/reference/directives/transition/) | fade only; class-based transitions are not provided |
 | `x-mask` | [`data-mask`](/reference/directives/mask/) | `__dynamic` for `x-mask:dynamic` |
 | `x-teleport` | [`data-teleport`](/reference/directives/teleport/) | selector value |
 | `x-html` | [`data-html`](/reference/directives/html/) | |
@@ -21,7 +21,7 @@ Most of what the Alpine and htmx ecosystems add as plugins or extensions exists 
 | `$persist` | [`data-persist`](/reference/directives/persist/) | |
 | `$dispatch` | [`@dispatch`](/reference/functions/dispatch/) | |
 | `$watch` | [`data-on-signal-patch`](/reference/directives/on-signal-patch/) | |
-| `x-anchor`, `x-sort` | not provided | both wrap a large third-party library; use it directly from a `data-init` |
+| `x-anchor`, `x-sort` | not provided | both wrap a large third-party library; use it directly from a `data-init`, or wrap it in a directive of your own |
 | `x-for`, `x-if` | not provided | render on the server and patch; sigmx has no client templating |
 
 ## htmx

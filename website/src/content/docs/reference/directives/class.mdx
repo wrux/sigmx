@@ -24,7 +24,7 @@ data-class="{ active: $on, 'text-red text-bold': $error }"
 
 | modifier | effect |
 |---|---|
-| `__case.camel` | keep the key camelCase (`data-class:isOn__case.camel` toggles `isOn`) |
+| `__case.camel` | convert the key to camelCase (`data-class:is-on__case.camel` toggles `isOn`; HTML lowercases attribute names, so the key is written in kebab-case) |
 
 ## Keyed form
 
@@ -63,7 +63,7 @@ Classes already on the element are left alone; the directive only toggles the on
 
 ## Notes
 
-Conditions are coerced with `!!`, so `0`, `''`, `null` and `undefined` remove the class. For a class name computed at runtime, use the object form with a computed key: `data-class="{ [$tone]: true }"` (remember to remove the previous one, or set `data-attr:class` instead).
+Conditions are coerced with `!!`, so `0`, `''`, `null` and `undefined` remove the class. For a class name computed at runtime, use the object form with a computed key: `data-class="{ [$tone]: true }"`; when `$tone` changes, the key that disappeared from the object has its class removed.
 
 ## Register
 

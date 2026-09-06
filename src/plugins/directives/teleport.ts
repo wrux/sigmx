@@ -2,7 +2,7 @@ import { dir } from '../def.js';
 
 /**
  * Moves the element to another place in the document: `teleport="body"` (a selector).
- * `__prepend` inserts at the start. The element and its signals keep working where it lands.
+ * The element and its signals keep working where it lands.
  */
 export const teleport = dir('teleport', 38, ({ el, evaluate, error }) => {
   const selector = String(evaluate()); // a literal selector, or an expression with `__dynamic`

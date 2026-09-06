@@ -1,0 +1,60 @@
+<div class="ex plausible" data-signals="{ plan: 'growth', qty: 1, total: 0, ordered: false, sent: 0 }">
+  <div class="grid">
+    <label class="field-row">Plan
+      <select class="field" data-bind:plan>
+        <option value="starter">Starter</option>
+        <option value="growth">Growth</option>
+        <option value="team">Team</option>
+      </select>
+    </label>
+    <label class="field-row">Quantity
+      <input class="field" type="number" min="1" max="9" data-bind:qty>
+    </label>
+  </div>
+  <div class="row">
+    <button class="btn ghost" data-track:signup="{ plan: $plan }">Sign up (data-track)</button>
+    <button class="btn ghost" data-on:click="@track('Plan Chosen', { plan: $plan }).then(() => $sent++)">Choose plan (@track)</button>
+    <button class="btn" data-on:click="@post('/api/goal')">Order (server event)</button>
+  </div>
+  <p class="status muted">
+    <span data-show="$ordered">Ordered: total <b class="num" data-text="$total"></b>. </span>
+    <span data-show="$sent">@track resolved <b class="num" data-text="$sent"></b> time(s).</span>
+    <span data-show="!$ordered && !$sent">Nothing sent yet.</span>
+  </p>
+  <div class="log">
+    <div class="log-head">
+      <span>window.plausible calls</span>
+      <button class="btn ghost small" data-on:click="document.getElementById('plausible-log').replaceChildren()">Clear</button>
+    </div>
+    <ol id="plausible-log"></ol>
+  </div>
+</div>
+<script>
+  // A stand-in for Plausible's script: records each call on the page instead of sending it.
+  type Call = { props?: Record<string, unknown>; callback?: () => void }
+  const stub = (event: string, options: Call = {}) => {
+    const li = document.createElement('li')
+    li.innerHTML = `<b></b><code></code>`
+    li.querySelector('b')!.textContent = event
+    li.querySelector('code')!.textContent = options.props ? JSON.stringify(options.props) : ''
+    document.getElementById('plausible-log')?.append(li)
+    setTimeout(() => options.callback?.(), 150)
+  }
+  const w = window as any
+  for (const args of w.plausible?.q ?? []) stub(...(args as [string, Call]))
+  w.plausible = stub
+</script>
+<style is:global>
+  .plausible { padding: 1rem; display: grid; gap: .8rem; background: var(--ex-surface); }
+  .plausible .grid { display: grid; grid-template-columns: 1fr 1fr; gap: .8rem; }
+  .plausible .field-row { display: grid; gap: .3rem; font-size: .8rem; color: var(--ex-muted); }
+  .plausible .row { display: flex; gap: .6rem; flex-wrap: wrap; }
+  .plausible .status { margin: 0; font-size: .85rem; }
+  .plausible .log { border: 1px solid var(--ex-line); border-radius: .6rem; overflow: hidden; }
+  .plausible .log-head { display: flex; justify-content: space-between; align-items: center; padding: .4rem .7rem; background: var(--ex-surface-2); font-family: var(--sl-font-mono); font-size: .72rem; color: var(--ex-muted); }
+  .plausible .btn.small { padding: .2rem .6rem; font-size: .75rem; }
+  .plausible ol { list-style: none; margin: 0; padding: 0; min-height: 2.2rem; font-family: var(--sl-font-mono); font-size: .8rem; }
+  .plausible ol li { display: flex; gap: .8rem; padding: .4rem .7rem; border-top: 1px solid var(--ex-line); animation: msg-in .25s ease-out; }
+  .plausible ol li b { color: var(--ex-accent); }
+  .plausible ol li code { color: var(--ex-muted); background: none; padding: 0; }
+</style>

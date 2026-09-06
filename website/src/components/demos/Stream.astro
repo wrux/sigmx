@@ -1,7 +1,7 @@
 <div class="ex job" data-signals="{ progress: 0, running: false }">
   <header class="bar">
     <div><b>Nightly export</b><small class="muted">one request, many patches</small></div>
-    <button class="btn" data-on:click="@get('/api/stream', { openWhenHidden: true })" data-attr:disabled="$running" data-text="$running ? 'Working…' : 'Start job'">Start job</button>
+    <button class="btn" data-on:click="@get('/api/stream')" data-attr:disabled="$running" data-text="$running ? 'Working…' : 'Start job'">Start job</button>
   </header>
   <div class="track"><i data-animate:width__duration.350ms="$progress + '%'"></i></div>
   <div class="meta"><span class="num" data-text="$progress + '%'">0%</span><span class="chip" data-class="{ good: $progress === 100 }" data-text="$progress === 100 ? 'done' : $running ? 'running' : 'idle'"></span></div>

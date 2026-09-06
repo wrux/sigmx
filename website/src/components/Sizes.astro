@@ -6,18 +6,19 @@ interface Props {
 }
 const { plugins = false } = Astro.props;
 const kb = (n: number) => `${(n / 1024).toFixed(1)} KB`;
-const rows = plugins ? [...sizes.perPlugin].sort((a, b) => b.gzip - a.gzip) : sizes.bundles;
+const rows = plugins ? [...sizes.perPlugin].sort((a, b) => b.brotli - a.brotli) : sizes.bundles;
+const fmt = (n: number) => (plugins ? `${n} B` : kb(n));
 ---
 <div class="sizes">
 <table>
-  <thead><tr><th>{plugins ? 'plugin (added on top of the core)' : 'what you register'}</th><th>minified</th><th>gzip</th><th>brotli</th></tr></thead>
+  <thead><tr><th>{plugins ? 'plugin (added on top of the core)' : 'what you register'}</th><th>brotli</th><th>gzip</th><th>minified</th></tr></thead>
   <tbody>
     {rows.map((r: any) => (
       <tr class={r.name?.startsWith('everything') || r.name?.startsWith('minimal preset') ? 'hl' : ''}>
-        <td>{r.name}</td><td class="num">{plugins ? r.raw + ' B' : kb(r.raw)}</td><td class="num">{plugins ? r.gzip + ' B' : kb(r.gzip)}</td><td class="num">{plugins ? r.brotli + ' B' : kb(r.brotli)}</td>
+        <td>{r.name}</td><td class="num"><b>{fmt(r.brotli)}</b></td><td class="num">{fmt(r.gzip)}</td><td class="num">{fmt(r.raw)}</td>
       </tr>
     ))}
   </tbody>
 </table>
-<p class="muted">Measured {sizes.measuredAt} with esbuild (minify, mangle internals), gzip level 9 and brotli quality 11. Regenerate with <code>npm run sizes</code>.</p>
+<p class="muted">Measured {sizes.measuredAt} with esbuild (minify, mangle internals), brotli quality 11 and gzip level 9. Regenerate with <code>npm run size -- --json website/src/data/sizes.json</code>.</p>
 </div>

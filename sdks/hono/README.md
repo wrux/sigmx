@@ -37,7 +37,7 @@ app.get('/api/progress', (c) =>
 | `isRequest` | true when the sigmx client made the request, so a route can return a partial instead of a whole page |
 | `signals()` | the signals: `sigmx` query parameter on GET and DELETE, JSON body otherwise, form fields for `contentType: 'form'` requests |
 | `signals(schema)` | the same, validated by any [Standard Schema](https://standardschema.dev) validator (Zod, Valibot, ArkType…) and typed from it |
-| `html(body, { selector, mode, useViewTransition, status })` | HTML the client morphs by id, or into `selector` with `mode`. Plain `c.html()` already works when you morph by id |
+| `html(body, { selector, mode, status })` | HTML the client morphs by id, or into `selector` with `mode`. Plain `c.html()` already works when you morph by id |
 | `json(signals, { onlyIfMissing, status })` | JSON the client merges into its signals |
 | `events(...events)` | several patches in one response, sent at once |
 | `stream(fn)` | a long-lived stream; `fn` gets a `SigmxStream` with `patchElements`, `patchSignals`, `removeElements`, `removeSignals`, `executeScript`, `sleep`, `closed` and `onAbort`. Built on Hono's `streamSSE`, so it stops when the client disconnects |

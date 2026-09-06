@@ -17,6 +17,7 @@ const app = createSigmx(options)
 | `prefix` | `string \| string[]` | `'data-'` | attribute prefixes to scan; the first is primary |
 | `eventPrefix` | `string \| string[]` | `'sigmx-'` | server event-name prefixes to accept |
 | `compile` | `Compiler` | `new Function` | expression compiler; see `sigmx/csp` |
+| `expressions` | `ExpressionCompiler` | | a build-time table from `precompiled(table)`; see [Precompiled expressions](/tooling/precompiled-expressions/) |
 | `store` | `Store` | a new store | share state with another instance |
 | `onError` | `(error, { plugin, el, attr }) => void` | `console.error` | error sink |
 | `autoStart` | `boolean` | `true` | scan `document.documentElement` on DOM ready |
@@ -40,4 +41,4 @@ type ActionPlugin    = { type: 'action'; name; call(ctx, ...args): any }
 type HandlerPlugin   = { type: 'handler'; name; handle(runtime, data: Record<string, string>): void }
 ```
 
-`attribute()`, `action()` and `handler()` from `sigmx` build these with types filled in. See [Writing plugins](/guides/plugins/).
+`attribute()`, `action()` and `handler()` from `sigmx` build these with types filled in. See [Writing plugins](/extending/).

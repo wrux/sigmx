@@ -4,7 +4,7 @@ description: "Feature-rich, server-backed examples: a streaming chat agent, a li
 sidebar: { order: 0, label: "Overview" }
 ---
 
-Each example is a real application slice: an Astro component on this page talking to an endpoint written with the `@sigmx/astro` SDK. The full source of both is shown under every demo. Together they use nearly every directive and function in the library.
+Each example is a real application slice: markup on this page talking to an endpoint on this site. The full source of both is shown under every demo. The endpoints are written with the JavaScript server helpers (as Astro routes, since that is what this site runs on); every response they send is plain HTML, JSON or a text event stream that a server in any language can produce the same way. Together they use nearly every directive and function in the library.
 
 | example | what it shows |
 |---|---|
@@ -14,4 +14,4 @@ Each example is a real application slice: an Astro component on this page talkin
 | [Infinite feed](/examples/feed/) | an intersection-observer sentinel that loads pages the server appends, with a loading indicator and relative timestamps |
 | [Data table](/examples/table/) | server-driven sort, filter and pagination, state synced to the query string, debounced search, focus-preserving morphs |
 
-All of the server code runs in this site's Astro endpoints; nothing talks to a third-party service, and the "agent" is a canned responder so the demo needs no API key.
+All of the server code runs on this site; nothing talks to a third-party service, and the "agent" is a canned responder so the demo needs no API key.

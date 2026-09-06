@@ -1,0 +1,135 @@
+---
+title: "Writing a server-event handler"
+description: "Give the server a new verb: the wire format, handler({ name, handle }), prefixes, multi-line values, and a streamed toast."
+sidebar: { order: 3 }
+---
+
+import Demo from '../../../components/Demo.astro'
+import Toast from '../../../components/demos/Toast.astro'
+import toastSrc from '../../../components/demos/Toast.astro?raw'
+
+Every event on a `text/event-stream` response is routed by name to a handler. Two ship with sigmx, `patch-elements` and `patch-signals`; a handler of your own gives the server a new verb that any language can emit.
+
+## The wire format
+
+An event is a name and one or more `data:` lines. Each data line is a `key value` pair: the key runs to the first space, the value is the rest.
+
+```
+event: sigmx-toast
+data: message Export finished
+data: tone good
+
+```
+
+That is the whole contract. A server writes those lines to a response with `Content-Type: text/event-stream`, one blank line after each event, and closes the stream when it is done. It can be a template, a `print` in a loop, or a streaming response object; nothing about it is specific to a language or framework.
+
+The handler receives the pairs as an object:
+
+```ts
+import { handler } from 'sigmx'
+
+export const toast = handler({
+  name: 'toast',                              // event: sigmx-toast
+  handle: (runtime, { message, tone = 'info' }) => show(message, tone),
+})
+```
+
+`handle` gets the runtime first: `runtime.store` to patch signals, `runtime.emit` to dispatch a `sigmx-*` DOM event, `runtime.handle` to delegate to another handler, `runtime.compiler` if it needs to build code. Errors thrown from `handle` are reported through `onError` and do not close the stream.
+
+## Prefixes
+
+The event on the wire is `sigmx-toast`; the handler is named `toast`. The runtime strips whichever configured `eventPrefix` the event starts with before looking the handler up (`sigmx-` by default, more during a migration from another library), so one handler serves every accepted prefix. An event no handler claims is ignored, apart from the `sigmx-server-event` DOM event described below.
+
+## Multi-line values
+
+A value that contains newlines is sent as the same key repeated, one line per line; the client joins them back with `\n`. The built-in `patch-elements` handler receives multi-line HTML this way:
+
+```
+event: sigmx-patch-elements
+data: elements <ul id="list">
+data: elements   <li>one</li>
+data: elements </ul>
+```
+
+Keys are plain strings, so a handler can accept JSON in a value (`data: props {"total": 42}`) and parse it itself.
+
+## Emitting from a JavaScript runtime
+
+Where the server is JavaScript, `sigmx/server` writes the format for you. `sse()` returns a fixed response; `sseStream()` keeps one open while a callback sends events, and `send()` accepts any event name with its data lines:
+
+```ts
+import { sse, sseStream } from 'sigmx/server'
+
+sse({ event: 'sigmx-toast', lines: ['message Saved', 'tone good'] })
+
+sseStream(async (s) => {
+  s.send({ event: 'sigmx-toast', lines: ['message Export queued'] })
+  await work()
+  s.patchSignals({ done: true })
+  s.send({ event: 'sigmx-toast', lines: ['message Export finished', 'tone good'] })
+})
+```
+
+`formatEvent()` and `SSE_HEADERS` are there for frameworks that want the string and the headers rather than a `Response`.
+
+## Worked example
+
+The demo's endpoint streams three `sigmx-toast` events with a delay between them; the handler appends each to a stack and removes it after a few seconds. On the wire the response is:
+
+```
+event: sigmx-toast
+data: message Export queued
+data: tone info
+
+event: sigmx-toast
+data: message Rendering 3 pages…
+data: tone info
+
+event: sigmx-toast
+data: message Export finished
+data: tone good
+
+```
+
+<Demo app title="A toast handler" source={toastSrc}><Toast /></Demo>
+
+This site is built with Astro, so its endpoint is an Astro route using the helpers above through `@sigmx/astro/server`; the equivalent in any other server is the text shown before it.
+
+```ts
+// src/pages/api/toast.ts
+import { sseStream } from '@sigmx/astro/server'
+
+export const prerender = false
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+const toasts = [
+  { message: 'Export queued', tone: 'info' },
+  { message: 'Rendering 3 pages…', tone: 'info' },
+  { message: 'Export finished', tone: 'good' },
+]
+
+export const GET = () =>
+  sseStream(async (s) => {
+    for (const [i, t] of toasts.entries()) {
+      if (i) await sleep(900)
+      s.send({ event: 'sigmx-toast', lines: [`message ${t.message}`, `tone ${t.tone}`] })
+    }
+  })
+```
+
+## Without a handler
+
+Every event also dispatches `sigmx-server-event` on `document` with `{ el, event, data }` before any handler runs, so a one-off can be handled from markup:
+
+```html
+<div data-on:sigmx-server-event="evt.detail.event === 'sigmx-toast' && ($toast = evt.detail.data.message)"></div>
+```
+
+Write a handler once the same event is handled in more than one place, or when the behaviour needs code rather than an expression.
+
+## Registering
+
+```ts
+createSigmx({ plugins: [...essentials, toast] })
+```
+
+Under [auto mode](/tooling/auto-mode/) a custom handler ships when its name appears as a string in a scanned file, typically the server code that emits it. Keep the endpoint inside the scanned directories, or list the handler under `always`.

@@ -1,4 +1,4 @@
-<div class="ex clock" data-on-interval__duration.2s.leading="@get('/api/time')">
+<div class="ex clock" data-init="@get('/api/time')" data-on-interval__duration.2s="@get('/api/time')">
   <span class="label">Server time</span>
   <b class="num"><span id="server-time">…</span></b>
   <small class="muted">refreshed every 2 s with a plain HTML response</small>
