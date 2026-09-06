@@ -40,4 +40,6 @@ const squeezed = await minify(bundled.outputFiles[0].text, {
 });
 const { writeFileSync } = await import('node:fs');
 writeFileSync('dist/sigmx.standalone.js', squeezed.code);
+// The Rust SDK embeds the client; keep its copy in step with dist/.
+execSync('node scripts/rust-client.mjs', { stdio: 'inherit' });
 console.log('built dist/');

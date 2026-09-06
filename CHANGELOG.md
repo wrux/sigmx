@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+**A Rust SDK.** `sdks/rust` is the `sigmx` crate: the protocol with no dependencies (`Event`, `PatchElements`, `PatchSignals`, `ExecuteScript`, `html`/`json`/`sse` responses), `read_signals` for the query parameter, JSON body and form cases, and feature-gated integrations for axum 0.8 (`ReadSignals`, `IsSigmxRequest`, `IntoResponse` for every builder, `Sse` with fixed, stream, channel and future-driven bodies, `serve_client`), Cloudflare Workers (`sigmx::worker`) and anything on the `http` crate. None of it needs tokio, so it builds for `wasm32-unknown-unknown`. The crate embeds the client of its own version (`sigmx::client`: the script-tag build and the ES module tree, `write_standalone`, `write_esm`) and carries auto mode as a Rust scanner (`sigmx::scan`, same rules as `sigmx/scan`, plus `.rs` and template extensions), so a Rust project without Node can ship the client from its own build step; `cargo install sigmx --features cli` gives `sigmx client standalone|unpack`, `sigmx scan` and `sigmx entry`. The API mirrors the Datastar Rust SDK where the two overlap (`prelude`, `PatchElements::new(html).into()`, `Display` for the wire format, `ElementPatchMode`), so a migration is mostly the two request strings. `npm run build` now writes the embedded copy (`scripts/rust-client.mjs`); CI runs fmt, clippy, the tests, the wasm32 checks and the Worker example's asset step. Examples: a native axum server (`cargo run --example axum`) and a complete Worker with a cargo-only asset step (`sdks/rust/examples/worker`).
+
 ## 0.2.0 (2026-09-06)
 
 Breaking changes, all pre-1.0 and listed here so an upgrade from 0.1.x is a checklist:

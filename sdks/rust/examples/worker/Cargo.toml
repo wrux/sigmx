@@ -1,0 +1,19 @@
+[package]
+name = "sigmx-example-worker"
+version = "0.0.0"
+edition = "2021"
+publish = false
+description = "sigmx on Cloudflare Workers: axum routes in wasm32, the client built by a Rust-only asset step"
+
+# worker-build compiles this to wasm32-unknown-unknown.
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+sigmx = { path = "../..", features = ["axum", "worker"] }
+worker = { version = "0.8", features = ["http", "axum"] }
+axum = { version = "0.8", default-features = false }
+tower-service = "0.3"
+maud = "0.27"
+serde = { version = "1", features = ["derive"] }
+console_error_panic_hook = "0.1"

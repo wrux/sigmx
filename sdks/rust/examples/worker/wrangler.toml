@@ -1,0 +1,12 @@
+name = "sigmx-example-worker"
+main = "build/worker/shim.mjs"
+compatibility_date = "2025-09-01"
+
+# The asset step first (it needs no Node), then the wasm build.
+[build]
+# WORKER_BUILD_FLAGS=--dev switches to the fast dev profile for `wrangler dev`; a bare deploy is always release.
+command = "cargo run --quiet --manifest-path assetc/Cargo.toml && sh -c 'worker-build ${WORKER_BUILD_FLAGS:---release}'"
+
+# public/ is served before the Worker runs: the client, its modules, nothing else.
+[assets]
+directory = "./public"
