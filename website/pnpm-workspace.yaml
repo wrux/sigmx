@@ -1,0 +1,10 @@
+# Install Sätteri's wasm32 build alongside the native one. The Workers bundle resolves satteri
+# (Astro's markdown compiler, used by Starlight's Steps, Tabs and FileTree at render time) through
+# its browser binding, which imports @bruits/satteri-wasm32-wasi; that package is published for
+# the wasm32 CPU only, so it is skipped unless the architecture is listed here.
+supportedArchitectures:
+  os:
+    - current
+  cpu:
+    - current
+    - wasm32

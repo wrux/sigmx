@@ -122,6 +122,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: website/package.json
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -129,7 +132,6 @@ jobs:
           cache-dependency-path: |
             package-lock.json
             sdks/astro/package-lock.json
-            website/package-lock.json
       - run: npm ci
       - run: npm run build
       - name: build @sigmx/astro
@@ -140,8 +142,8 @@ jobs:
       - name: build the site
         working-directory: website
         run: |
-          npm ci
-          npm run build
+          pnpm install --frozen-lockfile
+          pnpm run build
 
   examples:
     name: examples
