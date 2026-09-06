@@ -10,9 +10,9 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// The script-tag build of sigmx, straight from node_modules: no bundler anywhere in this example.
-const sigmxDist = join(dirname(fileURLToPath(import.meta.resolve('sigmx/package.json'))), 'dist');
-app.use('/vendor/sigmx', express.static(sigmxDist));
+// public/sigmx.js is the client bundle written by `vite build` (see vite.config.js): auto mode scans
+// index.html and this file and ships only the plugins they use, a fraction of the every-plugin build.
+app.use(express.static(join(here, 'public'), { immutable: false, maxAge: '1h' }));
 
 app.get('/', (_req, res) => res.sendFile(join(here, 'index.html')));
 

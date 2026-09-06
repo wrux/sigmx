@@ -1,4 +1,4 @@
-import { attribute } from '../../kernel/index.js';
+import { dir } from '../def.js';
 
 const slots: Record<string, RegExp> = { '9': /\d/, a: /[a-zA-Z]/, '*': /[a-zA-Z0-9]/ };
 
@@ -25,26 +25,23 @@ export const applyMask = (mask: string, raw: string): string => {
  * Formats the input as the user types: `mask="(999) 999-9999"`. The value is the mask itself;
  * add `__dynamic` to evaluate it as an expression instead (`mask__dynamic="$isUS ? '999-999' : '9999'"`).
  */
-export const mask = attribute({
-  name: 'mask',
-  key: 'forbidden',
-  value: 'required',
-  mount({ el, value, mods, evaluate, listen, effect }) {
-    const input = el as HTMLInputElement;
-    let pattern = value;
-    const format = () => {
-      const next = applyMask(pattern, input.value);
-      if (next !== input.value) {
-        input.value = next;
-        input.dispatchEvent(new Event('input', { bubbles: true })); // let `bind` see the formatted value
-      }
-    };
-    listen(input, 'input', format);
-    if (mods.has('dynamic')) {
-      effect(() => {
-        pattern = String(evaluate() ?? '');
-        format();
-      });
-    } else format();
-  },
+export const mask = dir('mask', 38, ({ el, evaluate, listen, effect }) => {
+  const input = el as HTMLInputElement;
+  let pattern = '';
+  const format = () => {
+    const next = applyMask(pattern, input.value);
+    if (next !== input.value) {
+      const pos = input.selectionStart;
+      const atEnd = pos === null || pos >= input.value.length;
+      input.value = next;
+      if (!atEnd) input.setSelectionRange(pos, pos);
+      input.dispatchEvent(new Event('input', { bubbles: true })); // let `bind` see the formatted value
+    }
+  };
+  listen(input, 'input', format);
+  // Literal by default; with `__dynamic` the value is an expression and the mask follows its signals.
+  effect(() => {
+    pattern = String(evaluate() ?? '');
+    format();
+  });
 });

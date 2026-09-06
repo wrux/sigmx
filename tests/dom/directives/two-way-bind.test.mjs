@@ -91,14 +91,11 @@ test('select single and multiple', async (t) => {
   assert.equal(multi.options[0].selected, false);
 });
 
-test('textarea, __event and __prop adapters', async (t) => {
+test('textarea and __event adapters', async (t) => {
   const { $, render } = app(t);
   $.note = 'n';
-  $.hide = true;
-  const el = await render(
-    '<div><textarea data-bind:note></textarea><input data-bind:late__event.change><p data-bind:hide__prop.hidden></p></div>',
-  );
-  const [ta, late, p] = el.children;
+  const el = await render('<div><textarea data-bind:note></textarea><input data-bind:late__event.change></div>');
+  const [ta, late] = el.children;
   assert.equal(ta.value, 'n');
   input(ta, 'changed');
   assert.equal($.note, 'changed');
@@ -106,9 +103,6 @@ test('textarea, __event and __prop adapters', async (t) => {
   assert.equal($.late, undefined, 'input events ignored when __event.change is set');
   late.dispatchEvent(new Event('change', { bubbles: true }));
   assert.equal($.late, 'typing');
-  assert.equal(p.hidden, true);
-  $.hide = false;
-  assert.equal(p.hidden, false);
 });
 
 test('bind resyncs when the morph changes a default value', async (t) => {

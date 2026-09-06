@@ -6,7 +6,7 @@ sidebar: {"order": 1}
 import Live from '../../../../components/Live.astro'
 import Cost from '../../../../components/Cost.astro'
 
-Send a request carrying your signals and apply the response.
+Send a request carrying your signals and apply the response. Each function returns a promise that resolves when the response has been fully applied, so `.then(…)` runs after the page changed. It resolves with `{ url, status, redirected }` describing the final response (or `undefined` when an invalid form stopped the request); the `finished` fetch event carries the same fields.
 
 ## Syntax
 
@@ -15,32 +15,104 @@ Send a request carrying your signals and apply the response.
 @post('/save', { payload: { id: 3 } })
 @post('/signup', { contentType: 'form' })
 @delete('/items/' + $id)
+@get('/live', { reconnect: true })
 ```
 
-Each function returns a promise that resolves when the response has been fully applied. Responses are handled by content type (event streams, HTML, JSON, JavaScript); see [Talking to the server](/guides/server/) for the protocol and all options.
+`@get` and `@delete` put the signals in the `sigmx` query parameter; `@post`, `@put` and `@patch` send them as a JSON body. Every request carries `Sigmx-Request: true` and an `Accept` header naming the three response types.
+
+## Options
 
 | option | default | meaning |
 |---|---|---|
 | `headers` | | extra request headers |
-| `contentType` | `'json'` | `'form'` serialises the closest form instead of signals |
-| `selector` | | which form to serialise |
+| `contentType` | `'json'` | `'form'` serialises the closest form instead of signals (urlencoded, or multipart when the form says so) |
+| `selector` | | with `contentType: 'form'`, which form to serialise |
 | `filter` | exclude paths starting with `_` | `{ include, exclude }` regular expressions over signal paths |
-| `payload` | | send this instead of signals |
-| `abort` | `'replace'` | `'replace'` cancels an earlier request with the same method and URL; `'none'` lets them overlap; or your own `AbortController` |
-| `openWhenHidden` | `true`, `false` for GET | keep streaming while the tab is hidden |
-| `reconnect` | `false` | reconnect after a stream ends normally |
-| `retry` | `{ attempts: 5, interval: 1000, factor: 2, max: 30000, onStatusError: false }` | backoff policy |
+| `payload` | | send this instead of the signals |
+| `abort` | `'replace'` | `'replace'` cancels an earlier request with the same method and URL; `'none'` lets them overlap |
+| `reconnect` | `false` | reconnect after a stream ends normally, sending `Last-Event-ID` |
+| `retry` | `{ attempts: 5, interval: 1000, factor: 2, max: 30000, onStatusError: false }` | backoff for network errors; `onStatusError: true` also retries 4xx and 5xx |
 
-`@get` and `@delete` put the signals in the `sigmx` query parameter; the others send a JSON body. Requests are aborted when the element that started them leaves the document.
+## Responses
 
-## Example
+| content type | what happens |
+|---|---|
+| `text/event-stream` | each event is routed to its handler as it arrives (`patch-signals`, `patch-elements`, your own) |
+| `text/html` | morphed into the page by element id, or targeted with the `Sigmx-Selector` and `Sigmx-Mode` response headers |
+| `application/json` | merged into the signals; `Sigmx-Only-If-Missing: true` keeps existing values |
+| 204, 304, empty | nothing |
+| 4xx, 5xx | a `sigmx-fetch` event with `type: 'error'` and the status; no exception |
 
-<Live html={`
-<div data-signals="{ hello: '' }" class="row" data-indicator:busy>
-  <button data-on:click="@get('/api/time')" data-attr:disabled="$busy">Ask the server for the time</button>
+## HTML by id
+
+The server returns a fragment; the element with the same id is morphed in place.
+
+<Live title="@get with an HTML reply" html={`
+<div class="row">
+  <button data-on:click="@get('/api/time')">Ask the server for the time</button>
   <span id="server-time" class="muted">not asked yet</span>
 </div>
 `} />
+
+## Signals travel, patches come back
+
+`q` goes to the server in the query string; the reply is an event stream that patches `#towns` and sets `results`.
+
+<Live title="search as you type" html={`
+<div data-signals="{ q: '', results: 0 }">
+  <div class="row"><input type="search" placeholder="filter towns…" data-bind:q data-on:input__debounce.250ms="@get('/api/search')"> <span class="muted" data-text="$results + ' match' + ($results === 1 ? '' : 'es')"></span></div>
+  <ul id="towns" class="muted"><li>type to search</li></ul>
+</div>
+`} />
+
+## Streams
+
+A long-running job streams progress: signals and elements update as each event lands, and the promise resolves at the end.
+
+<Live title="event stream" html={`
+<div data-signals="{ running: false, progress: 0, finished: '' }">
+  <div class="row"><button data-on:click="@get('/api/stream').then(() => $finished = 'stream closed at ' + new Date().toLocaleTimeString())" data-attr:disabled="$running">Run job</button> <b data-text="$running ? $progress + '%' : $finished"></b></div>
+  <ul id="job-log" class="muted"></ul>
+</div>
+`} />
+
+## Posting a form
+
+`contentType: 'form'` sends the form's fields instead of signals, respects the browser's validity checks (invalid forms call `reportValidity()` and do not send) and honours `enctype`.
+
+<Live title="@post with contentType: 'form'" html={`
+<form data-on:submit="@post('/api/form', { contentType: 'form' })">
+  <div class="row"><input name="email" type="email" required placeholder="you@example.com"> <input name="message" required minlength="5" placeholder="a message (5+ chars)"> <button>Send</button></div>
+  <p id="form-status" class="muted">The server validates and answers with a patch.</p>
+</form>
+`} />
+
+## `payload`, `filter` and `headers`
+
+Send exactly what you choose. The demo posts to the form endpoint with an explicit payload, so no form is involved.
+
+<Live title="explicit payload" html={`
+<div data-signals="{ email: 'ada@example.com', _draft: 'never sent', done: '' }">
+  <div class="row"><input data-bind:email> <button data-on:click="@post('/api/form', { payload: { email: $email, message: 'hello from a payload' }, headers: { 'X-Demo': 'payload' } }).then(() => $done = 'posted; the reply patched the status line of the form demo above')">Post payload</button> <span class="muted" data-text="$done"></span></div>
+  <p class="muted">Signals starting with <code>_</code> such as <code>_draft</code> are never sent by default; <code>filter</code> changes that.</p>
+</div>
+`} />
+
+## Replacing and overlapping requests
+
+A second request to the same URL cancels the first by default. `abort: 'none'` lets both run.
+
+<Live title="abort: 'replace' vs 'none'" html={`
+<div data-signals="{ log: [] }" data-on:sigmx-fetch="$log = [...$log.slice(-5), evt.detail.type + (evt.detail.status ? ' ' + evt.detail.status : '')]">
+  <div class="row"><button data-on:click="@get('/api/stream'); @get('/api/stream')">two streams, second replaces first</button><button data-on:click="@get('/api/time', { abort: 'none' }); @get('/api/time', { abort: 'none' })">two overlapping GETs</button></div>
+  <p>fetch events: <code data-text="$log.join(', ')"></code></p>
+  <div hidden><ul id="job-log"></ul><span id="server-time"></span></div>
+</div>
+`} />
+
+## Notes
+
+Requests are aborted when the element that started them leaves the document. Lifecycle is announced as `sigmx-fetch` events (`started`, `finished`, `error`) with the element, method, URL and a request id; `data-indicator` is built on them. See [Talking to the server](/guides/server/) for the wire protocol and the server helpers.
 
 ## Register
 

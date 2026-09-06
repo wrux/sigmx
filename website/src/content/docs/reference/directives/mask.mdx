@@ -6,7 +6,7 @@ sidebar: {"order": 31, "label": "mask"}
 import Live from '../../../../components/Live.astro'
 import Cost from '../../../../components/Cost.astro'
 
-Format an input as the user types (Alpine's x-mask).
+Format an input as the user types (Alpine's x-mask). `9` accepts a digit, `a` a letter, `*` either; every other character is a literal that is inserted for the user.
 
 ## Syntax
 
@@ -19,26 +19,47 @@ data-mask__dynamic="$country === 'US' ? '99999' : 'aa9 9aa'"
 | part | |
 |---|---|
 | key | forbidden |
-| value | required (the mask, or an expression with `__dynamic`) |
+| value | required: the mask, or with `__dynamic` an expression that yields it |
 
 ## Modifiers
 
 | modifier | effect |
 |---|---|
-| `__dynamic` | evaluate the value as an expression that yields the mask; it is reactive |
+| `__dynamic` | evaluate the value as an expression; the mask follows the signals it reads (the same modifier every literal-valued directive has) |
 
-## Example
+## Fixed masks
 
-<Live html={`
-<div data-signals="{ phone: '', card: '' }">
-  <div class="row"><input placeholder="(555) 123-4567" data-bind:phone data-mask="(999) 999-9999"> <input placeholder="card" data-bind:card data-mask="9999 9999 9999 9999"></div>
-  <p>phone = <code data-text="$phone"></code>, card = <code data-text="$card"></code></p>
+<Live title="phone, card, date" html={`
+<div data-signals="{ phone: '', card: '', date: '' }">
+  <div class="row"><input placeholder="(555) 123-4567" data-bind:phone data-mask="(999) 999-9999"> <input placeholder="card" data-bind:card data-mask="9999 9999 9999 9999"> <input placeholder="dd/mm/yyyy" data-bind:date data-mask="99/99/9999" style="width:7rem"></div>
+  <pre data-text="JSON.stringify({ phone: $phone, card: $card, date: $date })"></pre>
+</div>
+`} />
+
+## Letters and wildcards
+
+<Live title="a and *" html={`
+<div data-signals="{ plate: '', code: '' }">
+  <div class="row"><input placeholder="AB12 CDE" data-bind:plate data-mask="aa99 aaa" style="width:7rem"> <input placeholder="X7-Q2" data-bind:code data-mask="**-**" style="width:5rem"></div>
+  <p>plate = <code data-text="$plate"></code>, code = <code data-text="$code"></code></p>
+</div>
+`} />
+
+## Dynamic mask
+
+With `__dynamic` the mask is an expression and re-applies whenever a signal it reads changes.
+
+<Live title="__dynamic" html={`
+<div data-signals="{ country: 'US', postcode: '' }">
+  <div class="row"><select data-bind:country><option>US</option><option>UK</option><option>NL</option></select>
+  <input data-bind:postcode data-mask__dynamic="$country === 'US' ? '99999' : $country === 'NL' ? '9999 aa' : 'aa9 9aa'" placeholder="postcode"></div>
+  <p>postcode = <code data-text="$postcode"></code></p>
 </div>
 `} />
 
 ## Notes
 
-`9` accepts a digit, `a` a letter, `*` either; every other character is a literal inserted for the user. `bind` sees the formatted value. `applyMask(mask, raw)` is exported from `sigmx/plugins` for use in JavaScript.
+The mask formats the value on every `input` event and dispatches a new `input` event when it changed, so `data-bind` on the same element sees the formatted text. `applyMask(mask, raw)` is exported from `sigmx/plugins` for use in JavaScript, for example to format server data the same way.
 
 ## Register
 

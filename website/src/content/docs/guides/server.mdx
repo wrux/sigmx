@@ -29,7 +29,7 @@ Streams and JSON are for when you need them, not a requirement.
 
 ## What is sent
 
-- **Signals** as JSON: in the body for POST, PUT and PATCH; in the `sigmx` query parameter for GET and DELETE. Paths starting with `_` are left out. Change the set with `filter: { include, exclude }` or send something else with `payload`.
+- **Signals** as JSON: in the body for POST, PUT and PATCH; in the `sigmx` query parameter for GET and DELETE (a `contentType: 'form'` GET puts the form's fields in the query instead, and `readSignals` reads them back as signals, repeated names becoming arrays). Paths starting with `_` are left out. Change the set with `filter: { include, exclude }` or send something else with `payload`.
 - **Headers** `Accept: text/event-stream, text/html, application/json` and `Sigmx-Request: true`, plus any you pass in `headers`.
 - With `contentType: 'form'`, the closest form's fields instead of signals.
 
@@ -66,13 +66,13 @@ data: elements <li>Validating…</li>
 Two handlers ship with sigmx:
 
 - **`patch-signals`**: `signals {json}`, optional `onlyIfMissing true`.
-- **`patch-elements`**: `elements <html>` (repeat the line for multiline HTML), optional `selector`, `mode` (`outer` default, `inner`, `replace`, `prepend`, `append`, `before`, `after`, `remove`) and `useViewTransition true`.
+- **`patch-elements`**: `elements <html>` (repeat the line for multiline HTML), optional `selector`, `mode` (`outer` default, `inner`, `replace`, `prepend`, `append`, `before`, `after`, `remove`).
 
 `id:` lines are remembered and sent back as `Last-Event-ID` on reconnect; `retry:` sets the reconnect delay. Every event also dispatches `sigmx-server-event` on `document`, so you can listen for custom events with `data-on:sigmx-server-event__document`.
 
 <Demo app title="Streaming progress" source={streamSrc}><Stream /></Demo>
 
-GET streams pause while the tab is hidden and reconnect when it is visible again (sending `Last-Event-ID`). This job restarts from scratch on reconnect, so the demo passes `openWhenHidden: true` to keep the connection open instead.
+Streams stay open while the tab is hidden. When a connection drops, the client reconnects with backoff and sends `Last-Event-ID`.
 
 ## Server helpers
 
@@ -99,7 +99,6 @@ Use it directly wherever handlers take a `Request` and return a `Response` (Hono
   filter: { include: /^form\./ },
   payload: { anything: true },
   abort: 'replace' | 'none' | controller,   // 'replace' cancels an earlier request with the same method and URL
-  openWhenHidden: false,                    // pause while the tab is hidden; default true except GET streams
   reconnect: true,                          // reconnect after a stream closes normally
   retry: { attempts: 5, interval: 1000, factor: 2, max: 30000, onStatusError: false },
 })

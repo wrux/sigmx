@@ -6,7 +6,7 @@ sidebar: {"order": 12, "label": "on"}
 import Live from '../../../../components/Live.astro'
 import Cost from '../../../../components/Cost.astro'
 
-Listen for an event and run an expression.
+Listen for an event and run an expression with `evt` in scope.
 
 ## Syntax
 
@@ -14,40 +14,98 @@ Listen for an event and run an expression.
 data-on:click="$count++"
 data-on:keydown__window="evt.key === 'Escape' && ($open = false)"
 data-on:input__debounce.300ms="@get('/search')"
-data-on:submit__prevent="@post('/save')"
+data-on:submit="@post('/save')"
 ```
 
 | part | |
 |---|---|
-| key | required (the event name) |
-| value | required |
+| key | required: the event name, kebab-cased by default |
+| value | required: statements with `evt` in scope |
 
 ## Modifiers
 
 | modifier | effect |
 |---|---|
-| `__window / __document` | listen on `window` or `document` instead of the element |
+| `__window` / `__document` | listen on `window` or `document` instead of the element |
 | `__outside` | run only for events whose target is outside the element (listens on `document`) |
-| `__prevent / __stop` | `preventDefault()` / `stopPropagation()` |
-| `__capture / __passive / __once` | listener options |
-| `__delay.ms` | wait before running |
+| `__prevent` / `__stop` | `preventDefault()` / `stopPropagation()` before running |
+| `__once` | remove the listener after the first event |
 | `__debounce.ms[.leading][.notrailing]` | run after a quiet period |
 | `__throttle.ms[.noleading][.trailing]` | run at most once per window |
-| `__viewtransition` | wrap in a view transition |
-| `__case.camel` | recase the event name, e.g. for `myEvent` |
+| `__case.camel` | keep the event name camelCase, for custom events such as `myEvent` |
 
-## Example
+## Click, input, keydown
 
-<Live html={`
-<div data-signals="{ keys: '', hits: 0 }">
-  <div class="row"><input placeholder="type, then click outside" data-on:keydown="$keys = evt.key" data-on:click__outside="$hits++"></div>
-  <p>last key: <b data-text="$keys"></b>, outside clicks: <b data-text="$hits"></b></p>
+<Live title="evt in scope" html={`
+<div data-signals="{ n: 0, key: '', typed: '' }">
+  <div class="row"><button data-on:click="$n++">clicked <span data-text="$n"></span></button> <input placeholder="type here" data-on:input="$typed = evt.target.value" data-on:keydown="$key = evt.key"></div>
+  <p>typed <code data-text="$typed"></code>, last key <code data-text="$key"></code></p>
+</div>
+`} />
+
+## `__window`, `__document` and `__outside`
+
+Global listeners live on the element that owns the state, so they are removed with it. `__outside` is the classic "click outside to close".
+
+<Live title="dropdown" html={`
+<div data-signals="{ open: false }" data-on:keydown__window="evt.key === 'Escape' && ($open = false)">
+  <div style="display:inline-block;position:relative" data-on:click__outside="$open = false">
+    <button data-on:click="$open = !$open">menu <span data-text="$open ? '▴' : '▾'"></span></button>
+    <div data-show="$open" style="position:absolute;top:100%;left:0;background:var(--sl-color-bg);border:1px solid var(--sl-color-hairline);padding:.4rem .8rem;border-radius:.4rem;white-space:nowrap">click outside or press Escape</div>
+  </div>
+</div>
+`} />
+
+## `__prevent`, `__stop` and `__once`
+
+<Live title="listener options" html={`
+<div data-signals="{ outer: 0, once: 0, href: '' }">
+  <div class="row" data-on:click="$outer++">
+    <button data-on:click__stop="$href = 'stopped'">stop (parent does not count)</button>
+    <button data-on:click="$href = 'bubbled'">bubble</button>
+    <button data-on:click__once="$once++">once (<span data-text="$once"></span>)</button>
+    <a href="https://example.com" data-on:click__prevent="$href = 'prevented navigation'">link</a>
+  </div>
+  <p>parent clicks: <b data-text="$outer"></b>, last: <code data-text="$href"></code></p>
+</div>
+`} />
+
+## Debounce and throttle
+
+Debounce waits for a pause; throttle runs at most once per window. `.leading` and `.trailing` choose which edge fires.
+
+<Live title="__debounce and __throttle" html={`
+<div data-signals="{ raw: 0, deb: 0, thr: 0 }">
+  <input placeholder="type quickly" data-on:input="$raw++" data-on:input__debounce.400ms="$deb++" data-on:input__throttle.400ms="$thr++">
+  <p>raw <b data-text="$raw"></b>, debounced <b data-text="$deb"></b>, throttled <b data-text="$thr"></b></p>
+</div>
+`} />
+
+## Forms
+
+`submit` on a form always calls `preventDefault()`; post the fields with `@post(url, { contentType: 'form' })` or the signals with a plain `@post`.
+
+<Live title="submit" html={`
+<form data-signals="{ email: '', sent: false }" data-on:submit="$sent = true">
+  <div class="row"><input type="email" required data-bind:email placeholder="you@example.com"> <button>Subscribe</button></div>
+  <p data-show="$sent">Would have posted <b data-text="$email"></b>; the page did not reload.</p>
+</form>
+`} />
+
+## Custom and library events
+
+Events named `sigmx-*` listen on `document` automatically, so request lifecycle events are one attribute away. Custom events from `@dispatch` bubble to `data-on` on any ancestor.
+
+<Live title="sigmx-fetch and @dispatch" html={`
+<div data-signals="{ log: [] }" data-on:sigmx-fetch="$log = [...$log.slice(-3), evt.detail.type]" data-on:hello="$log = [...$log.slice(-3), 'hello ' + evt.detail.from]">
+  <div class="row"><button data-on:click="@get('/api/time')">request</button><button data-on:click="@dispatch('hello', { from: 'child' })">dispatch</button></div>
+  <p>events: <code data-text="$log.join(' → ')"></code> <span hidden><span id="server-time"></span></span></p>
 </div>
 `} />
 
 ## Notes
 
-`evt` is in scope. `submit` on a form calls `preventDefault()` automatically. Event names starting with `sigmx-` listen on `document`, so `data-on:sigmx-fetch="…"` sees request lifecycle events.
+Listeners are passive-safe by default (no `passive` flag is set) and are removed when the attribute or element goes away. Errors thrown in the handler are reported through `onError` without breaking other listeners.
 
 ## Register
 

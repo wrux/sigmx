@@ -1,4 +1,25 @@
 export type ServerEvent = { event: string; data: string; id?: string; retry?: number };
+type StreamState = { id?: string; retry?: number };
+
+/**
+ * Parse one blank-line-delimited block of `field: value` lines (the SSE wire format). `id` and
+ * `retry` persist in `state` across blocks; comments start with `:`. Undefined without data lines.
+ */
+export const parseBlock = (block: string, state: StreamState = {}): ServerEvent | undefined => {
+  let event = '';
+  const data: string[] = [];
+  for (const l of block.split(/\r?\n/)) {
+    const c = l.indexOf(':');
+    if (!c) continue;
+    const field = c < 0 ? l : l.slice(0, c);
+    const v = (c < 0 ? '' : l.slice(c + 1)).replace(/^ /, '');
+    if (field === 'event') event = v;
+    else if (field === 'data') data.push(v);
+    else if (field === 'id') state.id = v;
+    else if (field === 'retry' && /^\d+$/.test(v)) state.retry = +v;
+  }
+  if (data.length) return { event: event || 'message', data: data.join('\n'), id: state.id, retry: state.retry };
+};
 
 export const readEvents = async (
   body: ReadableStream<Uint8Array>,
@@ -6,42 +27,29 @@ export const readEvents = async (
 ): Promise<void> => {
   const reader = body.getReader();
   const decoder = new TextDecoder();
+  const state: StreamState = {};
   let buffer = '';
-  let event = '';
-  let data: string[] = [];
-  let id: string | undefined;
-  let retry: number | undefined;
-  const flush = () => {
-    if (data.length) onEvent({ event: event || 'message', data: data.join('\n'), id, retry });
-    event = '';
-    data = [];
-  };
-  const line = (l: string) => {
-    if (!l) return flush();
-    if (l[0] === ':') return;
-    const c = l.indexOf(':');
-    const field = c < 0 ? l : l.slice(0, c);
-    let v = c < 0 ? '' : l.slice(c + 1);
-    if (v[0] === ' ') v = v.slice(1);
-    if (field === 'event') event = v;
-    else if (field === 'data') data.push(v);
-    else if (field === 'id') id = v;
-    else if (field === 'retry' && /^\d+$/.test(v)) retry = +v;
+  let scan = 0; // where the next separator search starts: no rescanning of a large partial event
+  const dispatch = (block: string) => {
+    const e = parseBlock(block, state);
+    if (e) onEvent(e);
   };
   for (;;) {
     const { value, done } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    for (;;) {
-      const i = buffer.search(/\r\n|\r|\n/);
-      if (i < 0) break;
-      const l = buffer.slice(0, i);
-      buffer = buffer.slice(i + (buffer[i] === '\r' && buffer[i + 1] === '\n' ? 2 : 1));
-      line(l);
+    buffer += decoder.decode(value, { stream: !done });
+    const sep = /\r?\n\r?\n/g;
+    sep.lastIndex = scan;
+    for (let m = sep.exec(buffer); m; m = sep.exec(buffer)) {
+      dispatch(buffer.slice(0, m.index));
+      buffer = buffer.slice(m.index + m[0].length);
+      sep.lastIndex = 0;
+    }
+    scan = Math.max(0, buffer.length - 3);
+    if (done) {
+      dispatch(buffer);
+      break;
     }
   }
-  if (buffer) line(buffer);
-  flush();
 };
 
 /** Event payloads: each data line is `key value`; repeated keys join with newlines. */

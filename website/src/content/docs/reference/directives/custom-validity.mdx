@@ -6,7 +6,7 @@ sidebar: {"order": 22, "label": "custom-validity"}
 import Live from '../../../../components/Live.astro'
 import Cost from '../../../../components/Cost.astro'
 
-Set a form field's validity message from an expression.
+Set a form field's validity message from an expression. An empty string means valid; anything else blocks submission and becomes the message the browser shows.
 
 ## Syntax
 
@@ -17,19 +17,41 @@ data-custom-validity="$a === $b ? '' : 'Values must match.'"
 | part | |
 |---|---|
 | key | forbidden |
-| value | required |
+| value | required: the message, or `''` when valid |
 
-## Example
+## Validate one field against a rule
 
-<Live html={`
-<form data-signals="{ user: '' }" data-on:submit="alert('submitted')">
-  <div class="row"><input data-bind:user placeholder="username" data-custom-validity="$user.length >= 3 ? '' : 'At least three characters.'"> <button>Check</button></div>
+<Live title="minimum length" html={`
+<form data-signals="{ user: '' }" data-on:submit="alert('submitted ' + $user)">
+  <div class="row"><input data-bind:user placeholder="username" data-custom-validity="$user.length >= 3 ? '' : 'At least three characters.'"> <button>Submit</button></div>
 </form>
+`} />
+
+## Validate across fields
+
+The message can read any signal, so "passwords must match" is one expression on the second field.
+
+<Live title="fields that depend on each other" html={`
+<form data-signals="{ pw: '', pw2: '' }" data-on:submit="alert('ok')">
+  <div class="row"><input type="password" data-bind:pw placeholder="password"> <input type="password" data-bind:pw2 placeholder="repeat" data-custom-validity="$pw2 === $pw ? '' : 'Passwords must match.'"> <button>Save</button></div>
+  <p class="muted">The repeat field is invalid until it matches; try submitting.</p>
+</form>
+`} />
+
+## Style with `:invalid`
+
+The validity state is the browser's own, so CSS pseudo-classes and `checkValidity()` see it.
+
+<Live title=":invalid styling" html={`
+<style>.live input:invalid { outline: 2px solid #c0392b } .live input:valid { outline: 2px solid #2e8b57 }</style>
+<div data-signals="{ code: '' }">
+  <input data-bind:code placeholder="six digits" data-custom-validity="/^\\d{6}$/.test($code) ? '' : 'Six digits, please.'">
+</div>
 `} />
 
 ## Notes
 
-An empty string means valid. The browser reports the message on submit and through `:invalid`.
+Only elements with `setCustomValidity` (inputs, selects, textareas, buttons, output, fieldset, custom form-associated elements) accept the directive; others are reported as an error. Pair it with `@post(url, { contentType: 'form' })`, which refuses to send an invalid form and calls `reportValidity()` instead.
 
 ## Register
 

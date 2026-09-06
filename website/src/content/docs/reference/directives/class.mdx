@@ -6,7 +6,7 @@ sidebar: {"order": 7, "label": "class"}
 import Live from '../../../../components/Live.astro'
 import Cost from '../../../../components/Cost.astro'
 
-Add or remove classes based on expressions.
+Add or remove classes based on expressions: one class per key, or many from an object whose values are conditions.
 
 ## Syntax
 
@@ -17,26 +17,53 @@ data-class="{ active: $on, 'text-red text-bold': $error }"
 
 | part | |
 |---|---|
-| key | optional (a class name) or an object value |
-| value | required |
+| key | optional: a class name (kebab-cased by default) |
+| value | required: with a key, the condition; without one, an object of `class: condition` |
 
 ## Modifiers
 
 | modifier | effect |
 |---|---|
-| `__case.*` | key casing; classes default to kebab-case |
+| `__case.camel` | keep the key camelCase (`data-class:isOn__case.camel` toggles `isOn`) |
 
-## Example
+## Keyed form
 
-<Live html={`
+<Live title="one class from one condition" html={`
 <div data-signals="{ warm: false }">
   <button data-on:click="$warm = !$warm" data-class:hot="$warm">I turn warm</button>
 </div>
 `} />
 
+## Object form
+
+Several classes, each with its own condition. A key may hold several space-separated classes that switch together.
+
+<Live title="several classes, multi-class keys" html={`
+<style>.live .rounded { border-radius: 999px } .live .loud { text-transform: uppercase; letter-spacing: .08em }</style>
+<div data-signals="{ on: true, shout: false }">
+  <div class="row"><label><input type="checkbox" data-bind:on> hot + rounded</label><label><input type="checkbox" data-bind:shout> loud</label></div>
+  <button data-class="{ 'hot rounded': $on, loud: $shout }">styled by signals</button>
+</div>
+`} />
+
+## Combining with static classes
+
+Classes already on the element are left alone; the directive only toggles the ones it owns and removes those when it unmounts.
+
+<Live title="static classes stay" html={`
+<div data-signals="{ active: 1 }">
+  <div class="row">
+    <button class="tab" data-class:hot="$active === 1" data-on:click="$active = 1">one</button>
+    <button class="tab" data-class:hot="$active === 2" data-on:click="$active = 2">two</button>
+    <button class="tab" data-class:hot="$active === 3" data-on:click="$active = 3">three</button>
+  </div>
+  <p class="muted">Each button keeps its own <code>tab</code> class; only <code>hot</code> moves.</p>
+</div>
+`} />
+
 ## Notes
 
-Object keys may contain several space-separated classes. Classes the directive added are removed when it unmounts.
+Conditions are coerced with `!!`, so `0`, `''`, `null` and `undefined` remove the class. For a class name computed at runtime, use the object form with a computed key: `data-class="{ [$tone]: true }"` (remember to remove the previous one, or set `data-attr:class` instead).
 
 ## Register
 

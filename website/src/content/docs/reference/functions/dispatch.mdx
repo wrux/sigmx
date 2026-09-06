@@ -6,24 +6,38 @@ sidebar: {"order": 8}
 import Live from '../../../../components/Live.astro'
 import Cost from '../../../../components/Cost.astro'
 
-Fire a bubbling CustomEvent from the element (Alpine's $dispatch).
+Fire a bubbling, composed `CustomEvent` from the element (Alpine's $dispatch). Components can talk upwards without sharing signals; anything with `data-on:<name>` on an ancestor hears it.
 
 ## Syntax
 
 ```js
 @dispatch('saved', { id: 3 })
+@dispatch('close')
 ```
 
-Listen anywhere up the tree with `data-on:saved` (or `data-on:saved__window`). Components can talk to each other without sharing signals.
+## Child to parent
 
-## Example
-
-<Live html={`
+<Live title="detail travels with the event" html={`
 <div data-signals="{ last: 'nothing yet' }" data-on:ping="$last = 'ping with ' + JSON.stringify(evt.detail)">
   <button data-on:click="@dispatch('ping', { at: Date.now() % 1000 })">Dispatch from inside</button>
   <p>parent heard: <code data-text="$last"></code></p>
 </div>
 `} />
+
+## Across components with `__window`
+
+Two unrelated parts of the page: one dispatches, the other listens on `window`.
+
+<Live title="global bus" html={`
+<div data-signals="{ received: 0 }">
+  <div class="row"><button data-on:click="@dispatch('cart-add', { sku: 'X1' })">add to cart (component A)</button></div>
+  <p data-on:cart-add__window="$received++">cart badge (component B): <b data-text="$received"></b></p>
+</div>
+`} />
+
+## Notes
+
+The event bubbles from the element the expression runs on (`el`) and is `composed`, so it also leaves a shadow root. Use kebab-case event names: the listener side converts its key to kebab-case unless you add `__case.camel`.
 
 ## Register
 

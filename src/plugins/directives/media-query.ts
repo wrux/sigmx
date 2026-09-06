@@ -1,18 +1,21 @@
-import { attribute } from '../../kernel/index.js';
+import { dir } from '../def.js';
 
-/** `match-media:is-dark="'prefers-color-scheme: dark'"` keeps a boolean signal in sync. */
-export const matchMedia = attribute({
-  name: 'match-media',
-  key: 'required',
-  value: 'required',
-  mount({ cased, evaluate, store, listen }) {
+/**
+ * Keeps a boolean signal in step with a media query: `match-media:dark="(prefers-color-scheme: dark)"`.
+ * The value is a literal; `__dynamic` makes it an expression that can read signals.
+ */
+export const matchMedia = dir('match-media', 37, ({ cased, evaluate, store, effect, cleanup }) => {
+  const path = cased();
+  let mql: MediaQueryList | undefined;
+  const sync = () => store.set(path, !!mql?.matches);
+  const stop = () => mql?.removeEventListener('change', sync);
+  effect(() => {
     let q = String(evaluate()).trim();
-    if (!/^[(a-z]/.test(q) || (!q.startsWith('(') && q.includes(':') && !/^(not|only|all|screen|print)\b/.test(q)))
-      q = `(${q})`;
-    const mql = window.matchMedia(q);
-    const path = cased();
-    const sync = () => store.set(path, mql.matches);
+    if (/^[\w-]+\s*:/.test(q)) q = `(${q})`; // a bare `feature: value` pair gets its parentheses
+    stop();
+    mql = window.matchMedia(q);
     sync();
-    listen(mql, 'change', sync);
-  },
+    mql.addEventListener('change', sync);
+  });
+  cleanup(stop);
 });

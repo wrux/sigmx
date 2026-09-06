@@ -37,6 +37,28 @@ test('arrays notify on in-place mutation; computeds live in the store', () => {
   assert.throws(() => s.set('count', 9));
 });
 
+test('objects nested in an array signal are reactive, and array methods notify once', () => {
+  const s = createStore();
+  s.set('todos', [{ done: false }, { done: false }]);
+  const seen = [];
+  effect(() => seen.push(s.get('todos').filter((t) => t.done).length));
+  s.get('todos')[0].done = true;
+  assert.deepEqual(seen, [0, 1], 'in-place mutation of a nested object notifies');
+  let runs = 0;
+  effect(() => {
+    s.get('todos').length;
+    runs++;
+  });
+  s.get('todos').push({ done: true });
+  s.get('todos').splice(0, 1);
+  assert.equal(runs, 3, 'push and splice each notify exactly once');
+  assert.deepEqual(
+    s.snapshot(undefined, { at: 'todos' }),
+    {},
+    'a snapshot rooted at a leaf is empty, not { "": value }',
+  );
+});
+
 test('patch events are batched and nested; removals are null', () => {
   const s = createStore();
   const patches = [];
@@ -46,11 +68,14 @@ test('patch events are batched and nested; removals are null', () => {
   assert.deepEqual(patches, [{ a: { b: 1 }, c: 2 }, { c: null }]);
 });
 
-test('scope proxy resolves $names for `with` and the root as $', () => {
+test('the root proxy is the expression scope: strict code writes and reads through it', () => {
   const s = createStore();
   s.set('count', 1);
-  const fn = new Function('$', 'with($){ $count++; $user = { name: "n" }; return [$count, $.user.name, $["count"]] }');
-  assert.deepEqual(fn(s.scope), [2, 'n', 2]);
+  const fn = new Function(
+    '$',
+    '"use strict"; $.count++; $.user = { name: "n" }; return [$.count, $.user.name, $["count"]]',
+  );
+  assert.deepEqual(fn(s.$), [2, 'n', 2]);
   assert.equal(JSON.stringify(s.$), '{"count":2,"user":{"name":"n"}}');
 });
 

@@ -19,7 +19,7 @@ export const upper = attribute({
   name: 'upper',                  // data-upper
   key: 'forbidden',               // 'required' | 'forbidden' | undefined (optional)
   value: 'required',
-  returns: true,                  // evaluate() returns a value (default); false for statement bodies
+  literal: false,                 // true when the value is literal text (a mask, a selector); `__dynamic` then opts into an expression
   mount({ el, evaluate, effect }) {
     effect(() => { el.textContent = String(evaluate()).toUpperCase() })
   },
@@ -35,9 +35,10 @@ The context (`Ctx`):
 | `evaluate(evt?, ...args)` | compile (once) and run the expression; `args` map to the plugin's `args` names |
 | `effect(fn)` | reactive effect disposed with the attribute; errors go to `onError` |
 | `listen(target, type, fn, options?)` | event listener removed on cleanup |
-| `cleanup(fn)` | anything else to undo |
+| `cleanup(fn)` | anything else to undo; returns a function that unregisters `fn` early |
 | `store`, `runtime` | the store and instance services |
 | `error(message)` | build an error with plugin and element context |
+| `report(error)` | send an error that happened later (a callback, a promise) to `onError` with the same context |
 
 Return a function from `mount` for extra teardown. Everything registered through the context is undone when the attribute changes, the element leaves the document, or the instance is destroyed.
 
@@ -54,7 +55,7 @@ export const shout = action({
 })
 ```
 
-Functions get `cleanup(fn)` too, which runs when the attribute that invoked them is torn down. The request functions use it to abort in-flight requests.
+Functions get `cleanup(fn)` and `report(error)` too; cleanup runs when the attribute that invoked them is torn down. The request functions use it to abort in-flight requests.
 
 ## A server-event handler
 

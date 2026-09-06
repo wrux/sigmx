@@ -7,6 +7,7 @@ import {
   type EventOptions,
   type ExecuteScriptOptions,
   executeScript,
+  fieldsToObject,
   formatEvent,
   type Markup,
   type PatchElementsOptions,
@@ -148,18 +149,22 @@ const readSignals = async (c: Context, schema?: StandardSchema<any>): Promise<an
   try {
     if (method === 'GET' || method === 'DELETE') {
       const q = c.req.query(SIGNALS_KEY);
-      raw = q ? JSON.parse(q) : {};
+      raw = q
+        ? JSON.parse(q)
+        : fieldsToObject(Object.entries(c.req.queries()).map(([k, v]) => [k, v.length > 1 ? v : v[0]]));
     } else if (type.includes('application/json')) {
       const text = await c.req.text();
       raw = text ? JSON.parse(text) : {};
     } else if (type.includes('form')) {
-      raw = await c.req.parseBody();
+      raw = await c.req.parseBody({ all: true });
     } else {
       raw = {};
     }
   } catch (e) {
     throw new SignalsError(`could not parse signals: ${(e as Error).message}`, [], 400);
   }
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw))
+    throw new SignalsError('signals must be an object', [], 400);
   try {
     return await validateSignals(raw, schema);
   } catch (e) {
@@ -174,7 +179,6 @@ const contextFor = (c: Context): SigmxContext => ({
   html: (body, o = {}) => {
     if (o.selector) c.header('sigmx-selector', o.selector);
     if (o.mode) c.header('sigmx-mode', o.mode);
-    if (o.useViewTransition) c.header('sigmx-use-view-transition', 'true');
     return c.html(body, o.status ?? 200);
   },
   json: (signals, o = {}) => {

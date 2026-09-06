@@ -115,32 +115,40 @@ jobs:
           cache: npm
           cache-dependency-path: |
             package-lock.json
-            sdks/hono/package-lock.json
+            sdks/*/package-lock.json
             examples/*/package-lock.json
       - run: npm ci
       - run: npm run build
-      - name: build @sigmx/hono
-        working-directory: sdks/hono
+      - name: build the SDKs
         run: |
-          npm ci
-          npm run build
+          (cd sdks/hono && npm ci && npm run build)
+          (cd sdks/astro && npm ci && npm run build)
+      # Each example installs its published dependencies from its lockfile, then the packages built
+      # from this checkout are linked over them (without touching the lockfile), so the examples are
+      # tested against the code in the pull request rather than the last release.
       - name: vite
         working-directory: examples/vite
         run: |
           npm ci
+          npm install --no-save ../..
           npm run build
       - name: astro
         working-directory: examples/astro
         run: |
           npm ci
+          npm install --no-save ../.. ../../sdks/astro
           npm run build
       - name: hono
         working-directory: examples/hono
         run: |
           npm ci
+          npm install --no-save ../.. ../../sdks/hono
+          npm run build
           npm run check
       - name: express
         working-directory: examples/express
         run: |
           npm ci
+          npm install --no-save ../..
+          npm run build
           node --check server.js

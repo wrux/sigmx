@@ -1,43 +1,50 @@
 ---
 title: "data-persist"
-description: "Save signals to local or session storage and restore them on load."
+description: "Save signals to localStorage and restore them on load."
 sidebar: {"order": 23, "label": "persist"}
 ---
 import Live from '../../../../components/Live.astro'
 import Cost from '../../../../components/Cost.astro'
 
-Save signals to local or session storage and restore them on load.
+Save signals to `localStorage` and restore them when the page loads again.
 
 ## Syntax
 
 ```html
 data-persist
+data-persist:settings
 data-persist:settings="{ include: /^prefs\./ }"
-data-persist__session
 ```
 
 | part | |
 |---|---|
-| key | optional (the storage key, default `sigmx`) |
-| value | optional filter `{ include, exclude }` |
+| key | optional: the storage key, default `sigmx` |
+| value | optional filter `{ include, exclude }` of regular expressions over dotted paths |
 
-## Modifiers
+## Remember a counter across reloads
 
-| modifier | effect |
-|---|---|
-| `__session` | use `sessionStorage` |
+Defaults next to a persisted signal must use `__ifmissing`, or they overwrite the restored value.
 
-## Example
-
-<Live html={`
+<Live title="reload the page" html={`
 <div data-persist:docs-demo="{ include: /^kept/ }" data-signals:kept__ifmissing="0">
-  <button data-on:click="$kept++">kept = <span data-text="$kept"></span></button> <span class="muted">reload the page</span>
+  <button data-on:click="$kept++">kept = <span data-text="$kept"></span></button> <button data-on:click="$kept = 0">reset</button> <span class="muted">reload the page: the value survives</span>
+</div>
+`} />
+
+## Persist a namespace of preferences
+
+Filter to the paths that belong in storage; everything else stays in memory.
+
+<Live title="prefs only" html={`
+<div data-persist:docs-prefs="{ include: /^prefs\\./ }" data-signals__ifmissing="{ prefs: { theme: 'light', size: 'm' } }" data-signals="{ scratch: 'not persisted' }">
+  <div class="row"><select data-bind:prefs.theme><option>light</option><option>dark</option></select> <select data-bind:prefs.size><option>s</option><option>m</option><option>l</option></select> <input data-bind:scratch></div>
+  <pre data-text="'localStorage[docs-prefs] = ' + localStorage.getItem('docs-prefs')" data-on-signal-patch="el.textContent = 'localStorage[docs-prefs] = ' + localStorage.getItem('docs-prefs')"></pre>
 </div>
 `} />
 
 ## Notes
 
-Restore happens when the attribute mounts, so declare defaults with `data-signals:x__ifmissing` or they will overwrite the restored value. Computed signals are never stored.
+Restore happens when the attribute mounts; saving happens after every settled change to a matching signal. Computed signals are never stored. Two elements persisting under the same key overwrite each other, so give each area its own key.
 
 ## Register
 

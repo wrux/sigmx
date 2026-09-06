@@ -19,5 +19,18 @@ export const pascal = (s: string): string => words(s).map(cap).join('');
 
 const styles = { camel, kebab, snake, pascal };
 
-/** Recase a dotted path segment by segment so `user.first-name` becomes `user.firstName`. */
-export const recase = (path: string, style: CaseStyle): string => path.split('.').map(styles[style]).join('.');
+/**
+ * Recase a dotted path segment by segment so `user.first-name` becomes `user.firstName`. Leading
+ * underscores survive (`_draft` stays `_draft`); an unknown style is an error.
+ */
+export const recase = (path: string, style: CaseStyle): string => {
+  const f = styles[style];
+  if (!f) throw new Error(`unknown case "${style}"`);
+  return path
+    .split('.')
+    .map((seg) => {
+      const u = /^_+/.exec(seg)?.[0] ?? '';
+      return u + f(seg.slice(u.length));
+    })
+    .join('.');
+};

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { attribute, handler, parseAttr } from '../../dist/kernel/index.js';
 import { text } from '../../dist/plugins/index.js';
-import { app, lastEvent, tick } from './helpers.mjs';
+import { app, lastEvent, tick, until } from './helpers.mjs';
 
 test('parseAttr splits plugin, key and modifiers', () => {
   assert.deepEqual(parseAttr('on:click__debounce.300ms__prevent'), {
@@ -31,16 +31,14 @@ test('a configurable attribute prefix, or several', async (t) => {
   assert.equal(both.sigmx.runtime.attr('on'), 'data-on', 'the first prefix is primary');
 });
 
-test('ignore skips a subtree; ignore__self skips one element only', async (t) => {
+test('ignore skips a subtree', async (t) => {
   const { $, render } = app(t);
   $.n = 1;
   const el = await render(
-    '<div><section data-ignore><span data-text="$n"></span></section><section data-ignore__self data-text="$n"><b data-text="$n"></b></section></div>',
+    '<div><section data-ignore><span data-text="$n"></span></section><b data-text="$n"></b></div>',
   );
   assert.equal(el.querySelector('span').textContent, '');
-  const self = el.children[1];
-  assert.equal(self.childNodes.length, 1, 'own text directive not applied');
-  assert.equal(self.querySelector('b').textContent, '1');
+  assert.equal(el.querySelector('b').textContent, '1');
 });
 
 test('changing an attribute remounts it; removing it unmounts', async (t) => {
@@ -66,19 +64,6 @@ test('one failing expression is reported and does not stop the others', async (t
   assert.equal(errors[0].info.el, el.querySelector('i'));
 });
 
-test('plugin contracts: key and value requirements produce clear errors', async (t) => {
-  const { render, errors } = app(t);
-  await render('<div><i data-text:x="1"></i><i data-on="1"></i><i data-text=""></i><i data-cloak="x"></i></div>');
-  const messages = errors.map((e) => e.message);
-  assert.ok(
-    messages.some((m) => m === 'data-text: takes no key'),
-    messages.join('|'),
-  );
-  assert.ok(messages.some((m) => m === 'data-on: needs a key'));
-  assert.ok(messages.some((m) => m === 'data-text: needs a value'));
-  assert.ok(messages.some((m) => m === 'data-cloak: takes no value'));
-});
-
 test('expressions see el, evt and can call actions; unknown actions are reported', async (t) => {
   const { $, render, errors } = app(t);
   const el = await render(
@@ -89,6 +74,26 @@ test('expressions see el, evt and can call actions; unknown actions are reported
   assert.equal($.type, 'click');
   el.nextElementSibling.click();
   assert.match(errors.at(-1).message, /unknown action @nope/);
+});
+
+test('plugins can report later failures; an async mount that rejects is reported too', async (t) => {
+  const later = attribute({
+    name: 'later',
+    mount: ({ report }) => {
+      setTimeout(() => report(new Error('from a callback')), 1);
+    },
+  });
+  const asyncMount = attribute({
+    name: 'async-mount',
+    mount: async () => {
+      throw new Error('async');
+    },
+  });
+  const { render, errors } = app(t, { plugins: [later, asyncMount] });
+  const el = await render('<div data-later data-async-mount></div>');
+  await until(() => errors.length === 2);
+  assert.deepEqual(errors.map((e) => e.message).sort(), ['async', 'from a callback']);
+  assert.equal(errors.find((e) => e.message === 'async').info.el, el);
 });
 
 test('use() registers plugins late and applies them to already-observed roots', async (t) => {
@@ -120,13 +125,9 @@ test('destroy() unmounts everything and stops observing', async (t) => {
   assert.equal(stage.firstElementChild.textContent, '');
 });
 
-test('events: ready on first document apply, signal-patch on every settled change', async (t) => {
+test('events: signal-patch on every settled change', async (t) => {
   const patches = lastEvent(t, 'sigmx-signal-patch');
-  const ready = lastEvent(t, 'sigmx-ready');
-  const { $, sigmx } = app(t);
-  assert.equal(ready.length, 0, 'a stage root is not the document');
-  sigmx.apply(document.documentElement);
-  assert.equal(ready.length, 1);
+  const { $ } = app(t);
   $.user = { name: 'Ada' };
   await tick();
   assert.deepEqual(patches.at(-1), { user: { name: 'Ada' } });

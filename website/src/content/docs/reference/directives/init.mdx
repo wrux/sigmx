@@ -6,36 +6,56 @@ sidebar: {"order": 11, "label": "init"}
 import Live from '../../../../components/Live.astro'
 import Cost from '../../../../components/Cost.astro'
 
-Run an expression once when the element mounts.
+Run an expression once when the element mounts. The usual home for "fetch this when the page loads" and for one-off setup.
 
 ## Syntax
 
 ```html
 data-init="$loaded = true"
-data-init__delay.500ms="@get('/late')"
+data-init="@get('/api/dashboard')"
+data-init__debounce.300ms="…"
 ```
 
 | part | |
 |---|---|
 | key | forbidden |
-| value | required |
+| value | required: statements; the result is ignored |
 
 ## Modifiers
 
 | modifier | effect |
 |---|---|
-| `__delay.300ms` | wait before running |
-| `__viewtransition` | wrap in `document.startViewTransition` |
+| `__debounce.ms` / `__throttle.ms` | timing, mostly useful when many elements with the same expression mount together |
 
-## Example
+## Record something at mount time
 
-<Live html={`
+<Live title="mounted at" html={`
 <div data-signals="{ started: '' }" data-init="$started = new Date().toLocaleTimeString()">Mounted at <b data-text="$started"></b></div>
+`} />
+
+## Load data on mount
+
+The classic pattern: an element whose first job is to ask the server for its content.
+
+<Live title="fetch on mount" html={`
+<div data-init="@get('/api/time')">Server time when this box mounted: <span id="server-time" class="muted">loading…</span></div>
+`} />
+
+## Runs again on re-insertion
+
+Removing and re-adding the element is a new mount, so the expression runs again.
+
+<Live title="remount" html={`
+<div data-signals="{ mounts: 0, on: true }">
+  <div class="row"><button data-on:click="$on = !$on">remove / add</button> <span>mounted <b data-text="$mounts"></b> times</span></div>
+  <template id="init-tpl"><p data-init="$mounts++" class="muted">I run data-init every time I am inserted.</p></template>
+  <div data-effect="el.innerHTML = $on ? document.getElementById('init-tpl').innerHTML : ''"></div>
+</div>
 `} />
 
 ## Notes
 
-Runs again if the element is removed and re-inserted, because that is a new mount.
+`el` is in scope. Expressions are statements, so several can be separated with `;`. For work that must repeat, use `data-effect` (reactive) or `data-on-interval` (timed).
 
 ## Register
 

@@ -6,43 +6,137 @@ sidebar: {"order": 10, "label": "bind"}
 import Live from '../../../../components/Live.astro'
 import Cost from '../../../../components/Cost.astro'
 
-Two-way binding between an element's value and a signal.
+Two-way binding between an element's value and a signal. Typing writes the signal; setting the signal updates the element. Each kind of element has its own rules for what "value" means.
 
 ## Syntax
 
 ```html
 data-bind:email
 data-bind="email"
+data-bind:user.name
 data-bind:price__event.change
-data-bind:checked__prop.checked
 ```
 
 | part | |
 |---|---|
-| key | or value: the signal path |
+| key | or value: the signal path (camelCased, `__case` changes it) |
 | value | or key |
 
 ## Modifiers
 
 | modifier | effect |
 |---|---|
-| `__event.name[.name]` | events that write the signal; default depends on the element |
-| `__prop.name` | bind an element property instead of its value |
-| `__case.*` | key casing |
+| `__event.name[.name]` | the events that write the signal; default `input` for text-like fields, `change` for selects and unknown elements |
+| `__case.kebab` | keep the key kebab-cased |
 
-## Example
+## Text, number and range
 
-<Live html={`
-<div data-signals="{ v: { text: '', n: 5, on: true, pick: 'b', many: ['x'] } }">
-  <div class="row"><input data-bind:v.text placeholder="text"> <input type="number" data-bind:v.n> <label><input type="checkbox" data-bind:v.on> on</label></div>
-  <div class="row"><label><input type="radio" value="a" data-bind:v.pick> a</label><label><input type="radio" value="b" data-bind:v.pick> b</label> <label><input type="checkbox" value="x" data-bind:v.many> x</label><label><input type="checkbox" value="y" data-bind:v.many> y</label></div>
-  <pre data-text="JSON.stringify($v)"></pre>
+Text inputs bind strings. `type=number` and `type=range` bind numbers, and an empty number field binds `''`.
+
+<Live title="input types" html={`
+<div data-signals="{ name: 'Ada', age: 36, vol: 40 }">
+  <div class="row"><input data-bind:name placeholder="name"> <input type="number" data-bind:age style="width:5rem"> <input type="range" min="0" max="100" data-bind:vol></div>
+  <pre data-text="JSON.stringify({ name: $name, age: $age, vol: $vol })"></pre>
+  <div class="row"><button data-on:click="$name = 'Grace'; $age = 45; $vol = 80">set from the outside</button></div>
+</div>
+`} />
+
+## The signal is created from the element
+
+If the signal does not exist yet, the element's current value seeds it, so server-rendered forms need no `data-signals` declaration.
+
+<Live title="seeded from markup" html={`
+<div>
+  <div class="row"><input data-bind:city value="Lisbon"> <input type="number" data-bind:floors value="3"></div>
+  <p>city = <b data-text="$city"></b>, floors = <b data-text="$floors"></b> (a number)</p>
+</div>
+`} />
+
+## Checkboxes
+
+A lone checkbox binds a boolean. Checkboxes that share a signal holding an array bind their `value` into that array. A checkbox with its own `value` and a non-array signal binds that value or `''`.
+
+<Live title="boolean, group, own value" html={`
+<div data-signals="{ agree: false, toppings: ['cheese'], plan: '' }">
+  <div class="row"><label><input type="checkbox" data-bind:agree> agree</label></div>
+  <div class="row"><label><input type="checkbox" value="cheese" data-bind:toppings> cheese</label><label><input type="checkbox" value="olives" data-bind:toppings> olives</label><label><input type="checkbox" value="basil" data-bind:toppings> basil</label></div>
+  <div class="row"><label><input type="checkbox" value="pro" data-bind:plan> pro plan (own value)</label></div>
+  <pre data-text="JSON.stringify({ agree: $agree, toppings: $toppings, plan: $plan })"></pre>
+</div>
+`} />
+
+## Radios
+
+Radios bound to the same signal form a group; the checked one's `value` is the signal. They get a shared `name` automatically. If the signal already holds a number, values are converted back to numbers.
+
+<Live title="radio group" html={`
+<div data-signals="{ size: 'm', stars: 3 }">
+  <div class="row"><label><input type="radio" value="s" data-bind:size> S</label><label><input type="radio" value="m" data-bind:size> M</label><label><input type="radio" value="l" data-bind:size> L</label></div>
+  <div class="row"><label><input type="radio" value="1" data-bind:stars> 1</label><label><input type="radio" value="3" data-bind:stars> 3</label><label><input type="radio" value="5" data-bind:stars> 5</label> <span class="muted">numbers stay numbers</span></div>
+  <p>size = <b data-text="$size"></b>, stars = <b data-text="$stars"></b> (<span data-text="typeof $stars"></span>)</p>
+</div>
+`} />
+
+## Selects
+
+A single select binds the chosen option's value; `multiple` binds an array. Options with numeric values keep the signal's type.
+
+<Live title="single and multiple" html={`
+<div data-signals="{ colour: 'green', langs: ['js'] }">
+  <div class="row"><select data-bind:colour><option>red</option><option>green</option><option>blue</option></select>
+  <select multiple data-bind:langs size="3"><option value="js">JavaScript</option><option value="ts">TypeScript</option><option value="go">Go</option></select></div>
+  <pre data-text="JSON.stringify({ colour: $colour, langs: $langs })"></pre>
+  <div class="row"><button data-on:click="$langs = ['ts', 'go']">select ts and go</button></div>
+</div>
+`} />
+
+## Textareas and other `value` elements
+
+Textareas bind like text inputs. Any other element with a `value` property (custom elements included) binds it on `input` and `change`; elements without one bind their `value` attribute on `change`.
+
+<Live title="textarea" html={`
+<div data-signals="{ note: 'Two-way.' }">
+  <textarea data-bind:note rows="2" style="width:100%"></textarea>
+  <p><b data-text="$note.length"></b> characters</p>
+</div>
+`} />
+
+## Choosing the events with `__event`
+
+Bind on `change` (or `blur`) to update only when the user commits a value rather than on every keystroke.
+
+<Live title="__event.change" html={`
+<div data-signals="{ draft: '', committed: '' }">
+  <div class="row"><input data-bind:draft placeholder="updates as you type"> <input data-bind:committed__event.change placeholder="updates when you leave the field"></div>
+  <p>draft = <b data-text="$draft"></b>, committed = <b data-text="$committed"></b></p>
+</div>
+`} />
+
+## File inputs
+
+`type=file` binds an array of `{ name, type, size, contents }` where `contents` is the file's base64 body, ready to send as JSON.
+
+<Live title="files as base64" html={`
+<div data-signals="{ files: [] }">
+  <input type="file" multiple data-bind:files>
+  <pre data-text="JSON.stringify($files.map(f => ({ name: f.name, size: f.size, base64Length: f.contents.length })), null, 2)"></pre>
+</div>
+`} />
+
+## Dotted paths and the value form
+
+The key may be a dotted path into a namespace. When the path is awkward as an attribute key, put it in the value instead.
+
+<Live title="nested paths" html={`
+<div data-signals="{ user: { first: 'Ada', last: 'Lovelace' } }">
+  <div class="row"><input data-bind:user.first> <input data-bind="user.last"></div>
+  <p data-text="$user.first + ' ' + $user.last"></p>
 </div>
 `} />
 
 ## Notes
 
-If the signal does not exist, it is created from the element's current value. See [Forms and binding](/guides/forms/) for the per-element rules: numbers stay numbers, checkbox groups bind to arrays, radios share a name, `select multiple` gives an array, file inputs give base64 file objects.
+When a server patch morphs the element and changes its default `value`, `checked` or `selected` attribute, the morph updates the live field and dispatches `sigmx-prop-change`; `bind` listens for it and writes the new value to the signal, so server and browser never disagree. See [Forms and binding](/guides/forms/) for the full rules and for posting forms.
 
 ## Register
 

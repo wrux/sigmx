@@ -6,7 +6,7 @@ sidebar: {"order": 18, "label": "on-resize"}
 import Live from '../../../../components/Live.astro'
 import Cost from '../../../../components/Cost.astro'
 
-Run an expression when the element's size changes.
+Run an expression when the element's size changes. Backed by `ResizeObserver`, which also fires once when observation starts.
 
 ## Syntax
 
@@ -18,23 +18,39 @@ data-on-resize__debounce.100ms="…"
 | part | |
 |---|---|
 | key | forbidden |
-| value | required |
+| value | required: statements |
 
 ## Modifiers
 
 | modifier | effect |
 |---|---|
-| `__delay / __debounce / __throttle` | timing |
+| `__debounce.ms` / `__throttle.ms` | timing |
 
-## Example
+## Measure an element
 
-<Live html={`
-<textarea data-signals="{ w: 0 }" data-on-resize="$w = el.offsetWidth" style="width:12rem">drag my corner</textarea> <span data-text="$w + 'px'"></span>
+<Live title="textarea size" html={`
+<div data-signals="{ w: 0, h: 0 }">
+  <textarea data-on-resize="$w = el.offsetWidth; $h = el.offsetHeight" style="width:12rem">drag my corner</textarea>
+  <p><b data-text="$w"></b> × <b data-text="$h"></b> px</p>
+</div>
+`} />
+
+## Container queries in JavaScript
+
+React to the element's own width rather than the viewport: a card that switches to a stacked layout when it gets narrow.
+
+<Live title="compact below 360px" html={`
+<div data-signals="{ compact: false }" data-on-resize__throttle.50ms="$compact = el.offsetWidth < 360" style="resize:horizontal;overflow:auto;border:1px dashed var(--sl-color-hairline);padding:.5rem;min-width:12rem">
+  <div data-class:stacked="$compact" data-style="{ display: 'flex', flexDirection: $compact ? 'column' : 'row', gap: '.5rem' }">
+    <div class="box" style="flex:1;height:2rem"></div><div class="box" style="flex:1;height:2rem"></div>
+  </div>
+  <p class="muted">drag the corner: <b data-text="$compact ? 'stacked' : 'side by side'"></b></p>
+</div>
 `} />
 
 ## Notes
 
-Backed by `ResizeObserver`; it also fires once when observation starts.
+`el` is in scope. The first run happens when the observer connects, so the signals are populated on mount without a `data-init`.
 
 ## Register
 

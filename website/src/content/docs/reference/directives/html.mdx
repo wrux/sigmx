@@ -19,18 +19,29 @@ data-html="$markup"
 | key | forbidden |
 | value | required |
 
-## Example
+## Render a markup string
 
-<Live html={`
+<Live title="live markup" html={`
 <div data-signals="{ markup: '<b>bold</b> and <i>italic</i>' }">
   <input data-bind:markup style="width:100%">
   <p data-html="$markup"></p>
 </div>
 `} />
 
+## Build markup from data
+
+Any expression that yields a string works, so a list can be rendered from an array.
+
+<Live title="list from an array" html={`
+<div data-signals="{ items: ['bread', 'milk'] }">
+  <div class="row"><button data-on:click="$items = [...$items, 'item ' + ($items.length + 1)]">add</button><button data-on:click="$items = $items.slice(0, -1)">remove last</button></div>
+  <ul data-html="$items.map(i => '<li>' + i + '</li>').join('')"></ul>
+</div>
+`} />
+
 ## Notes
 
-Only use it with markup you trust; nothing is sanitised. Scripts inside are not executed. For server-rendered fragments prefer `@get` with a morph.
+Nothing is sanitised: only use it with markup you trust. `<script>` elements inserted this way do not run. `null` and `undefined` render as an empty string. Directives inside the inserted markup mount like any other markup, but with precompiled expressions (`precompile: true` in the Astro or Vite integration) their expressions must also appear as real attributes somewhere in your source, or they will not be in the compiled table. For server-rendered fragments prefer `@get`, whose HTML responses are morphed rather than replaced, so state inside survives.
 
 ## Register
 

@@ -6,7 +6,7 @@ sidebar: { order: 2 }
 
 import Live from '../../../components/Live.astro'
 
-Attribute values are JavaScript. sigmx does not parse or rewrite signal references; it evaluates your code inside a scope where every identifier starting with `$` resolves against the store. That is why all of the following are ordinary JavaScript:
+Attribute values are JavaScript. Before compiling, sigmx rewrites every `$name` into `$.name`, a property of the root store proxy, and every `@name(` into a call on the functions object; strings, template text, comments and regular expressions are left exactly as written. The result is compiled as a strict-mode function, so all of the following are ordinary JavaScript:
 
 ```js
 $count++
@@ -37,6 +37,12 @@ Directives that need a value (`text`, `show`, `class`, `computed`, …) evaluate
 ```
 
 Arrow functions, template literals, optional chaining and anything else the browser supports are fine.
+
+## Strict mode
+
+Expressions run in strict mode. A misspelt name such as `cuont = 1` throws `ReferenceError` instead of silently creating a global, `this` is `undefined`, and assignments to read-only properties throw. A misspelt signal, `$cuont`, reads as `undefined` like any missing store path.
+
+Four directives take a literal instead of an expression, because their values are almost always literal text: `mask` (a pattern), `match-media` (a media query), `teleport` (a selector) and `remove-me` (a delay). Add `__dynamic` to any of them to write an expression instead.
 
 ## What is in scope
 

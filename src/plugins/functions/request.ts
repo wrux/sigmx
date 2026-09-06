@@ -1,6 +1,7 @@
-import { type ActionCtx, action, type Filter, untracked } from '../../kernel/index.js';
+import { type ActionCtx, type Filter, untracked } from '../../kernel/index.js';
 import { camel } from '../../lib/casing.js';
 import { parseFields, readEvents } from '../../lib/sse.js';
+import { act } from '../def.js';
 
 export type RequestOptions = {
   headers?: Record<string, string>;
@@ -12,18 +13,20 @@ export type RequestOptions = {
   /** Explicit body instead of signals. */
   payload?: unknown;
   /** 'replace' (default) aborts an earlier request with the same method and URL; 'none' lets them overlap. */
-  abort?: 'replace' | 'none' | AbortController;
-  /** Keep the connection open while the tab is hidden. Default: true except for GET streams. */
-  openWhenHidden?: boolean;
+  abort?: 'replace' | 'none';
   /** Reconnect after a stream closes normally (long-lived event streams). */
   reconnect?: boolean;
   retry?: { attempts?: number; interval?: number; factor?: number; max?: number; onStatusError?: boolean };
 };
 
+/** What a request resolves with: the last response that was applied (undefined when nothing was sent). */
+export type RequestResult = { url: string; status: number; redirected: boolean } | undefined;
+
 const inflight = new Map<string, AbortController>();
 let seq = 0;
 const sleep = (ms: number, signal: AbortSignal) =>
   new Promise<void>((resolve) => {
+    if (signal.aborted) return resolve();
     const t = setTimeout(resolve, ms);
     signal.addEventListener(
       'abort',
@@ -34,11 +37,8 @@ const sleep = (ms: number, signal: AbortSignal) =>
       { once: true },
     );
   });
-const untilVisible = () =>
-  new Promise<void>((resolve) =>
-    document.addEventListener('visibilitychange', () => !document.hidden && resolve(), { once: true }),
-  );
 
+/** Response headers `sigmx-<name>` become camel-cased fields of `data`. */
 const headerArgs = (res: Response, names: string[], data: Record<string, string>) => {
   for (const n of names) {
     const v = res.headers.get(`sigmx-${n}`);
@@ -47,78 +47,73 @@ const headerArgs = (res: Response, names: string[], data: Record<string, string>
   return data;
 };
 
-const runScript = (text: string) => {
-  const s = document.createElement('script');
-  s.text = text;
-  document.head.append(s);
-  s.remove();
-};
-
-const send = async (method: string, ctx: ActionCtx, url: string, o: RequestOptions = {}): Promise<void> => {
+const send = async (method: string, ctx: ActionCtx, url: string, o: RequestOptions = {}): Promise<RequestResult> => {
   const { el, evt, store, runtime, error } = ctx;
   if (!url) throw error(`@${method.toLowerCase()} needs a URL`);
-  const key = `${method} ${url}`;
-  const ac = o.abort instanceof AbortController ? o.abort : new AbortController();
+  const u = new URL(url, location.href);
+  const key = `${method} ${u.href}`; // resolved, before any signals are appended
+  const hasBody = method !== 'GET' && method !== 'DELETE';
+  const headers = new Headers({ Accept: 'text/event-stream, text/html, application/json', 'Sigmx-Request': 'true' });
+  for (const [k, v] of new Headers(o.headers)) headers.set(k, v);
+  let body: BodyInit | undefined;
+  const contentType = (t: string) => {
+    if (hasBody && !headers.has('Content-Type')) headers.set('Content-Type', t);
+  };
+  if ((o.contentType ?? 'json') === 'json') {
+    const json = JSON.stringify(o.payload ?? untracked(() => store.snapshot(o.filter ?? { exclude: /(^|\.)_/ })));
+    if (hasBody) {
+      body = json;
+      contentType('application/json');
+    } else u.searchParams.set('sigmx', json);
+  } else {
+    const form = (o.selector ? document.querySelector(o.selector) : el.closest('form')) as HTMLFormElement | null;
+    if (!form) throw error('no form found', { selector: o.selector });
+    if (!form.noValidate && !form.checkValidity()) {
+      form.reportValidity();
+      return;
+    }
+    // Only a real submit button may be the submitter; FormData throws for anything else.
+    const submitter =
+      evt instanceof SubmitEvent
+        ? evt.submitter
+        : el instanceof HTMLButtonElement && el.form === form && el.type === 'submit'
+          ? el
+          : null;
+    const fd = new FormData(form, submitter);
+    const params = new URLSearchParams(fd as unknown as Record<string, string>);
+    if (!hasBody) for (const [k, v] of params) u.searchParams.append(k, v);
+    else if (form.enctype === 'multipart/form-data') body = fd;
+    else {
+      body = params;
+      contentType('application/x-www-form-urlencoded');
+    }
+  }
+
+  const ac = new AbortController();
   if (o.abort !== 'none') {
     inflight.get(key)?.abort();
     inflight.set(key, ac);
   }
-  ctx.cleanup(() => ac.abort());
+  const forget = ctx.cleanup(() => ac.abort());
   const rid = ++seq;
-  const emit = (type: string, extra: Record<string, unknown> = {}) =>
-    runtime.emit('fetch', { el, type, method, url, rid, ...extra });
-  const retry = { attempts: 5, interval: 1000, factor: 2, max: 30_000, onStatusError: false, ...o.retry };
-  const pauseWhenHidden = !(o.openWhenHidden ?? method !== 'GET');
-  const bodyAllowed = method !== 'GET' && method !== 'DELETE';
-
-  const build = (): { url: string; init: RequestInit } | undefined => {
-    const u = new URL(url, location.href);
-    const headers: Record<string, string> = {
-      Accept: 'text/event-stream, text/html, application/json',
-      'Sigmx-Request': 'true',
-      ...o.headers,
-    };
-    let body: BodyInit | undefined;
-    if ((o.contentType ?? 'json') === 'json') {
-      const payload = o.payload ?? untracked(() => store.snapshot(o.filter ?? { exclude: /(^|\.)_/ }));
-      const json = JSON.stringify(payload);
-      if (bodyAllowed) {
-        body = json;
-        headers['Content-Type'] ??= 'application/json';
-      } else u.searchParams.set('sigmx', json);
-    } else {
-      const form = (o.selector ? document.querySelector(o.selector) : el.closest('form')) as HTMLFormElement | null;
-      if (!form) throw error('no form found', { selector: o.selector });
-      if (!form.noValidate && !form.checkValidity()) {
-        form.reportValidity();
-        return;
-      }
-      const submitter =
-        evt instanceof SubmitEvent ? evt.submitter : el instanceof HTMLButtonElement && el.form === form ? el : null;
-      const fd = new FormData(form, submitter);
-      const multipart = form.enctype === 'multipart/form-data';
-      if (bodyAllowed) {
-        body = multipart ? fd : new URLSearchParams(fd as unknown as Record<string, string>);
-        if (!multipart) headers['Content-Type'] = 'application/x-www-form-urlencoded';
-      } else {
-        for (const [k, v] of new URLSearchParams(fd as unknown as Record<string, string>)) u.searchParams.append(k, v);
-      }
-    }
-    return { url: u.toString(), init: { method, headers, body } };
-  };
-
-  const route = (event: string, data: string) => {
-    const fields = parseFields(data);
-    runtime.emit('server-event', { el, event, data: fields });
-    runtime.handle(event, fields);
-  };
-
+  const emit = (type: string, extra?: object) => runtime.emit('fetch', { el, type, method, url, rid, ...extra });
+  const retry = { attempts: 5, interval: 1000, factor: 2, max: 30_000, ...o.retry };
   let attempt = 0;
   let wait = retry.interval;
   let lastId: string | undefined;
+  let last: RequestResult;
+  // Exceptions thrown while applying a response are the page's problem, not the network's: no retry.
+  let applyError: unknown;
+  const apply = (fn: () => void) => {
+    try {
+      fn();
+    } catch (e) {
+      applyError = e;
+      throw e;
+    }
+  };
   const backoff = async () => {
     if (attempt++ >= retry.attempts) throw new Error('retries exhausted');
-    emit('retrying', { attempt });
     await sleep(wait, ac.signal);
     wait = Math.min(wait * retry.factor, retry.max);
   };
@@ -126,63 +121,62 @@ const send = async (method: string, ctx: ActionCtx, url: string, o: RequestOptio
   emit('started');
   try {
     while (!ac.signal.aborted) {
-      const req = build();
-      if (!req) return;
-      if (lastId) (req.init.headers as Record<string, string>)['Last-Event-ID'] = lastId;
-      const hide = new AbortController();
-      const onHide = () => document.hidden && hide.abort();
-      if (pauseWhenHidden) document.addEventListener('visibilitychange', onHide);
+      if (lastId) headers.set('Last-Event-ID', lastId);
       try {
-        const res = await fetch(req.url, { ...req.init, signal: AbortSignal.any([ac.signal, hide.signal]) });
+        const res = await fetch(u.href, { method, headers, body, signal: ac.signal });
+        last = { url: res.url, status: res.status, redirected: res.redirected };
         const ct = res.headers.get('content-type') ?? '';
-        if (res.status >= 400) {
+        if (!res.ok) {
           emit('error', { status: res.status });
-          if (!retry.onStatusError) return;
+          if (!retry.onStatusError) return last;
           await backoff();
           continue;
         }
-        if (res.status === 204 || res.status === 304 || !res.body) return;
+        if (!res.body) return last;
         if (ct.includes('text/event-stream')) {
           attempt = 0;
           wait = retry.interval;
           await readEvents(res.body, (e) => {
             if (e.id !== undefined) lastId = e.id;
             if (e.retry) wait = retry.interval = e.retry;
-            route(e.event, e.data);
+            const data = parseFields(e.data);
+            apply(() => {
+              runtime.emit('server-event', { el, event: e.event, data });
+              runtime.handle(e.event, data);
+            });
           });
-          if (!o.reconnect) return;
+          if (!o.reconnect) return last;
           await backoff();
           continue;
         }
         const text = await res.text();
-        if (ct.includes('text/html'))
-          runtime.handle(
-            'patch-elements',
-            headerArgs(res, ['selector', 'mode', 'use-view-transition'], { elements: text }),
-          );
-        else if (ct.includes('application/json'))
-          runtime.handle('patch-signals', headerArgs(res, ['only-if-missing'], { signals: text }));
-        else if (ct.includes('javascript')) runScript(text);
-        return;
-      } catch {
-        if (ac.signal.aborted) return;
-        if (hide.signal.aborted) await untilVisible();
-        else await backoff();
-      } finally {
-        document.removeEventListener('visibilitychange', onHide);
+        apply(() => {
+          if (ct.includes('text/html'))
+            runtime.handle('patch-elements', headerArgs(res, ['selector', 'mode'], { elements: text }));
+          else if (ct.includes('application/json'))
+            runtime.handle('patch-signals', headerArgs(res, ['only-if-missing'], { signals: text }));
+        });
+        return last;
+      } catch (e) {
+        if (ac.signal.aborted) return last;
+        if (applyError) throw e;
+        await backoff();
       }
     }
+    return last;
   } catch (e: any) {
     emit('error', { message: e?.message });
     throw error(`${method} ${url}: ${e?.message ?? e}`);
   } finally {
-    emit('finished');
+    ac.abort(); // releases a still-open body and any pending backoff
+    forget();
+    emit('finished', last);
     if (inflight.get(key) === ac) inflight.delete(key);
   }
 };
 
 const make = (name: string, method: string) =>
-  action({ name, call: (ctx, url: string, o?: RequestOptions) => send(method, ctx, url, o) });
+  act(name, (ctx, url: string, o?: RequestOptions) => send(method, ctx, url, o));
 
 /** `@get(url, options)`: signals travel in the `sigmx` query parameter. */
 export const httpGet = make('get', 'GET');

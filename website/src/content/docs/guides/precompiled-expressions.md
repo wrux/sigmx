@@ -56,6 +56,6 @@ createRuntime({ plugins: all, expressions: precompiled(table) })
 
 ## How expressions change
 
-Precompiled functions run in strict mode, where `with` is not available, so the build rewrites `$name` into property access on the root store proxy: `$count++` becomes `$.count++`, `$user.name` becomes `$.user.name`, and template-literal interpolations are rewritten too. `@name(...)` calls and the last-statement return value work exactly as at runtime. The only visible difference is in error messages: a misspelt signal reads as `undefined` rather than `$typo is not defined`.
+They do not. The runtime and the build use one pipeline: `transform()` rewrites `$name` into property access on the root store proxy (`$count++` becomes `$.count++`, `$user.name` becomes `$.user.name`, template-literal holes included, strings, comments and regular expressions untouched) and `@name(...)` into a call on the actions object, then the same strict-mode body is compiled. Behaviour, return values and error messages are identical whether an expression was precompiled or compiled in the browser.
 
-Expressions are keyed by their source text, the parameter names of the directive and whether it returns a value, so the same text used by two directives compiles once per shape.
+Expressions are keyed by their source text alone, so the same text used by two directives compiles once, and a plugin that gains an argument (arguments are only ever appended) keeps tables built before the upgrade valid. Directives whose value is a literal (`mask`, `match-media`, `teleport`, `remove-me`) are skipped unless the attribute carries `__dynamic`. The scan also warns about keyed attributes written with capital letters, such as `data-bind:firstName`, which HTML would lowercase.

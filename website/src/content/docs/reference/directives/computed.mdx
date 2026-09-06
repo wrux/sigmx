@@ -6,38 +6,60 @@ sidebar: {"order": 2, "label": "computed"}
 import Live from '../../../../components/Live.astro'
 import Cost from '../../../../components/Cost.astro'
 
-A derived signal that recalculates lazily when its inputs change.
+A derived signal that recalculates lazily when its inputs change. Read it like any other signal; it is never assigned.
 
 ## Syntax
 
 ```html
 data-computed:total="$price * $qty"
-data-computed="{ total: () => $price * $qty, label: () => $total + ' EUR' }"
+data-computed:full-name="$first + ' ' + $last"     <!-- signal $fullName -->
 ```
 
 | part | |
 |---|---|
-| key | optional (the signal path); the object form takes functions |
-| value | required |
+| key | required: the signal path (camelCased, `__case` changes it) |
+| value | required: the expression |
 
 ## Modifiers
 
 | modifier | effect |
 |---|---|
-| `__case.*` | key casing |
+| `__case.kebab` | keep the key kebab-cased |
 
-## Example
+## Derive from other signals
 
-<Live html={`
+<Live title="full name" html={`
 <div data-signals="{ first: 'Ada', last: 'Lovelace' }" data-computed:full="$first + ' ' + $last">
   <div class="row"><input data-bind:first> <input data-bind:last></div>
   <p>Full name: <b data-text="$full"></b></p>
 </div>
 `} />
 
+## Chain computeds
+
+A computed can read other computeds; each one recalculates only when something it read changed.
+
+<Live title="cart total" html={`
+<div data-signals="{ price: 12.5, qty: 2, vat: 20 }" data-computed:net="$price * $qty" data-computed:tax="$net * $vat / 100" data-computed:gross="$net + $tax">
+  <div class="row"><input type="number" step="0.5" data-bind:price style="width:5rem"> × <input type="number" data-bind:qty style="width:4rem"> at <input type="number" data-bind:vat style="width:4rem">% VAT</div>
+  <p>net <b data-text="$net.toFixed(2)"></b>, tax <b data-text="$tax.toFixed(2)"></b>, gross <b data-text="$gross.toFixed(2)"></b></p>
+</div>
+`} />
+
+## Readers only re-run when the result changes
+
+`isEven` flips once per parity change, so the paragraph below re-renders half as often as the counter.
+
+<Live title="no cascade on unchanged results" html={`
+<div data-signals="{ n: 0, renders: 0 }" data-computed:is-even="$n % 2 === 0">
+  <button data-on:click="$n++">n = <span data-text="$n"></span></button>
+  <p data-effect="$isEven; $renders = @peek(() => $renders) + 1">even: <b data-text="$isEven"></b>; the effect reading it ran <b data-text="$renders"></b> times</p>
+</div>
+`} />
+
 ## Notes
 
-A computed only notifies its readers when its result changes, so `data-text="$isEven"` re-renders once per parity change, not once per increment. Writing to a computed path throws; server and storage patches skip computed paths silently.
+Computed paths are read-only: writing to one throws, and server or storage patches skip them silently, so `data-persist` never stores them and `snapshot(filter, { computed: false })` leaves them out. Evaluation is lazy: nothing runs until something reads the value. For a computed built from a function in JavaScript, use `store.define(path, computed(fn))` from `sigmx`.
 
 ## Register
 

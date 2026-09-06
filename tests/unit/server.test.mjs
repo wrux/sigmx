@@ -94,6 +94,11 @@ test('validateSignals applies a schema to already-parsed input', async () => {
 
 test('markup helpers accept anything that renders to a string', async () => {
   const node = { toString: () => '<p id="x">\n  hi\n</p>' };
-  assert.deepEqual(patchElements(node).lines, ['elements <p id="x">', 'elements   hi', 'elements </p>']);
+  assert.deepEqual(patchElements(node).lines, ['elements <p id="x">\n  hi\n</p>']);
+  assert.equal(
+    formatEvent(patchElements(node)),
+    'event: sigmx-patch-elements\ndata: elements <p id="x">\ndata: elements   hi\ndata: elements </p>\n\n',
+    'multi-line values become several data lines on the wire',
+  );
   assert.equal(await html(node).text(), '<p id="x">\n  hi\n</p>');
 });

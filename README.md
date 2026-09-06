@@ -8,11 +8,11 @@
 
 Your server renders HTML, as it always has. The browser asks for more of it with `@get` and `@post`, and sigmx merges the response into the page with a morph that keeps focus, typed input and scroll position. When you want live updates, the same request can return a stream of patches instead. Signals, two-way binding and reactive attributes cover the client-side state. You write `data-*` attributes and register only the plugins you use.
 
-- **Tiny.** 4.1 KB core, 8.8 KB with the essentials, 12.1 KB with all 52 plugins (brotli). Zero runtime dependencies.
+- **Tiny.** 4.5 KB core, 9.0 KB with the essentials, 11.5 KB with all 50 plugins (brotli). Zero runtime dependencies.
 - **Server-driven.** Return plain HTML from any endpoint and it is morphed into the page by id, or targeted with a header. Return JSON to merge signals, or an event stream to push many patches over one request, with `Last-Event-ID` reconnects.
 - **Reactive where it matters.** Signals declared in markup; `bind`, `show`, `class`, computed values and effects keep the page in step. No component model, no virtual DOM.
 - **Pay for what you use.** Every directive and function is an opt-in plugin, and auto mode scans your source to bundle exactly the set it finds.
-- **Batteries from the ecosystem.** The Alpine plugins (`collapse`, `mask`, `trap`, `teleport`, …) and htmx extensions (`boost`, `ws`, `remove-me`, …) people bolt on are built in as plugins.
+- **Batteries from the ecosystem.** The Alpine plugins (`collapse`, `mask`, `teleport`, …) and htmx extensions (`boost`, `ws`, `remove-me`, …) people bolt on are built in as plugins.
 - **Datastar-compatible markup.** Existing Datastar templates run unchanged.
 
 ```html
@@ -53,7 +53,7 @@ Attributes are `data-<plugin>[:key][__modifier.arg]="expression"`. Expressions a
 <button data-on:click__debounce.300ms="@get('/search')">Search</button>
 <li data-class:active="$page === 3"></li>
 <input data-bind:user.email />
-<p data-text="`${$items.length} items, ${@intl('number', $total, { style: 'currency', currency: 'EUR' })}`"></p>
+<p data-text="`${$items.length} items, ${@intl('NumberFormat', $total, { style: 'currency', currency: 'EUR' })}`"></p>
 ```
 
 State is one JSON-like store addressed by dotted paths and patched with merge-patch semantics: objects merge, `null` removes, arrays notify on `push`. Requests send the store (minus `_`-prefixed paths) and apply whatever comes back, decided by the response's content type:
@@ -81,10 +81,10 @@ data: elements <li>Validating…</li>
 | kind      | plugins                                                                                                        |
 | --------- | -------------------------------------------------------------------------------------------------------------- |
 | state     | `signals` `computed` `effect` `ref` `persist` `query-string`                                                   |
-| rendering | `text` `html` `show` `class` `style` `attr` `animate` `transition` `collapse` `view-transition` `cloak`        |
+| rendering | `text` `html` `show` `class` `style` `attr` `animate` `transition` `collapse` `cloak`                          |
 | forms     | `bind` `custom-validity` `mask`                                                                                |
 | events    | `on` `init` `on-interval` `on-intersect` `on-resize` `on-raf` `on-signal-patch` `match-media`                  |
-| layout    | `teleport` `trap` `scroll-into-view` `remove-me`                                                               |
+| layout    | `teleport` `scroll-into-view` `remove-me`                                                                      |
 | server    | `@get` `@post` `@put` `@patch` `@delete` `@ws` `boost` `indicator` `patch-elements` `patch-signals`            |
 | utilities | `@peek` `@setAll` `@toggleAll` `@fit` `@clipboard` `@intl` `@dispatch` `@confirm` `json-signals` `replace-url` |
 
@@ -96,14 +96,14 @@ Brotli, measured from the real source by `npm run size` and `npm run compare` (n
 
 |                                                             |  brotli |
 | ----------------------------------------------------------- | ------: |
-| sigmx core                                                  |  4.1 KB |
-| sigmx essentials (state, rendering, forms, requests, morph) |  8.8 KB |
-| sigmx everything, 52 plugins                                | 12.1 KB |
+| sigmx core                                                  |  4.5 KB |
+| sigmx essentials (state, rendering, forms, requests, morph) |  9.0 KB |
+| sigmx everything, 50 plugins                                | 11.5 KB |
 | htmx 2.0.10                                                 | 14.6 KB |
-| Datastar 1.0.3, free bundle (23 plugins)                    | 11.8 KB |
+| Datastar 1.0.3 (23 plugins)                                 | 11.8 KB |
 | Alpine.js 3.17.1                                            | 17.6 KB |
 
-Precompiling expressions at build time removes the runtime compiler and any use of `new Function`, taking the core to 3.7 KB and making strict CSP trivial.
+Precompiling expressions at build time removes the runtime compiler and any use of `new Function`, taking the core to 3.8 KB and making strict CSP trivial.
 
 ## Auto mode
 

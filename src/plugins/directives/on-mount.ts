@@ -1,15 +1,7 @@
-import { attribute, withTiming, withViewTransition } from '../../kernel/index.js';
+import { withTiming } from '../../kernel/index.js';
+import { dir } from '../def.js';
 
 /** Runs once when the element is mounted. Supports `__delay.500ms` and `__viewtransition`. */
-export const init = attribute({
-  name: 'init',
-  key: 'forbidden',
-  value: 'required',
-  returns: false,
-  mount({ mods, evaluate }) {
-    withTiming(
-      withViewTransition(() => evaluate(), mods),
-      mods,
-    )();
-  },
+export const init = dir('init', 22, ({ mods, evaluate, cleanup }) => {
+  withTiming(() => evaluate(), mods, cleanup)();
 });

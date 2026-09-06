@@ -6,31 +6,55 @@ sidebar: {"order": 6, "label": "show"}
 import Live from '../../../../components/Live.astro'
 import Cost from '../../../../components/Cost.astro'
 
-Show or hide the element with `display: none`.
+Show or hide the element with `display: none`. The element stays in the DOM, so its state and its directives survive being hidden.
 
 ## Syntax
 
 ```html
 data-show="$open"
+data-show="$items.length > 0"
 ```
 
 | part | |
 |---|---|
 | key | forbidden |
-| value | required |
+| value | required: truthy shows |
 
-## Example
+## Toggle
 
-<Live html={`
+<Live title="basic" html={`
 <div data-signals="{ open: false }">
   <button data-on:click="$open = !$open">Toggle</button>
   <p data-show="$open">Now you see me.</p>
 </div>
 `} />
 
+## The inline display value is kept
+
+A `style="display:flex"` element comes back as flex, not block.
+
+<Live title="flex survives a hide" html={`
+<div data-signals="{ on: true }">
+  <button data-on:click="$on = !$on">toggle</button>
+  <div data-show="$on" style="display:flex;gap:.5rem;margin-top:.5rem"><div class="box" style="flex:1;height:1rem"></div><div class="box" style="flex:1;height:1rem"></div></div>
+  <p class="muted">display after showing again: <code data-text="$on ? el.parentElement.previousElementSibling.style.display : 'none'"></code></p>
+</div>
+`} />
+
+## Avoid the flash before mount
+
+Content that starts hidden should also carry `style="display:none"`, so it does not appear for a frame before sigmx runs.
+
+<Live title="start hidden" html={`
+<div data-signals="{ details: false }">
+  <button data-on:click="$details = !$details" data-text="$details ? 'less' : 'more'">more</button>
+  <p data-show="$details" style="display:none">Rendered hidden by the server, revealed by the signal.</p>
+</div>
+`} />
+
 ## Notes
 
-The element's own inline `display` value is remembered and restored, so `style="display:flex"` survives a hide/show cycle. To avoid a flash before sigmx mounts, add `style="display:none"` for content that starts hidden.
+For an animated show and hide use `data-transition` (fade) or `data-collapse` (height); both remember the inline display value the same way.
 
 ## Register
 

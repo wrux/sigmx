@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url';
 import { serve } from '@hono/node-server';
 import { patchElements, patchSignals, sigmx } from '@sigmx/hono';
 import { serveClient } from '@sigmx/hono/node';
@@ -7,7 +8,9 @@ import { Greeting, Home, Layout, Subscribed, Towns } from './components.js';
 
 const app = new Hono();
 app.use(sigmx()); // every handler now has c.var.sigmx
-app.get('/sigmx.js', serveClient()); // the script-tag build straight from node_modules, no bundler
+// public/sigmx.js is written by `vite build` (see vite.config.ts): auto mode scans the components and
+// ships only the plugins they use. serveClient() with no options would serve the every-plugin build instead.
+app.get('/sigmx.js', serveClient({ path: fileURLToPath(new URL('./public/sigmx.js', import.meta.url)) }));
 
 app.use(
   '/',

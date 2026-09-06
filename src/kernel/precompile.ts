@@ -1,98 +1,20 @@
 // Build-time expression compiler. Not for the browser: import it from a Vite/Astro plugin.
-import { rewriteActions, splitStatements } from './compile.js';
+// It emits the very same strict-mode bodies the runtime compiles, keyed by source text.
+import { compileBody, functionCompiler } from './compile.js';
 import { expressionKey } from './precompiled.js';
 
-const ident = /[A-Za-z0-9_$]/;
-
-/**
- * Rewrite `$name` and `$a.b` into `$.name` / `$.a.b` so the expression runs in strict mode without
- * `with`. Skips strings and comments, recurses into template-literal interpolations, and leaves
- * `$` alone, `$[...]` alone, and `obj.$prop` alone.
- */
-export const rewriteSignals = (src: string): string => {
-  let out = '';
-  let i = 0;
-  const n = src.length;
-  const prevCode = () => {
-    for (let j = out.length - 1; j >= 0; j--) if (!/\s/.test(out[j])) return out[j];
-    return '';
-  };
-  while (i < n) {
-    const c = src[i];
-    const next = src[i + 1];
-    if (c === '"' || c === "'") {
-      let j = i + 1;
-      while (j < n && src[j] !== c) j += src[j] === '\\' ? 2 : 1;
-      out += src.slice(i, j + 1);
-      i = j + 1;
-    } else if (c === '`') {
-      out += c;
-      i++;
-      while (i < n && src[i] !== '`') {
-        if (src[i] === '\\') {
-          out += src.slice(i, i + 2);
-          i += 2;
-        } else if (src[i] === '$' && src[i + 1] === '{') {
-          let depth = 1;
-          let j = i + 2;
-          while (j < n && depth) {
-            if (src[j] === '{') depth++;
-            else if (src[j] === '}') depth--;
-            if (depth) j++;
-          }
-          out += `\${${rewriteSignals(src.slice(i + 2, j))}}`;
-          i = j + 1;
-        } else out += src[i++];
-      }
-      out += '`';
-      i++;
-    } else if (c === '/' && next === '/') {
-      const j = src.indexOf('\n', i);
-      i = j < 0 ? n : j;
-    } else if (c === '/' && next === '*') {
-      const j = src.indexOf('*/', i + 2);
-      i = j < 0 ? n : j + 2;
-    } else if (
-      c === '$' &&
-      next !== undefined &&
-      ident.test(next) &&
-      next !== '$' &&
-      prevCode() !== '.' &&
-      !ident.test(out[out.length - 1] ?? '')
-    ) {
-      let j = i + 1;
-      while (j < n && ident.test(src[j])) j++;
-      out += `$.${src.slice(i + 1, j)}`;
-      i = j;
-    } else {
-      out += c;
-      i++;
-    }
-  }
-  return out;
-};
-
-export const compileBody = (src: string, returns: boolean): string => {
-  const code = rewriteSignals(rewriteActions(src.trim()));
-  if (!returns) return code;
-  const parts = splitStatements(code);
-  const last = parts.pop() ?? '';
-  return `${parts.length ? `${parts.join(';')};` : ''}return (${last}\n)`;
-};
-
-export type Extracted = { src: string; params: string[]; returns: boolean };
+export type Extracted = { src: string; params: string[] };
 
 export const generateTable = (items: Extracted[]): string => {
   const seen = new Set<string>();
   const lines: string[] = [];
-  for (const { src, params, returns } of items) {
-    const key = expressionKey(src, params, returns);
+  for (const { src, params } of items) {
+    const key = expressionKey(src);
     if (seen.has(key)) continue;
     seen.add(key);
     let body: string;
     try {
-      body = compileBody(src, returns);
-      Function('$', '__a', ...params, body); // syntax check at build time
+      [body] = compileBody(functionCompiler, src, params); // also the syntax check
     } catch {
       continue; // leave it to the runtime fallback (or fail there)
     }
@@ -109,13 +31,24 @@ const entities: Record<string, string> = {
   '&gt;': '>',
   '&amp;': '&',
 };
-const decode = (s: string) => s.replace(/&(quot|#39|apos|lt|gt|amp);/g, (m) => entities[m]);
+const decode = (s: string) =>
+  s.replace(/&(?:quot|apos|lt|gt|amp|#\d+|#x[\da-f]+);/gi, (m) =>
+    m[1] === '#'
+      ? String.fromCodePoint(
+          Number.parseInt(
+            m[2] === 'x' || m[2] === 'X' ? m.slice(3, -1) : m.slice(2, -1),
+            m[2] === 'x' || m[2] === 'X' ? 16 : 10,
+          ),
+        )
+      : (entities[m.toLowerCase()] ?? m),
+  );
 
-export type PluginMeta = { name: string; returns?: boolean; args?: string[] };
+export type PluginMeta = { name: string; args?: string[]; literal?: boolean };
 
 /**
  * Find directive attributes with literal values in template source. Values must be plain quoted
- * strings; anything interpolated at render time is left to the runtime fallback.
+ * strings; anything interpolated at render time is left to the runtime fallback. Plugins whose value
+ * is a literal (mask, teleport, …) are skipped unless the attribute carries `__dynamic`.
  */
 export const extractExpressions = (
   source: string,
@@ -130,9 +63,22 @@ export const extractExpressions = (
     const value = decode(m[2] ?? m[3] ?? '');
     const prefix = prefixes.find((p) => attr.startsWith(p));
     if (!prefix || !value.trim()) continue;
-    const plugin = byName.get(attr.slice(prefix.length).split('__')[0].split(':')[0]);
-    if (!plugin) continue;
-    out.push({ src: value, params: ['el', 'evt', ...(plugin.args ?? [])], returns: plugin.returns ?? true });
+    const [head, ...mods] = attr.slice(prefix.length).split('__');
+    const plugin = byName.get(head.split(':')[0]);
+    if (!plugin || (plugin.literal && !mods.some((x) => x.split('.')[0] === 'dynamic'))) continue;
+    out.push({ src: value, params: ['el', 'evt', ...(plugin.args ?? [])] });
   }
+  return out;
+};
+
+/**
+ * Keyed directive attributes whose key contains an uppercase letter. HTML lowercases attribute names,
+ * so `data-bind:firstName` reaches the runtime as `firstname`: write `data-bind:first-name`.
+ */
+export const lintSource = (source: string, prefixes: string[] = ['data-']): string[] => {
+  const out: string[] = [];
+  for (const p of prefixes)
+    for (const m of source.matchAll(new RegExp(`(?<![\\w-])(${p}[a-z-]+:[^\\s="'<>]*[A-Z][^\\s="'<>]*)`, 'g')))
+      out.push(`${m[1]}: attribute names are lowercased by HTML; write the key in kebab-case`);
   return out;
 };

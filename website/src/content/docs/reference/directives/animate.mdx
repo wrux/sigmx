@@ -1,45 +1,77 @@
 ---
 title: "data-animate"
-description: "Tween a numeric CSS property or attribute towards an expression's value."
+description: "Tween a numeric CSS property towards an expression's value."
 sidebar: {"order": 27, "label": "animate"}
 ---
 import Live from '../../../../components/Live.astro'
 import Cost from '../../../../components/Cost.astro'
 
-Tween a numeric CSS property or attribute towards an expression's value.
+Tween a numeric CSS property towards an expression's value. The first value is applied at once; every later change animates from the current value to the new one.
 
 ## Syntax
 
 ```html
 data-animate:opacity="$open ? 1 : 0"
-data-animate:width__duration.500ms__easing.ease-in-out="$w + 'px'"
-data-animate:r="$radius"   <!-- SVG attribute -->
+data-animate:width__duration.500ms="$w + '%'"
+data-animate:font-size="$size + 'rem'"
 ```
 
 | part | |
 |---|---|
-| key | required (a CSS property or attribute) |
-| value | required |
+| key | required: the CSS property, in kebab-case or camelCase |
+| value | required: an expression yielding a number with an optional unit |
 
 ## Modifiers
 
 | modifier | effect |
 |---|---|
-| `__duration.ms|s` | tween length, default 300ms |
-| `__easing.linear|ease-in|ease-out|ease-in-out` | curve, default ease-out |
+| `__duration.ms\|s` | tween length, default 300ms |
 
-## Example
+## Tween a length
 
-<Live html={`
+<Live title="width, 600ms" html={`
 <div data-signals="{ w: 20 }">
-  <div class="row"><button data-on:click="$w = 20">small</button><button data-on:click="$w = 90">large</button></div>
-  <div class="box" data-animate:width__duration.600ms__easing.ease-in-out="$w + '%'" style="height:1rem"></div>
+  <div class="row"><button data-on:click="$w = 20">small</button><button data-on:click="$w = 60">medium</button><button data-on:click="$w = 90">large</button></div>
+  <div class="box" data-animate:width__duration.600ms="$w + '%'" style="height:1rem;width:20%"></div>
+</div>
+`} />
+
+## Tween opacity and retarget mid-flight
+
+Click while a tween is running: the new target takes over from wherever the value currently is.
+
+<Live title="opacity, retargeting" html={`
+<div data-signals="{ o: 1 }">
+  <div class="row"><button data-on:click="$o = $o > 0.5 ? 0.1 : 1">fade <span data-text="$o > 0.5 ? 'out' : 'in'"></span></button></div>
+  <div class="box hot" data-animate:opacity__duration.1500ms="$o" style="height:1rem"></div>
+</div>
+`} />
+
+## Several properties on one element
+
+Each key is its own tween with its own duration.
+
+<Live title="two properties, two durations" html={`
+<div data-signals="{ big: false }">
+  <button data-on:click="$big = !$big">toggle</button>
+  <div class="box" data-animate:height__duration.300ms="$big ? '3rem' : '1rem'" data-animate:opacity__duration.900ms="$big ? 1 : 0.4" style="height:1rem;opacity:.4;margin-top:.5rem"></div>
+</div>
+`} />
+
+## Non-numeric values apply immediately
+
+A value with a different unit, or no number at all, is written without a tween; the next numeric value in the same unit tweens again.
+
+<Live title="unit change" html={`
+<div data-signals="{ w: '30%' }">
+  <div class="row"><button data-on:click="$w = '30%'">30%</button><button data-on:click="$w = '80%'">80% (tweens)</button><button data-on:click="$w = '12rem'">12rem (jumps: different unit)</button><button data-on:click="$w = 'auto'">auto (jumps)</button></div>
+  <div class="box" data-animate:width__duration.500ms="$w" style="height:1rem;width:30%"></div>
 </div>
 `} />
 
 ## Notes
 
-Values with the same unit tween; anything else applies immediately. A tween retargets mid-flight when the expression changes again. `prefers-reduced-motion: reduce` makes every change instant.
+The start value is read from the element's inline style first, then from the computed style, so a width declared in a stylesheet tweens from its rendered pixel value. Values with the same unit tween with an ease-out curve; anything else applies immediately. `prefers-reduced-motion: reduce` makes every change instant. The directive writes inline styles only; to animate an SVG attribute, bind the attribute with `data-attr` and let CSS or SMIL animate it.
 
 ## Register
 

@@ -17,10 +17,9 @@ const store = createStore()
 | `remove(path)` | remove a leaf or a whole namespace |
 | `has(path)` | |
 | `define(path, signal)` | install a `Signal` or `Computed` as the leaf |
-| `paths(filter?)` | every leaf path, optionally filtered |
+| `paths(filter?, { computed? })` | every leaf path, optionally filtered; `computed: false` leaves computeds out |
 | `snapshot(filter?, { at?, computed? })` | plain-object copy |
 | `onPatch(fn)` | called after each settled batch with the nested patch; returns an unsubscribe |
 | `$` | root namespace proxy |
-| `scope` | the identifier scope expressions run in (`$name` → path `name`) |
 
-Filters are `{ include?: RegExp | string; exclude?: RegExp | string }` or a predicate over paths.
+Filters are `{ include?: RegExp; exclude?: RegExp }` or a predicate over paths.

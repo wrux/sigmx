@@ -141,15 +141,9 @@ await t('mask formats input and bind sees the formatted value; dynamic masks rea
   const dyn = el.querySelector('#dyn'); dyn.value = 'ab12345'; dyn.dispatchEvent(new Event('input', { bubbles: true })); eq(dyn.value, '1234')
   app.$.code = '99-99'; await tick(); eq(dyn.value, '12-34')
 })
-await t('trap keeps Tab inside and restores focus; teleport moves the element', async () => {
-  app.$.modal = false
-  const el = html('<div><button id="outside">o</button><div id="dlg" data-trap="$modal" data-teleport="#stage"><button id="a">a</button><button id="b">b</button></div><div id="landing"></div></div>')
+await t('teleport moves the element', async () => {
+  const el = html('<div><div id="dlg" data-teleport="#stage"><button id="a">a</button></div><div id="landing"></div></div>')
   await tick(); eq(document.getElementById('dlg').parentElement, stage, 'teleported to #stage')
-  document.getElementById('outside').focus(); app.$.modal = true; await tick(); await tick()
-  eq(document.activeElement.id, 'a')
-  document.getElementById('b').focus(); document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true }))
-  eq(document.activeElement.id, 'a', 'wrapped to first')
-  app.$.modal = false; eq(document.activeElement.id, 'outside', 'focus restored')
 })
 await t('@dispatch bubbles a CustomEvent; @confirm gates', async () => {
   let got = null; stage.addEventListener('ping', (e) => (got = e.detail))
@@ -169,6 +163,20 @@ await t('boost turns a same-origin link into a morphed navigation with history',
   await until(() => document.getElementById('title')?.textContent === 'Page two')
   eq(location.pathname, '/api/page2'); eq(!!document.getElementById('boost-note'), true)
   history.replaceState(null, '', url0)
+})
+await t('full-document patch: html attrs copied, head merged by equality, body morphed in place', async () => {
+  const mark = document.createElement('p'); mark.id = 'doc-mark'; mark.textContent = 'start'; document.body.append(mark)
+  const style = document.head.querySelector('style'), title = document.head.querySelector('title'), h1 = document.querySelector('h1'), head = document.head.innerHTML
+  const doc = (extraHead, text) => `<!doctype html><html lang="fr" data-doc="${text}"><head>${head}${extraHead}</head><body>${document.body.innerHTML.replace(/<script[\s\S]*?<\/script>/, '').replace(/id="doc-mark">[^<]*</, `id="doc-mark">${text}<`)}</body></html>`
+  const send = (extraHead, text) => app.runtime.handlers['patch-elements'].handle(app.runtime, { elements: doc(extraHead, text) })
+  send('<meta name="merged" content="yes">', 'one')
+  eq(document.documentElement.lang, 'fr', 'html attribute'); eq(document.documentElement.dataset.doc, 'one')
+  eq(document.head.querySelector('meta[name=merged]')?.content, 'yes', 'new head child added')
+  eq(document.head.querySelector('style'), style, 'existing style kept (no reload flash)'); eq(document.head.querySelector('title'), title, 'title kept')
+  eq(document.querySelector('h1'), h1, 'body morphed in place'); eq(document.getElementById('doc-mark'), mark, 'body child kept'); eq(mark.textContent, 'one')
+  send('', 'two')
+  eq(document.head.querySelector('meta[name=merged]'), null, 'absent head child removed'); eq(mark.textContent, 'two')
+  document.documentElement.lang = 'en'; mark.remove()
 })
 window.__done = true
 </script></body></html>

@@ -1,6 +1,6 @@
 {
   "name": "@sigmx/astro",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Astro integration and server helpers for sigmx: inject the client, stream patches from endpoints, read signals from requests.",
   "keywords": [
     "astro",
@@ -61,6 +61,6 @@
   },
   "peerDependencies": {
     "astro": "^5.0.0 || ^6.0.0 || ^7.0.0",
-    "sigmx": "^0.1.1"
+    "sigmx": "^0.2.0"
   }
 }

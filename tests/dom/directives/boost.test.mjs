@@ -33,7 +33,7 @@ test('boost turns same-origin link clicks into GET requests with a history entry
   await until(() => calls.length === 1);
   assert.equal(new URL(calls[0].url).pathname, '/next');
   assert.equal(calls[0].method, 'GET');
-  assert.equal(location.pathname + location.search, '/next?x=1');
+  await until(() => location.pathname + location.search === '/next?x=1', 500); // pushed once the page arrived
   assert.equal(click('ext'), false, 'other origins are left to the browser');
   assert.equal(click('hash'), false, 'same-page anchors are left alone');
   assert.equal(click('blank'), false, 'targets are left alone');
@@ -46,9 +46,7 @@ test('boost submits forms as requests and re-fetches on popstate', async (t) => 
   restoreUrl(t);
   const calls = mockFetch(t, () => new native.Response(null, { status: 204 }));
   const { render, stage } = app(t);
-  await render(
-    '<div data-boost__replace><form id="f" method="post" action="/save"><input name="q" value="v"></form></div>',
-  );
+  await render('<div data-boost><form id="f" method="post" action="/save"><input name="q" value="v"></form></div>');
   const prevented = decisions(stage, 'submit');
   document.getElementById('f').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
   assert.equal(prevented(), true);
@@ -56,6 +54,7 @@ test('boost submits forms as requests and re-fetches on popstate', async (t) => 
   assert.equal(calls[0].method, 'POST');
   assert.equal(await calls[0].text(), 'q=v');
   assert.equal(location.pathname, '/save');
+  history.replaceState(null, '', '/back'); // Back: the address changed, so the page is fetched again
   window.dispatchEvent(new PopStateEvent('popstate'));
   await until(() => calls.length === 2);
   assert.equal(calls[1].method, 'GET');

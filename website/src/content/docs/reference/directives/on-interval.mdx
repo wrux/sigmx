@@ -6,36 +6,55 @@ sidebar: {"order": 13, "label": "on-interval"}
 import Live from '../../../../components/Live.astro'
 import Cost from '../../../../components/Cost.astro'
 
-Run an expression on a timer.
+Run an expression on a timer until the element unmounts.
 
 ## Syntax
 
 ```html
 data-on-interval="$ticks++"
-data-on-interval__duration.5s.leading="@get('/status')"
+data-on-interval__duration.5s="@get('/status')"
+data-on-interval__duration.250ms="…"
 ```
 
 | part | |
 |---|---|
 | key | forbidden |
-| value | required |
+| value | required: statements |
 
 ## Modifiers
 
 | modifier | effect |
 |---|---|
-| `__duration.ms|s[.leading]` | interval (default 1s); `leading` also runs immediately |
-| `__viewtransition` | wrap in a view transition |
+| `__duration.ms\|s` | the interval, default 1s |
 
-## Example
+## Tick
 
-<Live html={`
+<Live title="every 500ms" html={`
 <div data-signals="{ ticks: 0 }" data-on-interval__duration.500ms="$ticks++">ticks: <b data-text="$ticks"></b></div>
+`} />
+
+## Poll the server
+
+The usual htmx `every 5s` pattern: a request on a timer, morphing whatever comes back.
+
+<Live title="polling" html={`
+<div data-on-interval__duration.3s="@get('/api/time')" data-init="@get('/api/time')">Server time, refreshed every 3s: <span id="server-time" class="muted">…</span></div>
+`} />
+
+## Stop by removing the element
+
+The timer is cleared on unmount, so `data-show` is not enough to pause it; remove the element instead.
+
+<Live title="start and stop" html={`
+<div data-signals="{ running: false, n: 0 }">
+  <div class="row"><button data-on:click="$running = !$running" data-text="$running ? 'stop' : 'start'">start</button> <span>n = <b data-text="$n"></b></span></div>
+  <div data-effect="el.innerHTML = $running ? '<span data-on-interval__duration.200ms=\\'$n++\\' class=\\'muted\\'>ticking…</span>' : '<span class=\\'muted\\'>stopped</span>'"></div>
+</div>
 `} />
 
 ## Notes
 
-The timer is cleared when the element unmounts.
+The first run happens after one interval; put `data-init` next to it for an immediate first run, as in the polling demo. Browsers throttle timers in background tabs.
 
 ## Register
 

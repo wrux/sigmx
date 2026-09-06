@@ -6,32 +6,71 @@ sidebar: {"order": 8, "label": "style"}
 import Live from '../../../../components/Live.astro'
 import Cost from '../../../../components/Cost.astro'
 
-Set inline style properties from expressions.
+Set inline style properties from expressions: one property per key, or many from an object.
 
 ## Syntax
 
 ```html
 data-style:opacity="$visible ? 1 : 0.3"
-data-style="{ backgroundColor: $bg, '--accent': $accent }"
+data-style:background-color="$bg"
+data-style="{ backgroundColor: $bg, '--accent': $accent, width: $w + '%' }"
 ```
 
 | part | |
 |---|---|
-| key | optional (a property) or an object value |
-| value | required |
+| key | optional: a property, kebab-cased by default |
+| value | required: with a key, the property value; without one, an object of properties |
 
-## Example
+## Modifiers
 
-<Live html={`
+| modifier | effect |
+|---|---|
+| `__case.camel` | keep the key camelCase (object keys are always converted to kebab-case for you) |
+
+## One property
+
+<Live title="width from a slider" html={`
 <div data-signals="{ w: 40 }">
   <input type="range" min="10" max="100" data-bind:w>
   <div class="box" data-style:width="$w + '%'" style="height:1rem"></div>
 </div>
 `} />
 
+## Object form and custom properties
+
+camelCase keys are converted; custom properties pass through and can drive a whole stylesheet.
+
+<Live title="several properties, --custom" html={`
+<style>.live .themed { background: var(--accent, gray); color: white; padding: .4rem .8rem; border-radius: .4rem; transition: background .3s }</style>
+<div data-signals="{ accent: '#0e7c86', rot: 0 }">
+  <div class="row"><input type="color" data-bind:accent> <input type="range" min="-10" max="10" data-bind:rot></div>
+  <p class="themed" data-style="{ '--accent': $accent, transform: 'rotate(' + $rot + 'deg)', letterSpacing: Math.abs($rot) / 10 + 'em' }">themed by signals</p>
+</div>
+`} />
+
+## Falsy values restore the original
+
+A falsy result (other than `0`) puts back whatever inline value the element had before, and unmounting restores everything the directive touched.
+
+<Live title="restore" html={`
+<div data-signals="{ highlight: false }">
+  <button data-on:click="$highlight = !$highlight">toggle highlight</button>
+  <p style="color: steelblue" data-style:color="$highlight && 'crimson'">Blue by my own inline style; crimson while highlighted; blue again after.</p>
+</div>
+`} />
+
+## Zero is a value
+
+<Live title="opacity 0" html={`
+<div data-signals="{ o: 0 }">
+  <div class="row"><button data-on:click="$o = 0">0</button><button data-on:click="$o = 0.5">0.5</button><button data-on:click="$o = 1">1</button></div>
+  <div class="box hot" data-style:opacity="$o" style="height:1rem"></div>
+</div>
+`} />
+
 ## Notes
 
-Property names are converted to kebab-case, so `backgroundColor` and `background-color` both work; custom properties (`--x`) are passed through. A falsy value (other than `0`) restores the original inline value; unmounting restores everything.
+Properties dropped from the object between two evaluations are restored too. Prefer `data-class` for anything that a class can express; use `data-style` for values that are truly dynamic.
 
 ## Register
 

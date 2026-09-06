@@ -20,8 +20,8 @@ stop()
 ```
 
 - `Signal<T>`: `value` (get/set), `peek()`, `bump()`.
-- `Computed<T>`: read-only `value`, lazily recomputed; its version moves only when the result changes, so downstream effects can skip runs.
-- `effect(fn, onError?)`: runs now and on change; effects created inside an effect are disposed when the parent re-runs; returns a disposer.
+- `Computed<T>`: read-only `value`, lazily recomputed; its version moves only when the result changes, so downstream effects can skip runs; `dispose()` unsubscribes it (the store does this when a computed leaf goes).
+- `effect(fn, onError?)`: runs now and on change; effects created inside an effect are disposed when the parent re-runs; returns a disposer. `rootEffect(fn, onError?)` is the same but never owned by the running effect: use it for long-lived effects created from inside another effect (mounted attributes use it).
 - `batch(fn)`: coalesce writes. `onSettled(fn)`: run after each flush. `flush()`: run queued effects now.
 
 The graph has no DOM dependency and is tested in Node.

@@ -35,7 +35,7 @@ const app = createSigmx(options)
 ## Plugin shapes
 
 ```ts
-type AttributePlugin = { type: 'attribute'; name; key?: 'required' | 'forbidden'; value?: 'required' | 'forbidden'; returns?: boolean; args?: string[]; mount(ctx): void | (() => void) }
+type AttributePlugin = { type: 'attribute'; name; key?: 'required' | 'forbidden'; value?: 'required' | 'forbidden'; literal?: boolean; args?: string[]; mount(ctx): void | (() => void) }
 type ActionPlugin    = { type: 'action'; name; call(ctx, ...args): any }
 type HandlerPlugin   = { type: 'handler'; name; handle(runtime, data: Record<string, string>): void }
 ```

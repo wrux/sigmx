@@ -19,7 +19,7 @@ import { serveClient } from '@sigmx/hono/node'
 
 const app = new Hono()
 app.use(sigmx())
-app.get('/sigmx.js', serveClient())   // the script-tag build from node_modules; skip it if you bundle
+app.get('/sigmx.js', serveClient())   // the script-tag build from node_modules; or serveClient({ path }) for your own bundle
 ```
 
 ```html
@@ -97,6 +97,8 @@ The stream is built on Hono's `streamSSE`: every write is awaited, `closed` turn
 ## Serving the client
 
 `serveClient()` reads `sigmx.standalone.js` from the installed `sigmx` package and serves it with an ETag and a one-hour `cache-control`. It lives in `@sigmx/hono/node` because it needs a filesystem; on Workers, bundle the client into your app instead. Options: `file` to serve another file from sigmx's `dist`, `maxAge` to change the cache lifetime.
+
+Pass `path` to serve a bundle you built instead, with the same ETag and caching: `serveClient({ path: 'public/sigmx.js' })`. The Hono example does this with `sigmxAuto()` from `sigmx/vite`, so only the plugins its components use ship (14 plugins, 9.3 KB brotli instead of 11.8 KB for everything).
 
 ## Example
 

@@ -22,7 +22,7 @@ npm publish
 git push --follow-tags
 ```
 
-Before the first publish: `npm login`, and confirm `npm view <name>` returns 404 (`sigmx` and `@sigmx/astro` were free on 6 September 2026 and are now published; `@sigmx/hono` is not yet). The SDKs import `sigmx/server`, so whenever the core gains or changes a server export, release it first and raise the SDKs' `peerDependencies.sigmx` to that version before publishing them. `@sigmx/hono` 0.1.0 was published against the wrong range; after 0.1.1 run `npm deprecate @sigmx/hono@0.1.0 "needs sigmx >= 0.1.1"`.
+All three packages are published (`sigmx`, `@sigmx/astro`, `@sigmx/hono`). When the versions were already bumped by hand in the release commit (as for 0.2.0), skip `npm version` and tag instead: `git tag v0.2.0 && git push --follow-tags`. The SDKs import `sigmx/server`, so whenever the core gains or changes a server export, release it first and raise the SDKs' `peerDependencies.sigmx` to that version before publishing them. `@sigmx/hono` 0.1.0 was published against the wrong range; after 0.1.1 run `npm deprecate @sigmx/hono@0.1.0 "needs sigmx >= 0.1.1"`.
 
 After a release that the examples depend on, run `npm install` in `examples/hono` and `examples/express` so their lockfiles pick up the published version.
 

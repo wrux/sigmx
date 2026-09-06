@@ -26,7 +26,7 @@ test('object helpers: isPlain, expand and filters', () => {
   const inc = toPredicate({ include: /^user\./ });
   assert.equal(inc('user.name'), true);
   assert.equal(inc('other'), false);
-  const exc = toPredicate({ exclude: '/^_/' });
+  const exc = toPredicate({ exclude: /^_/ });
   assert.equal(exc('_private'), false);
   assert.equal(exc('public'), true);
   assert.equal(toPredicate()('anything'), true);

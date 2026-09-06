@@ -6,28 +6,38 @@ sidebar: {"order": 25, "label": "replace-url"}
 import Live from '../../../../components/Live.astro'
 import Cost from '../../../../components/Cost.astro'
 
-Replace the address bar URL from an expression, without navigating.
+Replace the address bar URL from an expression, without navigating. Re-runs whenever a signal it reads changes.
 
 ## Syntax
 
 ```html
 data-replace-url="`/products?page=${$page}`"
+data-replace-url="'#' + $section"
 ```
 
 | part | |
 |---|---|
 | key | forbidden |
-| value | required |
+| value | required: a relative or absolute URL |
 
-## Example
+## Reflect state in the query
 
-<Live html={`
-<div data-signals="{ p: 1 }" data-replace-url="\`?p=\${$p}\`" class="row"><button data-on:click="$p++">page <span data-text="$p"></span></button></div>
+<Live title="?p=" html={`
+<div data-signals="{ p: 1 }" data-replace-url="\`?p=\${$p}\`" class="row"><button data-on:click="$p++">page <span data-text="$p"></span></button> <code data-text="location.search" data-on-signal-patch="el.textContent = location.search"></code></div>
+`} />
+
+## Deep links with a hash
+
+<Live title="#section" html={`
+<div data-signals="{ section: 'intro' }" data-replace-url="'#' + $section">
+  <div class="row"><button data-on:click="$section = 'intro'">intro</button><button data-on:click="$section = 'usage'">usage</button><button data-on:click="$section = 'faq'">faq</button></div>
+  <p>hash = <code data-text="'#' + $section"></code></p>
+</div>
 `} />
 
 ## Notes
 
-Uses `history.replaceState`; relative and absolute URLs are accepted.
+Uses `history.replaceState`, so no entry is added and Back leaves the page. For one parameter that also seeds a signal from the URL on load, use `data-query-string`; `replace-url` is the free-form counterpart for paths and hashes.
 
 ## Register
 

@@ -16,7 +16,7 @@ On mount, `data-init` opens a GET stream that never closes on its own: the endpo
 
 ## What it uses
 
-- `data-init="@get('/api/metrics', { openWhenHidden: true, reconnect: true })"` for a stream that outlives any single request
+- `data-init="@get('/api/metrics', { reconnect: true })"` for a stream that outlives any single request
 - `id:` on every event and `Last-Event-ID` on reconnect (see the endpoint's first line)
 - `data-animate:width__duration.700ms` for the gauges, `@fit` to map ranges onto percentages
 - `data-class` with an object of thresholds, `@intl` for numbers, percentages and times
@@ -31,4 +31,4 @@ On mount, `data-init` opens a GET stream that never closes on its own: the endpo
 
 ## Notes
 
-Browsers throttle timers and animation frames in background tabs; the stream keeps flowing (`openWhenHidden: true`) and the gauges catch up when you return.
+Browsers throttle timers and animation frames in background tabs; the stream keeps flowing and the gauges catch up when you return.

@@ -11,11 +11,10 @@ Most of what the Alpine and htmx ecosystems add as plugins or extensions exists 
 | Alpine | sigmx | notes |
 |---|---|---|
 | `x-cloak` | [`data-cloak`](/reference/directives/cloak/) | same CSS rule, `[data-cloak] { display: none !important }` |
-| `x-collapse` | [`data-collapse`](/reference/directives/collapse/) | standalone, no `x-show` needed; `__duration`, `__min` |
+| `x-collapse` | [`data-collapse`](/reference/directives/collapse/) | standalone, no `x-show` needed; `__duration` |
 | `x-transition` | [`data-transition`](/reference/directives/transition/) | fade with optional scale; class-based transitions are not provided |
 | `x-mask` | [`data-mask`](/reference/directives/mask/) | `__dynamic` for `x-mask:dynamic` |
-| `x-trap` | [`data-trap`](/reference/directives/trap/) | `__inert` for `.inert` |
-| `x-teleport` | [`data-teleport`](/reference/directives/teleport/) | selector value; `__prepend` |
+| `x-teleport` | [`data-teleport`](/reference/directives/teleport/) | selector value |
 | `x-html` | [`data-html`](/reference/directives/html/) | |
 | `x-intersect` | [`data-on-intersect`](/reference/directives/on-intersect/) | |
 | `x-resize` | [`data-on-resize`](/reference/directives/on-resize/) | |

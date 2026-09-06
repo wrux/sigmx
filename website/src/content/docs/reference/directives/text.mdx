@@ -6,13 +6,14 @@ sidebar: {"order": 5, "label": "text"}
 import Live from '../../../../components/Live.astro'
 import Cost from '../../../../components/Cost.astro'
 
-Keep the element's text content equal to an expression.
+Keep the element's text content equal to an expression. The workhorse of rendering: anything reactive that ends up as text goes through it.
 
 ## Syntax
 
 ```html
 data-text="$count"
 data-text="`Hello ${$name}`"
+data-text="$items.length + ' items'"
 ```
 
 | part | |
@@ -20,15 +21,37 @@ data-text="`Hello ${$name}`"
 | key | forbidden |
 | value | required |
 
-## Example
+## Basic
 
-<Live html={`
+<Live title="template literal" html={`
 <div data-signals="{ who: 'world' }" class="row"><input data-bind:who> <p data-text="\`Hello, \${$who}!\`"></p></div>
+`} />
+
+## Formatting inline
+
+Any expression works: arithmetic, ternaries, methods, `@intl`.
+
+<Live title="derived text" html={`
+<div data-signals="{ price: 9.5, qty: 3 }">
+  <div class="row"><input type="number" step="0.5" data-bind:price style="width:5rem"> × <input type="number" data-bind:qty style="width:4rem"></div>
+  <p data-text="$qty + ($qty === 1 ? ' item at ' : ' items at ') + @intl('NumberFormat', $price, { style: 'currency', currency: 'EUR' }) + ' = ' + @intl('NumberFormat', $price * $qty, { style: 'currency', currency: 'EUR' })"></p>
+</div>
+`} />
+
+## Empty values
+
+`undefined` renders as an empty string; everything else goes through `String()`, so objects show as `[object Object]` unless you stringify them. Assigning `null` to a signal removes it, so it too reads as `undefined`.
+
+<Live title="empty, arrays, objects" html={`
+<div data-signals="{ v: 'text' }">
+  <div class="row"><button data-on:click="$v = null">null (removes)</button><button data-on:click="$v = [1, 2]">array</button><button data-on:click="$v = { a: 1 }">object</button><button data-on:click="$v = 0">0</button></div>
+  <p>raw: “<span data-text="$v"></span>”, stringified: <code data-text="JSON.stringify($v)"></code></p>
+</div>
 `} />
 
 ## Notes
 
-`null` and `undefined` render as an empty string; other values are converted with `String()`.
+Text is set with `textContent`, so markup in the value is shown literally; use `data-html` to render markup. The expression is evaluated once per settled change to its dependencies.
 
 ## Register
 

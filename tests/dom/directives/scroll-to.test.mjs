@@ -15,8 +15,8 @@ test('scroll-into-view calls scrollIntoView with the modifiers and can focus', a
     '<div><input data-scroll-into-view__instant__vstart__focus><p data-scroll-into-view></p></div>',
   );
   assert.deepEqual(calls, [
-    { behavior: 'instant', block: 'start', inline: 'center' },
-    { behavior: 'smooth', block: 'center', inline: 'center' },
+    { behavior: 'instant', block: 'start' },
+    { behavior: 'smooth', block: 'center' },
   ]);
   assert.equal(document.activeElement, el.querySelector('input'));
 });

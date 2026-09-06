@@ -8,7 +8,7 @@ export type Mods = Map<string, string[]>;
 /** A compiled attribute expression. `store` is the instance store; `actions` resolves `@name(...)`. */
 export type Evaluator = (store: Store, actions: any, el: El, evt: Event | undefined, ...args: any[]) => any;
 /** Turns expression source into an evaluator. The runtime compiler and the precompiled table both implement this. */
-export type ExpressionCompiler = (src: string, params: string[], returns: boolean) => Evaluator;
+export type ExpressionCompiler = (src: string, params: string[]) => Evaluator;
 
 export interface Runtime {
   /** Attribute prefixes being scanned; the first is primary. */
@@ -46,8 +46,11 @@ export interface Ctx {
   effect(fn: () => void): void;
   /** addEventListener with automatic removal on cleanup. */
   listen(target: EventTarget, type: string, fn: (e: any) => void, options?: AddEventListenerOptions): void;
-  cleanup(fn: () => void): void;
+  /** Run `fn` when the attribute unmounts. Returns a function that unregisters it (for work that finished early). */
+  cleanup(fn: () => void): () => void;
   error(message: string, extra?: Record<string, unknown>): Error;
+  /** Route an error that happened later (a callback, a promise) to `onError` with this attribute's info. */
+  report(error: unknown): void;
   store: Store;
   runtime: Runtime;
 }
@@ -58,8 +61,10 @@ export interface ActionCtx {
   store: Store;
   runtime: Runtime;
   error(message: string, extra?: Record<string, unknown>): Error;
-  /** Run when the attribute that invoked the action is torn down. */
-  cleanup(fn: () => void): void;
+  /** Route an error that happened later (a callback, a promise) to `onError` with this attribute's info. */
+  report(error: unknown): void;
+  /** Run when the attribute that invoked the action is torn down. Returns a function that unregisters it. */
+  cleanup(fn: () => void): () => void;
 }
 
 export interface AttributePlugin {
@@ -68,7 +73,8 @@ export interface AttributePlugin {
   key?: 'required' | 'forbidden';
   value?: 'required' | 'forbidden';
   /** Whether the expression yields a value (default) or is a statement body. */
-  returns?: boolean;
+  /** The value is a literal (a mask, a selector, a delay) rather than an expression; `__dynamic` makes it one. */
+  literal?: boolean;
   /** Extra parameter names the expression can reference, in the order passed to `evaluate`. */
   args?: string[];
   // biome-ignore lint/suspicious/noConfusingVoidType: mount may return nothing or a teardown

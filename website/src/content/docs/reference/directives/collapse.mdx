@@ -6,39 +6,71 @@ sidebar: {"order": 29, "label": "collapse"}
 import Live from '../../../../components/Live.astro'
 import Cost from '../../../../components/Cost.astro'
 
-Animate an element open and closed by height (Alpine's x-collapse).
+Animate an element open and closed by height (Alpine's x-collapse). The height transitions from zero to the content's natural height and back; once open, the inline height is cleared so the content can grow freely.
 
 ## Syntax
 
 ```html
 data-collapse="$open"
-data-collapse__duration.400ms__min.48px="$open"
+data-collapse__duration.400ms="$open"
 ```
 
 | part | |
 |---|---|
 | key | forbidden |
-| value | required |
+| value | required: truthy means open |
 
 ## Modifiers
 
 | modifier | effect |
 |---|---|
-| `__duration.ms` | animation length, default 250ms |
-| `__min.Npx` | collapsed height, default 0 (use it for “show more” teasers) |
+| `__duration.ms\|s` | animation length, default 250ms |
 
-## Example
+## Toggle
 
-<Live html={`
+<Live title="default duration" html={`
 <div data-signals="{ open: false }">
   <button data-on:click="$open = !$open" data-text="$open ? 'Collapse' : 'Expand'">Expand</button>
   <div data-collapse="$open" style="border:1px solid var(--sl-color-hairline);border-radius:.4rem;margin-top:.5rem"><p style="padding:.8rem;margin:0">The height animates from zero to the content's natural height and back. After the animation, height is cleared so the content can grow freely.</p></div>
 </div>
 `} />
 
+## Duration
+
+<Live title="__duration.800ms" html={`
+<div data-signals="{ slow: false }">
+  <button data-on:click="$slow = !$slow">toggle slowly</button>
+  <div data-collapse__duration.800ms="$slow" style="border:1px solid var(--sl-color-hairline);border-radius:.4rem;margin-top:.5rem"><p style="padding:.8rem;margin:0">Eight hundred milliseconds each way.</p></div>
+</div>
+`} />
+
+## Accordion
+
+Several collapses driven by one signal make an accordion with no extra code.
+
+<Live title="one open at a time" html={`
+<div data-signals="{ which: 1 }">
+  <button data-on:click="$which = $which === 1 ? 0 : 1" style="display:block;width:100%;text-align:left">Section one</button>
+  <div data-collapse="$which === 1"><p style="padding:.6rem;margin:0" class="muted">Contents of section one.</p></div>
+  <button data-on:click="$which = $which === 2 ? 0 : 2" style="display:block;width:100%;text-align:left;margin-top:.3rem">Section two</button>
+  <div data-collapse="$which === 2"><p style="padding:.6rem;margin:0" class="muted">Contents of section two.</p></div>
+</div>
+`} />
+
+## Starts in its initial state without animating
+
+The first evaluation applies the state instantly, so a collapsed section does not flash open on page load.
+
+<Live title="initially open, then animated" html={`
+<div data-signals="{ shown: true }">
+  <button data-on:click="$shown = !$shown">toggle</button>
+  <div data-collapse="$shown" style="border:1px solid var(--sl-color-hairline);border-radius:.4rem;margin-top:.5rem"><p style="padding:.8rem;margin:0">Open from the start, no animation on mount.</p></div>
+</div>
+`} />
+
 ## Notes
 
-Overflow is hidden while collapsed and during the animation. `prefers-reduced-motion: reduce` makes the change instant.
+Overflow is hidden while collapsed and during the animation. A change that does not flip the outcome (a dependency changed, the truthiness did not) does nothing. `prefers-reduced-motion: reduce` makes the change instant.
 
 ## Register
 

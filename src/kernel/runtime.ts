@@ -12,81 +12,74 @@ import type {
   RuntimeOptions,
   Sigmx,
 } from './contracts.js';
-import { effect } from './reactive.js';
+import { rootEffect } from './reactive.js';
 import { createStore } from './state.js';
 
 const isEl = (n: Node): n is El => n.nodeType === 1;
 /** An element (or shadow root) followed by every element under it; nothing for text and comment nodes. */
 const tree = (n: Node): El[] =>
-  isEl(n) ? [n, ...n.querySelectorAll<El>('*')] : n instanceof ShadowRoot ? [...n.querySelectorAll<El>('*')] : [];
+  (n as ParentNode).querySelectorAll ? [...(isEl(n) ? [n] : []), ...(n as ParentNode).querySelectorAll<El>('*')] : [];
 
 type Parsed = { plugin: string; key: string | undefined; mods: Mods };
-const parsed = new Map<string, Parsed>();
 
 /** 'on:click__debounce.300ms__prevent' → { plugin: 'on', key: 'click', mods: {debounce: ['300ms'], prevent: []} } */
 export const parseAttr = (raw: string): Parsed => {
-  let p = parsed.get(raw);
-  if (!p) {
-    const [head, ...modParts] = raw.split('__');
-    const i = head.indexOf(':');
-    const mods: Mods = new Map();
-    for (const m of modParts) {
-      const [name, ...args] = m.split('.');
-      mods.set(name, args);
-    }
-    p = { plugin: i < 0 ? head : head.slice(0, i), key: i < 0 ? undefined : head.slice(i + 1), mods };
-    parsed.set(raw, p);
-  }
-  return p;
+  const [head, ...modParts] = raw.split('__');
+  const [, plugin, key] = /^([^:]*)(?::(.*))?$/.exec(head) as string[];
+  return {
+    plugin,
+    key,
+    mods: new Map(
+      modParts.map((m) => {
+        const [name, ...args] = m.split('.');
+        return [name, args];
+      }),
+    ),
+  };
 };
 
-const fail = (message: string, info: Record<string, unknown>): Error => Object.assign(new Error(message), { info });
+/** The rest of `s` after the first prefix in `list` that it starts with; undefined when none matches. */
+const cut = (list: readonly string[], s: string): string | undefined => {
+  for (const p of list) if (s.startsWith(p)) return s.slice(p.length);
+};
 
 /** Low-level constructor: you supply the expression pipeline. `createSigmx` wraps it with the runtime compiler. */
 export const createRuntime = (options: RuntimeOptions): Sigmx => {
   const prefixes = ([] as string[]).concat(options.prefix ?? 'data-');
   const eventPrefixes = ([] as string[]).concat(options.eventPrefix ?? 'sigmx-');
   const store = options.store ?? createStore();
-  const compiler = options.compile ?? functionCompiler;
   const { expressions } = options;
   const onError = options.onError ?? ((e, info) => console.error(e, info));
   const attributes: Record<string, AttributePlugin> = Object.create(null);
-  const actions: Runtime['actions'] = Object.create(null);
-  const handlers: Runtime['handlers'] = Object.create(null);
 
   const runtime: Runtime = {
     prefixes,
     attr: (name) => prefixes[0] + name,
     store,
-    compiler,
+    compiler: options.compile ?? functionCompiler,
     emit: (type, detail) => document.dispatchEvent(new CustomEvent(`sigmx-${type}`, { detail })),
     call: (name, ctx, args) => {
-      const a = actions[name];
+      const a = runtime.actions[name];
       if (!a) throw ctx.error(`unknown action @${name}`);
       return a.call(ctx, ...args);
     },
     eventPrefixes,
     handle: (event, data) => {
-      const p = eventPrefixes.find((p) => event.startsWith(p));
-      const h = handlers[p ? event.slice(p.length) : event];
+      const h = runtime.handlers[cut(eventPrefixes, event) ?? event];
       h?.handle(runtime, data);
       return !!h;
     },
     attributes,
-    actions,
-    handlers,
+    actions: Object.create(null),
+    handlers: Object.create(null),
   };
 
   // element → attribute name → dispose
   const mounted = new Map<El, Map<string, () => void>>();
   const roots = new Set<El | ShadowRoot>();
-  const ignoreSelf = prefixes.map((p) => `[${p}ignore__self]`).join();
   const ignoreAny = prefixes.map((p) => `[${p}ignore]`).join();
-  const ignored = (el: El) => el.matches(ignoreSelf) || !!el.closest(ignoreAny);
-
-  const strip = (attr: string): string | undefined => {
-    for (const p of prefixes) if (attr.startsWith(p)) return attr.slice(p.length);
-  };
+  const ignored = (el: El) => !!el.closest(ignoreAny);
+  let destroyed = false;
 
   const unmount = (els: Iterable<El>): void => {
     for (const el of els) {
@@ -101,29 +94,6 @@ export const createRuntime = (options: RuntimeOptions): Sigmx => {
     m?.delete(attr);
   };
 
-  const actionsFor = (
-    el: El,
-    evt: Event | undefined,
-    error: Ctx['error'],
-    cleanup: (fn: () => void) => void,
-    report: (e: unknown) => void,
-  ) => {
-    const ctx: ActionCtx = { el, evt, store, runtime, error, cleanup };
-    return new Proxy(
-      {},
-      {
-        get:
-          (_, name: string) =>
-          (...args: any[]) => {
-            const r = runtime.call(name, ctx, args);
-            // Async actions (requests) reject long after the expression returned; route that to onError.
-            if (r instanceof Promise) r.catch(report);
-            return r;
-          },
-      },
-    );
-  };
-
   const mount = (el: El, attr: string, raw: string, value: string, only?: Set<string>): void => {
     const { plugin: name, key, mods } = parseAttr(raw);
     const plugin = attributes[name];
@@ -131,10 +101,25 @@ export const createRuntime = (options: RuntimeOptions): Sigmx => {
     unmountAttr(el, attr);
 
     const disposers: (() => void)[] = [];
+    const cleanup = (f: () => void) => {
+      disposers.push(f);
+      return () => {
+        const i = disposers.indexOf(f);
+        if (i >= 0) disposers.splice(i, 1);
+      };
+    };
     const info = { plugin: name, el, attr };
-    const error: Ctx['error'] = (message, extra) => fail(`${prefixes[0]}${name}: ${message}`, { ...info, ...extra });
+    const error: Ctx['error'] = (message, extra) =>
+      Object.assign(new Error(`${prefixes[0]}${name}: ${message}`), { info: { ...info, ...extra } });
     const report = (e: unknown) => onError(e, info);
     let fn: Evaluator | undefined;
+    const watched = new WeakSet<Promise<unknown>>(); // promises already routed to onError
+    const watch = (r: unknown) => {
+      if (r instanceof Promise && !watched.has(r)) {
+        watched.add(r);
+        r.catch(report);
+      }
+    };
     const ctx: Ctx = {
       el,
       plugin: name,
@@ -144,10 +129,29 @@ export const createRuntime = (options: RuntimeOptions): Sigmx => {
       mods,
       cased: (style = 'camel') => recase(key ?? '', (mods.get('case')?.[0] as CaseStyle) || style),
       evaluate: (evt, ...args) => {
-        fn ??= expressions(value, ['el', 'evt', ...(plugin.args ?? [])], plugin.returns ?? true);
-        return fn(store, actionsFor(el, evt, error, ctx.cleanup, report), el, evt, ...args);
+        if (plugin.literal && !mods.has('dynamic')) return value;
+        fn ??= expressions(value, ['el', 'evt', ...(plugin.args ?? [])]);
+        const actx: ActionCtx = { el, evt, store, runtime, error, cleanup, report };
+        const actions = new Proxy(
+          {},
+          {
+            get:
+              (_, name: string) =>
+              (...args: any[]) => {
+                const r = runtime.call(name, actx, args);
+                watch(r); // async actions (requests) reject long after the expression returned
+                return r;
+              },
+          },
+        );
+        const r = fn(store, actions, el, evt, ...args);
+        watch(r); // an expression's own rejected promise is reported too, once
+        return r;
       },
-      effect: (f) => disposers.push(effect(f, report)),
+      // Root-owned: an attribute mounted from inside another effect must outlive that effect's re-runs.
+      effect: (f) => {
+        cleanup(rootEffect(f, report));
+      },
       listen: (target, type, f, opts) => {
         const h = (e: Event) => {
           try {
@@ -157,10 +161,11 @@ export const createRuntime = (options: RuntimeOptions): Sigmx => {
           }
         };
         target.addEventListener(type, h, opts);
-        disposers.push(() => target.removeEventListener(type, h, opts));
+        cleanup(() => target.removeEventListener(type, h, opts));
       },
-      cleanup: (f) => disposers.push(f),
+      cleanup,
       error,
+      report,
       store,
       runtime,
     };
@@ -175,12 +180,17 @@ export const createRuntime = (options: RuntimeOptions): Sigmx => {
     });
 
     try {
-      if (plugin.key === 'required' && !key) throw error('needs a key');
-      if (plugin.key === 'forbidden' && key) throw error('takes no key');
-      if (plugin.value === 'required' && !value) throw error('needs a value');
-      if (plugin.value === 'forbidden' && value) throw error('takes no value');
-      const r = plugin.mount(ctx);
-      if (typeof r === 'function') disposers.push(r);
+      // Contract checks: a keyed directive without a key would otherwise write to the path ''.
+      for (const [k, v] of [
+        ['key', key],
+        ['value', value],
+      ] as const) {
+        const rule = plugin[k];
+        if (rule && (rule === 'required') === !v) throw error(`${rule === 'required' ? 'needs a' : 'takes no'} ${k}`);
+      }
+      const r: unknown = plugin.mount(ctx);
+      if (typeof r === 'function') cleanup(r as () => void);
+      else watch(r); // an async mount that rejects is reported, not lost
     } catch (e) {
       report(e);
     }
@@ -190,7 +200,7 @@ export const createRuntime = (options: RuntimeOptions): Sigmx => {
     for (const el of els) {
       if (ignored(el)) continue;
       for (const { name, value } of [...el.attributes]) {
-        const raw = strip(name);
+        const raw = cut(prefixes, name);
         // Observers can report a subtree more than once (nested insertions); a mounted attribute stays as it is.
         if (raw && !mounted.get(el)?.has(name)) mount(el, name, raw, value, only);
       }
@@ -200,10 +210,11 @@ export const createRuntime = (options: RuntimeOptions): Sigmx => {
   const observer = new MutationObserver((records) => {
     for (const { type, target, attributeName, addedNodes, removedNodes } of records) {
       if (type === 'childList') {
-        for (const n of removedNodes) unmount(tree(n));
+        // A node that is still connected was moved (teleport, morph), not removed: it keeps its state.
+        for (const n of removedNodes) if (!n.isConnected) unmount(tree(n));
         for (const n of addedNodes) mountEls(tree(n));
       } else if (attributeName && isEl(target) && !ignored(target)) {
-        const raw = strip(attributeName);
+        const raw = cut(prefixes, attributeName);
         if (!raw) continue;
         const value = target.getAttribute(attributeName);
         if (value === null) unmountAttr(target, attributeName);
@@ -212,27 +223,20 @@ export const createRuntime = (options: RuntimeOptions): Sigmx => {
     }
   });
 
-  let ready = false;
   const apply = (root: El | ShadowRoot = document.documentElement, observe = true, only?: Set<string>) => {
+    if (destroyed) return;
     mountEls(tree(root), only);
     if (observe && !roots.has(root)) {
       observer.observe(root, { subtree: true, childList: true, attributes: true });
       roots.add(root);
-    }
-    if (!ready && roots.has(document.documentElement)) {
-      ready = true;
-      runtime.emit('ready');
     }
   };
 
   const use = (...plugins: Plugin[]): void => {
     const added = new Set<string>();
     for (const p of plugins) {
-      if (p.type === 'attribute') {
-        attributes[p.name] = p;
-        added.add(p.name);
-      } else if (p.type === 'action') actions[p.name] = p;
-      else handlers[p.name] = p;
+      (runtime as any)[`${p.type}s`][p.name] = p;
+      if (p.type === 'attribute') added.add(p.name);
     }
     if (added.size) for (const r of roots) apply(r, false, added);
   };
@@ -249,6 +253,7 @@ export const createRuntime = (options: RuntimeOptions): Sigmx => {
     apply: (root, observe) => apply(root, observe),
     use,
     destroy: () => {
+      destroyed = true;
       observer.disconnect();
       stopPatches();
       unmount([...mounted.keys()]);

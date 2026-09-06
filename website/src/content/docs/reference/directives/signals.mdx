@@ -6,7 +6,7 @@ sidebar: {"order": 1, "label": "signals"}
 import Live from '../../../../components/Live.astro'
 import Cost from '../../../../components/Cost.astro'
 
-Declare signals from an object literal or one path at a time.
+Declare signals from an object literal or one path at a time. Values merge into the store like a JSON merge-patch: existing sibling paths are kept, plain objects become nested paths, `null` removes a path.
 
 ## Syntax
 
@@ -18,27 +18,59 @@ data-signals:user.name__ifmissing="'anon'"
 
 | part | |
 |---|---|
-| key | optional (a signal path) |
-| value | required |
+| key | optional: a signal path (camelCased, `__case` changes it) |
+| value | required: an object without a key, a value with one |
 
 ## Modifiers
 
 | modifier | effect |
 |---|---|
-| `__ifmissing` | only write paths that do not exist yet; use it for defaults next to `persist` or `query-string` |
-| `__case.kebab|snake|pascal` | casing of the key when it is a signal path |
+| `__ifmissing` | only write paths that do not exist yet; the way to declare defaults next to `persist` or `query-string` |
+| `__case.kebab` | keep the key kebab-cased |
 
-## Example
+## Object and keyed forms
 
-<Live html={`
-<div data-signals="{ n: 1 }" data-signals:label="'clicks'">
+<Live title="both forms" html={`
+<div data-signals="{ n: 1, user: { name: 'Ada' } }" data-signals:label="'clicks'" data-signals:user.role="'admin'">
   <button data-on:click="$n++"><span data-text="$n"></span> <span data-text="$label"></span></button>
+  <p><b data-text="$user.name"></b> is <b data-text="$user.role"></b></p>
+</div>
+`} />
+
+## Merge semantics
+
+A second declaration merges: siblings survive, `null` deletes.
+
+<Live title="merge and remove" html={`
+<div data-signals="{ cfg: { a: 1, b: 2 } }">
+  <div class="row"><button data-on:click="$cfg = { c: 3 }">$cfg = { c: 3 } (replaces)</button><button data-on:click="el.parentElement.parentElement.setAttribute('data-signals', '{ cfg: { d: 4 } }')">re-declare { cfg: { d: 4 } } (merges)</button><button data-on:click="$cfg.a = null">$cfg.a = null (removes)</button></div>
+  <pre data-json-signals="{ include: /^cfg/ }"></pre>
+</div>
+`} />
+
+## Defaults with `__ifmissing`
+
+Without it, a declaration would overwrite whatever `persist` or a query parameter restored a moment earlier.
+
+<Live title="defaults that yield" html={`
+<div data-signals="{ theme: 'dark' }" data-signals__ifmissing="{ theme: 'light', lang: 'en' }">
+  <p>theme = <b data-text="$theme"></b> (kept), lang = <b data-text="$lang"></b> (added)</p>
+</div>
+`} />
+
+## Expressions, not just literals
+
+The value is an expression: read other signals, call functions, use `el`.
+
+<Live title="computed at declaration time" html={`
+<div data-signals="{ base: 10 }" data-signals:doubled="$base * 2" data-signals:width="el.offsetWidth">
+  <p>doubled once at mount: <b data-text="$doubled"></b>; this box was <b data-text="$width"></b>px wide when declared</p>
 </div>
 `} />
 
 ## Notes
 
-Values merge into the store like a JSON merge-patch: existing sibling paths are kept, `null` removes a path, and plain objects become nested paths. Declaring the same signal twice is fine; the last declaration wins unless it has `__ifmissing`.
+Declaration runs once when the element mounts; it is not reactive (use `data-computed` for that). Declaring the same signal twice is fine; the later one wins unless it has `__ifmissing`. Paths beginning with `_` are excluded from requests by default, which is the convention for browser-only state.
 
 ## Register
 

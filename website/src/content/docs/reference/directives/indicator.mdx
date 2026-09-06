@@ -6,7 +6,7 @@ sidebar: {"order": 17, "label": "indicator"}
 import Live from '../../../../components/Live.astro'
 import Cost from '../../../../components/Cost.astro'
 
-A boolean signal that is true while a request is in flight.
+A boolean signal that is true while a request started from the element, or from anything inside it, is in flight.
 
 ## Syntax
 
@@ -24,21 +24,43 @@ data-indicator="saving"
 
 | modifier | effect |
 |---|---|
-| `__case.*` | key casing |
+| `__case.kebab` | keep the key kebab-cased |
 
-## Example
+## Disable a button while its request runs
 
-<Live html={`
-<div data-signals="{ }" data-indicator:polling class="row">
-  <button data-on:click="@get('/api/time')">Fetch time</button>
-  <span data-text="$polling ? 'loading…' : 'idle'"></span>
-  <span id="server-time"></span>
+<Live title="one request" html={`
+<div data-indicator:fetching class="row">
+  <button data-on:click="@get('/api/time')" data-attr:disabled="$fetching" data-text="$fetching ? 'loading…' : 'Fetch the server time'">Fetch the server time</button>
+  <span id="server-time" class="muted">not asked yet</span>
+</div>
+`} />
+
+## Cover a whole form
+
+Put the indicator on a container: every request from any element inside counts, so one flag drives the spinner and the disabled state for the entire form.
+
+<Live title="container indicator with a stream" html={`
+<div data-indicator:running data-signals="{ progress: 0 }">
+  <div class="row"><button data-on:click="@get('/api/stream')" data-attr:disabled="$running">Run a five-step job</button> <span data-show="$running">working… <b data-text="$progress + '%'"></b></span></div>
+  <ul id="job-log" class="muted"></ul>
+</div>
+`} />
+
+## Overlapping requests
+
+The signal stays true until the last request finishes; each request is counted separately.
+
+<Live title="two clicks, one flag" html={`
+<div data-indicator:busy class="row">
+  <button data-on:click="@get('/api/time', { abort: 'none' })">fetch (allow overlap)</button>
+  <span data-text="$busy ? 'busy' : 'idle'"></span>
+  <span class="muted">(the time in the first demo updates)</span>
 </div>
 `} />
 
 ## Notes
 
-Counts requests started from this element or any element inside it, so one indicator can cover a whole form. Multiple overlapping requests keep it true until the last one finishes.
+The flag is driven by `sigmx-fetch` events (`started` and `finished`), so it also covers requests made by `data-boost`, `data-on-interval="@get(…)"` and streams. A request whose element is morphed away is still counted until it finishes.
 
 ## Register
 

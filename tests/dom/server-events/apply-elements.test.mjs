@@ -39,21 +39,13 @@ test('patch-elements modes against a selector', async (t) => {
   assert.equal(el.querySelector('#l').tagName, 'OL');
 });
 
-test('patch-elements validates modes and warns on missing targets', async (t) => {
+test('patch-elements rejects a selector-less non-outer mode and ignores missing targets', async (t) => {
   const { sigmx, render } = app(t);
   await render('<div></div>');
-  assert.throws(
-    () => handle(sigmx, 'patch-elements', { mode: 'sideways', elements: '<p></p>' }),
-    /unknown mode "sideways"/,
-  );
+  assert.throws(() => handle(sigmx, 'patch-elements', { mode: 'sideways', elements: '<p></p>' }));
   assert.throws(() => handle(sigmx, 'patch-elements', { mode: 'append', elements: '<p></p>' }), /needs a selector/);
-  const warned = [];
-  const original = console.warn;
-  t.after(() => (console.warn = original));
-  console.warn = (...a) => warned.push(a.join(' '));
   handle(sigmx, 'patch-elements', { elements: '<p id="missing"></p>' });
   handle(sigmx, 'patch-elements', { selector: '#nope', mode: 'inner', elements: '<p></p>' });
-  assert.equal(warned.length, 2);
 });
 
 test('patch-elements applies mounted directives inside new markup', async (t) => {

@@ -6,7 +6,7 @@ sidebar: {"order": 28, "label": "cloak"}
 import Live from '../../../../components/Live.astro'
 import Cost from '../../../../components/Cost.astro'
 
-Hide markup until sigmx has mounted it (Alpine's x-cloak).
+Hide markup until sigmx has mounted it (Alpine's x-cloak). The attribute is removed the moment the element mounts; a one-line stylesheet rule hides it until then.
 
 ## Syntax
 
@@ -19,16 +19,40 @@ data-cloak
 | key | forbidden |
 | value | forbidden |
 
-## Example
+## Setup
 
-<Live html={`
+```css
+[data-cloak] { display: none !important }
+```
+
+Use your own prefix in the selector if you configured one (`[hx-cloak]` for `prefix: 'hx-'`).
+
+## Hide a template until it renders
+
+Without the cloak, the raw `{ signals }` text and empty `data-text` elements would show for a moment before sigmx runs.
+
+<Live title="no flash of unrendered markup" html={`
 <style>[data-cloak] { display: none !important }</style>
-<div data-signals="{ ready: true }"><p data-cloak>You only see this once sigmx has run, so no flash of raw <code>{ signals }</code> or unstyled placeholders.</p></div>
+<div data-signals="{ user: { name: 'Ada', unread: 3 } }">
+  <p data-cloak>Welcome back, <b data-text="$user.name"></b>. You have <b data-text="$user.unread"></b> unread messages.</p>
+</div>
+`} />
+
+## Works for patched-in markup too
+
+Markup a server patches in mounts immediately, so the cloak is removed straight away; the same rule protects both paths.
+
+<Live title="inserted later" html={`
+<style>[data-cloak] { display: none !important }</style>
+<div data-signals="{ n: 0 }">
+  <button data-on:click="$n++; el.nextElementSibling.insertAdjacentHTML('beforeend', '<p data-cloak>Inserted item ' + $n + ', mounted and uncloaked at once.</p>')">insert cloaked markup</button>
+  <div></div>
+</div>
 `} />
 
 ## Notes
 
-Add `[data-cloak] { display: none !important }` to your CSS (use your prefix if you changed it). The attribute is removed the moment the element mounts, which happens on DOM ready for markup in the initial HTML and immediately for patched-in markup.
+Mounting happens on `DOMContentLoaded` for markup in the initial HTML, or immediately for markup added afterwards. The attribute is only removed; nothing else about the element changes.
 
 ## Register
 

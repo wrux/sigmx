@@ -6,39 +6,64 @@ sidebar: {"order": 15, "label": "on-signal-patch"}
 import Live from '../../../../components/Live.astro'
 import Cost from '../../../../components/Cost.astro'
 
-Run an expression after signals change.
+Run an expression after signals change, with the patch in scope. Unlike `data-effect`, it does not subscribe to what it reads: it fires for changes to a path prefix (or to anything), which makes it the tool for autosave and audit logs.
 
 ## Syntax
 
 ```html
 data-on-signal-patch="console.log(patch)"
-data-on-signal-patch:user.name="$dirty = true"
+data-on-signal-patch:user="$dirty = true"
 data-on-signal-patch__debounce.500ms="@post('/autosave')"
 ```
 
 | part | |
 |---|---|
-| key | optional (a path prefix to watch) |
-| value | required |
+| key | optional: a path; the expression runs only when that path or something under it changed |
+| value | required: statements with `patch` in scope |
 
 ## Modifiers
 
 | modifier | effect |
 |---|---|
-| `__delay / __debounce / __throttle` | timing |
+| `__debounce.ms` / `__throttle.ms` | timing |
+| `__case.kebab` | keep the key kebab-cased |
 
-## Example
+## See every patch
 
-<Live html={`
-<div data-signals="{ a: 0, b: 0, seen: '' }" data-on-signal-patch="$seen = Object.keys(patch).join(',')">
-  <div class="row"><button data-on:click="$a++">a++</button><button data-on:click="$b++">b++</button></div>
-  <p>last patch touched: <code data-text="$seen"></code></p>
+`patch` is the nested object of changed paths; removed paths are `null`.
+
+<Live title="the patch object" html={`
+<div data-signals="{ a: 0, b: { c: 0 }, last: '' }" data-on-signal-patch="$last = JSON.stringify(patch)">
+  <div class="row"><button data-on:click="$a++">a++</button><button data-on:click="$b.c++">b.c++</button><button data-on:click="$b = null">remove b</button></div>
+  <p>last patch: <code data-text="$last"></code></p>
+</div>
+`} />
+
+## Watch one path
+
+With a key, only patches touching that path (or anything under it) run the expression.
+
+<Live title="keyed" html={`
+<div data-signals="{ user: { name: 'Ada', age: 36 }, theme: 'light', userEdits: 0, themeEdits: 0 }" data-on-signal-patch:user="$userEdits++" data-on-signal-patch:theme="$themeEdits++">
+  <div class="row"><input data-bind:user.name> <input type="number" data-bind:user.age style="width:4rem"> <select data-bind:theme><option>light</option><option>dark</option></select></div>
+  <p>user patches: <b data-text="$userEdits"></b>, theme patches: <b data-text="$themeEdits"></b></p>
+</div>
+`} />
+
+## Autosave with a debounce
+
+Post the form once typing pauses. `@post` sends the signals; `_`-prefixed paths are left out by default.
+
+<Live title="__debounce for autosave" html={`
+<div data-signals="{ draft: { title: '', body: '' }, _saves: 0 }" data-on-signal-patch:draft__debounce.600ms="$_saves++">
+  <div class="row"><input data-bind:draft.title placeholder="title"> <input data-bind:draft.body placeholder="body"></div>
+  <p class="muted">stand-in for <code>@post('/autosave')</code>: saved <b data-text="$_saves"></b> times, 600ms after the last keystroke</p>
 </div>
 `} />
 
 ## Notes
 
-`patch` is the nested object of changed paths, with `null` for removed ones. With a key, the expression runs only when that path (or something under it) is in the patch. Changes made by the expression itself do not re-trigger it.
+The expression's own writes do not re-trigger it. Patches arrive once per settled batch, so a `data-signals` merge or a server `patch-signals` event counts as one patch however many paths it touched. The same information is dispatched on `document` as the `sigmx-signal-patch` event.
 
 ## Register
 
