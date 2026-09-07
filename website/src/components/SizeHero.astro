@@ -1,90 +1,189 @@
 ---
+// Every bundle as a row of byte tiles, so a difference in kilobytes is a difference you can count.
 import compare from '../data/compare.json';
 import sizes from '../data/sizes.json';
 
 const kb = (n: number) => (n / 1024).toFixed(1);
-function must<T>(v: T | undefined, what: string): T {
-  if (v === undefined) throw new Error(`sizes data is missing ${what}`);
-  return v;
-}
-const find = (prefix: string) =>
-  must(
-    sizes.bundles.find((b: any) => b.name.startsWith(prefix)),
-    prefix,
-  );
-const tiers = [
-  { label: 'core', sub: 'signals, store, expressions, the engine', size: find('core only').brotli },
-  { label: 'essentials', sub: 'state, rendering, forms, requests, morph', size: find('essentials preset').brotli },
+const TILE = 512;
+const find = (prefix: string) => {
+  const b = sizes.bundles.find((b: any) => b.name.startsWith(prefix));
+  if (!b) throw new Error(`sizes data is missing ${prefix}`);
+  return b.brotli;
+};
+const core = find('core only');
+const mine = [
+  { name: 'sigmx core', sub: 'signals, store, expressions, the engine', size: core },
+  { name: 'sigmx minimal', sub: 'core + signals, text, show, on', size: find('minimal preset') },
+  { name: 'a typical sigmx page', sub: 'minimal + fetch + morph', size: find('minimal + fetch') },
+  { name: 'sigmx essentials', sub: 'state, rendering, forms, requests, morph', size: find('essentials preset') },
   {
-    label: 'everything',
-    sub: `all ${sizes.perPlugin.length} plugins, shipped file`,
-    size: find('everything, shipped').brotli,
+    name: 'sigmx, everything',
+    sub: `all ${sizes.perPlugin.length} plugins in one file`,
+    size: find('everything, shipped'),
   },
-];
-const bars = [
-  ...tiers.map((t) => ({ name: `sigmx ${t.label}`, size: t.size, mine: true })),
-  ...compare.libraries.map((l: any) => ({ name: `${l.name} ${l.version}`, size: l.brotli, mine: false, note: l.note })),
-];
-const max = Math.max(...bars.map((b) => b.size));
-const lib = (n: string) =>
-  must(
-    compare.libraries.find((l: any) => l.name === n),
-    n,
-  );
+].map((r) => ({ ...r, mine: true }));
+const theirs = compare.libraries.map((l: any) => ({
+  name: `${l.name} ${l.version}`,
+  sub: l.note,
+  size: l.brotli,
+  mine: false,
+}));
+const rows = [...mine, ...theirs].sort((a, b) => a.size - b.size);
+const tiles = (n: number) => {
+  const full = Math.floor(n / TILE);
+  const rest = (n % TILE) / TILE;
+  return { full, rest };
+};
+const coreTiles = tiles(core);
+const lib = (n: string) => compare.libraries.find((l: any) => l.name === n)?.brotli ?? 0;
 const pct = (a: number, b: number) => Math.round((1 - a / b) * 100);
-const everything = tiers[2].size;
-const vsHtmx = pct(everything, lib('htmx').brotli);
-const vsDatastar = pct(everything, lib('Datastar').brotli);
+const everything = find('everything, shipped');
+const vsHtmx = pct(everything, lib('htmx'));
+const vsDatastar = pct(everything, lib('Datastar'));
 const datastarLine =
   vsDatastar >= 2
     ? `${vsDatastar}% smaller than Datastar`
     : vsDatastar <= -2
       ? `${-vsDatastar}% larger than Datastar`
-      : `within 2% of Datastar`;
+      : 'within 2% of Datastar';
 ---
-<section class="hero-sizes not-content">
-  <div class="tiers">
-    {tiers.map((t) => (
-      <div class="tier">
-        <b>{kb(t.size)}<small>KB</small></b>
-        <span class="label">{t.label}</span>
-        <span class="sub">{t.sub}</span>
-      </div>
-    ))}
+<section class="home-s not-content">
+  <h2>Every kilobyte, counted.</h2>
+  <p class="lede">
+    One tile is {TILE} bytes, brotli-compressed the way a CDN serves it. The core is the dark tiles; everything after
+    it is plugins, and you only ship the ones you register. All {sizes.perPlugin.length} of them together, including
+    the Alpine and htmx extensions, come to {vsHtmx}% less than htmx alone and {datastarLine}.
+  </p>
+  <div class="tiles">
+    {rows.map((r) => {
+      const t = tiles(r.size);
+      return (
+        <div class:list={['row', { mine: r.mine }]}>
+          <span class="name">{r.name}<small>{r.sub}</small></span>
+          <span class="bytes">
+            {Array.from({ length: t.full }, (_, i) => (
+              <i class:list={{ core: r.mine && i < coreTiles.full }} />
+            ))}
+            {t.rest > 0 && <i class:list={{ core: r.mine && t.full < coreTiles.full }} style={`width:${t.rest * 100}%`} class="part" />}
+          </span>
+          <span class="size">{kb(r.size)} KB</span>
+        </div>
+      );
+    })}
   </div>
-  <p class="how">Brotli-compressed, the way a CDN serves it. Register only what you use and the runtime is whatever those plugins weigh. Everything, all {sizes.perPlugin.length} plugins including the Alpine and htmx extensions, is {vsHtmx}% smaller than htmx alone and {datastarLine} (23 plugins).</p>
-  <div class="bars">
-    {bars.map((b) => (
-      <div class={`bar ${b.mine ? 'mine' : ''}`}>
-        <span class="name">{b.name}</span>
-        <span class="track"><i style={`width:${(b.size / max) * 100}%`}></i></span>
-        <span class="size">{kb(b.size)} KB</span>
-      </div>
-    ))}
-  </div>
-  <p class="foot">
-    Measured {compare.measuredAt}: {compare.libraries.map((l: any) => `${l.name} (${l.note})`).join(', ')}. Every number comes from{' '}
-    <code>npm run size</code> and <code>npm run compare</code>, brotli quality 11.
+  <p class="key">
+    <span><i class="sw core"></i>core</span>
+    <span><i class="sw plug"></i>plugins</span>
+    <span><i class="sw"></i>other libraries, measured the same way</span>
+  </p>
+  <p class="home-note">
+    Measured {compare.measuredAt}: {compare.libraries.map((l: any) => `${l.name} ${l.version} (${l.note})`).join(', ')},
+    with <code>npm run size</code> and <code>npm run compare</code> at brotli quality 11. Per-plugin figures and every preset are in <a class="home-link" href="/tooling/bundle-sizes/">bundle sizes</a>.
   </p>
 </section>
 <style>
-  .hero-sizes { display: grid; gap: 1.2rem; margin: 2rem auto 0; max-width: 56rem; }
-  .tiers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--sl-color-hairline); border: 1px solid var(--sl-color-hairline); border-radius: 14px; overflow: hidden; }
-  @media (max-width: 40rem) { .tiers { grid-template-columns: 1fr; } }
-  .tier { background: var(--sl-color-bg); padding: 1.2rem 1.3rem; display: grid; gap: .15rem; }
-  .tier b { font-size: 2.6rem; line-height: 1; letter-spacing: -.03em; color: var(--sl-color-accent-high); font-variant-numeric: tabular-nums; }
-  .tier b small { font-size: 1rem; margin-left: .25rem; color: var(--sl-color-gray-3); letter-spacing: 0; font-weight: 500; }
-  .tier .label { font-weight: 600; text-transform: uppercase; letter-spacing: .08em; font-size: .78rem; }
-  .tier .sub { color: var(--sl-color-gray-3); font-size: .85rem; }
-  .how, .foot { margin: 0; color: var(--sl-color-gray-3); font-size: .9rem; text-align: center; }
-  .foot { font-size: .78rem; }
-  .bars { display: grid; gap: .45rem; padding: 1rem 1.2rem; border: 1px solid var(--sl-color-hairline); border-radius: 14px; background: var(--sl-color-bg); }
-  .bar { display: grid; grid-template-columns: 11rem 1fr 5rem; gap: .8rem; align-items: center; font-size: .88rem; }
-  .bar .name { color: var(--sl-color-gray-2); text-align: right; }
-  .bar .track { height: .7rem; border-radius: 999px; background: var(--sl-color-gray-6); overflow: hidden; }
-  .bar .track i { display: block; height: 100%; border-radius: 999px; background: var(--sl-color-gray-4); }
-  .bar.mine .track i { background: linear-gradient(90deg, var(--sl-color-accent), #7c5cff); }
-  .bar.mine .name { color: var(--sl-color-white); font-weight: 600; }
-  .bar .size { font-variant-numeric: tabular-nums; text-align: right; }
-  @media (max-width: 40rem) { .bar { grid-template-columns: 1fr; gap: .2rem; } .bar .name, .bar .size { text-align: left; } }
+  .tiles {
+    margin-top: 2.25rem;
+    display: grid;
+    gap: 0.35rem;
+  }
+  .row {
+    display: grid;
+    grid-template-columns: 13rem minmax(0, 1fr) 4.5rem;
+    gap: 1rem;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--sl-color-hairline);
+  }
+  .name {
+    display: grid;
+    line-height: 1.2;
+    font-size: 0.9rem;
+    color: var(--sl-color-gray-2);
+  }
+  .row.mine .name {
+    color: var(--sl-color-white);
+    font-weight: 600;
+  }
+  .name small {
+    font-weight: 400;
+    font-size: 0.72rem;
+    color: var(--sl-color-gray-3);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .bytes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+  }
+  .bytes i {
+    display: block;
+    width: 0.6rem;
+    height: 1rem;
+    border-radius: 2px;
+    background: var(--sl-color-gray-5);
+  }
+  .row.mine .bytes i {
+    background: var(--sl-color-accent-low);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--sl-color-accent) 50%, transparent);
+  }
+  .row.mine .bytes i.core {
+    background: var(--sl-color-accent);
+    box-shadow: none;
+  }
+  .bytes i.part {
+    min-width: 2px;
+    max-width: 0.6rem;
+    flex: 0 0 auto;
+  }
+  .size {
+    font-family: var(--sl-font-mono);
+    font-size: 0.85rem;
+    text-align: right;
+    color: var(--sl-color-gray-2);
+    font-variant-numeric: tabular-nums;
+  }
+  .row.mine .size {
+    color: var(--sl-color-white);
+  }
+  .key {
+    margin: 1rem 0 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.5rem;
+    font-size: 0.8rem;
+    color: var(--sl-color-gray-3);
+  }
+  .sw {
+    display: inline-block;
+    width: 0.6rem;
+    height: 0.85rem;
+    margin-right: 0.4rem;
+    border-radius: 2px;
+    vertical-align: -0.1em;
+    background: var(--sl-color-gray-5);
+  }
+  .sw.core {
+    background: var(--sl-color-accent);
+  }
+  .sw.plug {
+    background: var(--sl-color-accent-low);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--sl-color-accent) 50%, transparent);
+  }
+  @media (max-width: 44rem) {
+    .row {
+      grid-template-columns: minmax(0, 1fr) 4.5rem;
+      gap: 0.5rem 1rem;
+    }
+    .bytes {
+      order: 3;
+      grid-column: 1 / -1;
+    }
+    .bytes i {
+      width: 0.45rem;
+      height: 0.7rem;
+    }
+  }
 </style>

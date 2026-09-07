@@ -1,0 +1,55 @@
+/* Homepage sections share only rhythm and type; each section's own figure lives in its component. */
+.home-s {
+  padding-block: clamp(3rem, 6vw, 4.75rem);
+  border-top: 1px solid var(--sl-color-hairline);
+}
+.home-s > h2,
+.home-s .home-h2 {
+  margin: 0;
+  font-size: clamp(1.5rem, 1.1rem + 1.4vw, 2.1rem);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  font-weight: 600;
+  color: var(--sl-color-white);
+  max-width: 30ch;
+}
+.home-s .lede {
+  margin: 1rem 0 0;
+  max-width: 62ch;
+  color: var(--sl-color-gray-2);
+  line-height: 1.65;
+}
+.home-s .lede a,
+.home-s .home-link {
+  color: var(--sl-color-accent-high);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  text-decoration-color: color-mix(in srgb, var(--sl-color-accent) 45%, transparent);
+}
+.home-s .lede code,
+.home-s .home-code {
+  font-family: var(--sl-font-mono);
+  font-size: 0.85em;
+  padding: 0.1em 0.35em;
+  border-radius: 6px;
+  background: var(--sl-color-gray-6);
+  color: var(--sl-color-white);
+}
+.home-note {
+  margin: 1.25rem 0 0;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--sl-color-gray-3);
+  max-width: 70ch;
+}
+.home-s .home-note code {
+  font-size: 0.74rem;
+}
+.home-pl {
+  display: block;
+  font-family: var(--sl-font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--sl-color-gray-3);
+}

@@ -3,11 +3,8 @@ title: "sigmx"
 description: "A modern, server-driven web framework in a runtime the browser barely notices: signals, streaming patches and a state-preserving morph from a 4.5 KB core, with a build that ships only what your markup uses."
 template: splash
 hero:
-  image:
-    light: ../../assets/logo-light.svg
-    dark: ../../assets/logo-dark.svg
-    alt: ""
-  tagline: The power of a modern framework, in a runtime the browser barely notices. Your server keeps rendering HTML. sigmx fetches it, morphs it into the page without losing your place, and adds signals, two-way binding and streaming. The build scans your markup and ships only the plugins it finds. Zero dependencies.
+  title: The power of a modern framework, in a runtime the browser barely notices.
+  tagline: Your server keeps rendering HTML. sigmx fetches it, morphs it into the page without losing your place, and adds signals, two-way binding and streaming. The build ships only the plugins your markup uses. Zero dependencies.
   actions:
     - text: Get started
       link: /start/installation/
@@ -17,88 +14,14 @@ hero:
       variant: minimal
 ---
 
-import { Card, CardGrid } from '@astrojs/starlight/components'
-import Live from '../../components/Live.astro'
 import SizeHero from '../../components/SizeHero.astro'
-import sizes from '../../data/sizes.json'
+import Anatomy from '../../components/home/Anatomy.astro'
+import Auto from '../../components/home/Auto.astro'
+import Extend from '../../components/home/Extend.astro'
+import Origins from '../../components/home/Origins.astro'
 
 <SizeHero />
-
-<Live title="A complete app, no build step" html={`
-<div data-signals="{ count: 0 }" class="row">
-  <button data-on:click="$count--">−</button>
-  <b data-text="$count"></b>
-  <button data-on:click="$count++">+</button>
-  <span data-transition="$count > 4">that is a lot of clicks</span>
-</div>
-`} />
-
-## The problem
-
-A modern framework gives you reactive state, a component model, routing and data fetching, and asks for tens of kilobytes of JavaScript before your first line runs. A hypermedia library gives you server-rendered HTML in a few kilobytes and leaves everything that happens between requests to you, so a search box with a debounce, a form with a live total or a menu that closes on Escape ends up as a second library bolted on, then a third for its extensions.
-
-sigmx starts from the other end. The server renders HTML, as it always has. The page gets one small, reactive runtime that can ask for more HTML, merge it in without destroying what the user was doing, hold client state in signals, and keep listening on a stream when one request should keep delivering. Everything beyond the core is a plugin you register, and a build step that reads your markup and registers them for you.
-
-## What you get
-
-<CardGrid>
-  <Card title="Server-driven HTML" icon="rocket">
-    Return plain HTML from any endpoint and `@get` or `@post` morphs it into the page by id. Return JSON to merge signals. Return an event stream when one request should keep delivering. Boosted links and forms, history, and `Last-Event-ID` reconnects are all in.
-  </Card>
-  <Card title="Signals, not sprinkles" icon="star">
-    Client state lives in signals you declare in markup. `data-bind`, `data-show`, `data-class`, computed values and effects keep the page in step without a component model or a virtual DOM. Expressions are plain JavaScript.
-  </Card>
-  <Card title="A morph that keeps your place" icon="approve-check">
-    Patched HTML is merged, not replaced. Focus, typed input, scroll position and playing media survive every update because elements with ids are kept, wherever they move.
-  </Card>
-  <Card title="Pay for what you use" icon="setting">
-    A {(sizes.bundles[0].brotli / 1024).toFixed(1)} KB core and {sizes.perPlugin.length} opt-in plugins, including the Alpine and htmx extensions you would otherwise bolt on. Most pages need a handful, and the build finds them.
-  </Card>
-</CardGrid>
-
-## The build decides what ships
-
-The runtime is small because the work of choosing plugins and compiling expressions happens at build time, not in the browser. Point the scanner at your source and it selects exactly the directives and functions your markup uses, the way a CSS framework scans for class names. Turn on precompilation and every expression becomes a real function in a table, so the runtime compiler and `new Function` leave the bundle and a strict Content-Security-Policy needs no exceptions.
-
-```bash
-npx sigmx scan src --out src/sigmx-plugins.js
-```
-
-```
-[sigmx] auto: 13 plugins (signals, text, show, on, bind, httpGet, applyElements, …); 37 unused
-```
-
-The scanner runs as a CLI for any build, as a Vite plugin for any framework, as an Astro integration, and inside the Rust crate for projects without Node. Read about it in [Build tooling](/tooling/).
-
-## Any server, any language
-
-Nothing on the server needs JavaScript. A backend speaks sigmx by returning HTML with the same ids as the page, JSON to merge into signals, or a text event stream of `event:` and `data:` lines. Any language that can write an HTTP response can do that; `sigmx/server` and the Astro, Hono and Rust SDKs save you the formatting.
-
-## Extend it in twenty lines
-
-Every built-in directive, function and server-event handler is a plain object made with the same three helpers you get. Nothing registers on import, so your plugins tree-shake, teardown is automatic, and auto mode scans them like the built-ins.
-
-```ts
-import { attribute } from 'sigmx'
-
-export const upper = attribute({
-  name: 'upper',                  // data-upper="$title"
-  value: 'required',
-  mount({ el, evaluate, effect }) {
-    effect(() => { el.textContent = String(evaluate()).toUpperCase() })
-  },
-})
-```
-
-The [Extending](/extending/) section walks through directives, functions and server events, and ends with a complete [Plausible analytics plugin](/extending/plausible/) that tracks goals from markup, from expressions and from the server in one small file.
-
-## Why it is small
-
-- No runtime dependencies, and a kernel written for compression: a versioned reactive graph, a path-keyed store, and expressions that run as plain JavaScript.
-- Plugins are values, not side effects, so bundlers drop what you do not register and auto mode never registers what you do not use.
-- Optional build-time compilation of expressions removes the compiler and `new Function` entirely.
-- The numbers above are measured from the real source on every build, not quoted from memory.
-
-## Where it comes from
-
-sigmx keeps the model htmx established (the server sends HTML, the browser swaps it in, event streams carry updates), the attribute style Alpine.js made familiar, and the attribute vocabulary Datastar used to fuse the two, so markup written for Datastar runs unchanged. Under the hood it is an independent implementation with different goals: a smaller, simpler codebase, plugins you register rather than side effects that register themselves, and a build that does the heavy lifting. Read the [introduction](/start/introduction/) for the full story.
+<Anatomy />
+<Auto />
+<Extend />
+<Origins />

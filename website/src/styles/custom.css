@@ -314,6 +314,3 @@
   height: 1.35rem;
   width: auto;
 }
-.hero > img {
-  width: min(45%, 13rem);
-}

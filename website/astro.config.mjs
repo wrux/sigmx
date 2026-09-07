@@ -1,11 +1,14 @@
-import node from '@astrojs/node';
+import cloudflare from '@astrojs/cloudflare';
 import starlight from '@astrojs/starlight';
 import sigmx from '@sigmx/astro';
 import { defineConfig } from 'astro/config';
 
 export default defineConfig({
   site: 'https://sigmx.dev',
-  adapter: node({ mode: 'standalone' }),
+  // Prerendered pages are optimised with sharp at build time; the on-demand routes only stream
+  // markup, so no Images binding is needed at runtime. Prerendering stays in Node: the Workers
+  // sandbox forbids WebAssembly compilation, which Shiki's highlighter needs.
+  adapter: cloudflare({ imageService: 'compile', prerenderEnvironment: 'node' }),
   redirects: {
     '/guides/auto-mode/': '/tooling/auto-mode/',
     '/guides/precompiled-expressions/': '/tooling/precompiled-expressions/',
@@ -35,7 +38,8 @@ export default defineConfig({
         'A small hypermedia library: declarative attributes, signals, streaming server patches. Zero dependencies.',
       social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/wrux/sigmx' }],
       editLink: { baseUrl: 'https://github.com/wrux/sigmx/edit/main/website/' },
-      customCss: ['./src/styles/custom.css'],
+      customCss: ['./src/styles/custom.css', './src/styles/home.css'],
+      components: { Hero: './src/components/home/Hero.astro' },
       head: [
         { tag: 'link', attrs: { rel: 'icon', type: 'image/png', sizes: '32x32', href: '/favicon-32x32.png' } },
         { tag: 'link', attrs: { rel: 'icon', type: 'image/png', sizes: '16x16', href: '/favicon-16x16.png' } },
